@@ -1,23 +1,43 @@
---permet davoir le debug 
+--Debug Log Enable
 io.stdout:setvbuf("no")
-
-  --***********Paramétrage fenêtre de jeux*************
-  love.window.setTitle("BerouteEngine")
-  love.window.setMode(1280,720)
-
 if arg[#arg] == "-debug" then require("mobdebug").start() end
 
 
+  --***********Config Window Game*************
+  love.window.setTitle("Tactique Cards")
+	love.window.setFullscreen(false)
 
-love.window.getTitle("player Animation & Mouvements")
+--REQUIRE
 
-cardeGenerator = require("my-librairie/cardeGenerator")
+local screen = require("my-librairie/responsive");
+local hud = require("my-librairie/hud");
+local scene = require("my-librairie/sceneManager");
+--VARIABLES
 
 
---variables
---Systeme
-resolution ={wiedth = 1280,height = 720}
---Object
+--INIT
+function love.load()
+	
+	scene.load();
+	
+	end
 
-print ('salut');
+--UPDATE
+function love.update()
+	
+	screen.UpdateRatio();
+	scene.update();
+	
+end
 
+--DRAW
+function love.draw()
+	
+	love.graphics.push()
+	love.graphics.scale(screen.ratioScreen.width, screen.ratioScreen.height)
+
+	scene.draw();
+	
+	love.graphics.pop()
+	
+	end
