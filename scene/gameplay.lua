@@ -1,72 +1,51 @@
-local gameplay={};
+local gameplay = {};
+local lockClick = false;
+-- REQUIRE
 
---REQUIRE
-local cardeGenerator = require("my-librairie/cardeGenerator");
-local hud = require("my-librairie/hud");
 local hero = require("ActorScripts/hero");
 local Enemies = require("ActorScripts/Enemies");
---VARIABLE
-	local myDeck={};
+local cards = require("ressources/card");
+-- VARIABLE
 
---LOAD
+-- LOAD
 function gameplay.load()
-	
-	hud.init();
-	
-	for  i=0 , 9 do
-		card = cardeGenerator.create(
-			
-			'img/card/tourbillion/card.jpg' ,
-			'img/card/tourbillion/decoration.png' ,
-			'img/card/tourbillion/ilustration.png',
-			'Ma Premiere card'
-		);
-		
-		
-		card.vector2.x = card.vector2.x + ((card.width/2) * (i+1));
-		card.oldVector2.x = card.vector2.x;
-		
-		table.insert(myDeck,card);
-		
-	end	
-	
+
+    hudGameplay.init();
+    for key, value in pairs(cards) do
+        cardeGenerator.create(key, value.ImgIlustration, value.Description, value.PowerBlow, value.Effect,2);
+    end
+    cardeGenerator.tirage(5);
 end
 
-
---UPDATE
+-- UPDATE
 function gameplay.update()
 
-cardeGenerator.hover();
+    cardeGenerator.hover();
 
+    if love.mouse.isDown(1) and lockClick == false then
+        lockClick = true;
+        hudGameplay.hover('click')
+    elseif love.mouse.isDown(1) == false and lockClick == true then
+        lockClick = false;
+    end
 
 end
 
-
-
---DRAW
+-- DRAW
 function gameplay.draw()
-	
-	--DRAW ACTOR 
-	hero.draw();
-	Enemies.draw();
-	--DRAW CARD
-	for key,value in pairs(myDeck) do
-	
-		love.graphics.draw(
-			
-			value.canvas ,
-			value.vector2.x ,
-			value.vector2.y ,
-			0 ,
-			value.scale.x ,
-			value.scale.y 
-		);
-		
 
-	end
-	
-	--DRAW HUD
-	hud.draw();
-	
-	end
+    -- DRAW ACTOR 
+    hero.draw();
+    Enemies.draw();
+    -- DRAW CARD
+    for key, value in pairs(cardeGenerator.hand) do
+
+        love.graphics.draw(value.canvas, value.vector2.x, value.vector2.y, 0, value.scale.x, value.scale.y);
+
+    end
+
+    -- DRAW HUD
+    hudGameplay.draw();
+
+end
 return gameplay;

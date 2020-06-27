@@ -1,77 +1,47 @@
-local Enemies={};
+Enemies = {};
 
---REQUIRE
+-- REQUIRE
+local actor = require("ActorScripts/actorManager");
 
+-- VARIABLE
 
---VARIABLE
-Enemies.vector2 ={x = 1261 , y = 450};
-Enemies.sfx={};
-Enemies.sound ={};
-Enemies.curentAnimation = 'idle';
-
-Enemies.state = {
-	life=100,
-	degatBase ={0},
-	bonus ={
-		degat =0,
-		life =0,
-		armor =0,
-		}
-	};
-
-Enemies.animation ={
-	
-	idle = {
-		love.graphics.newImage("img/Actor/Enemy/enemy.png");
-		};
-	hit = {};
-	attack = {};
-	parade = {};
-	heal = {};
-	
-};
-
---LOAD
+-- DECLARATION ENEMY
+Enemies = actor.create('Glob', {
+    idle = {
+        'img/Actor/Enemy/enemy.png'
+    }
+}, {
+    x = 1261,
+    y = 450
+});
+Enemies.state.life = 100;
+-- LOAD
 function Enemies.load()
-	
-	
-	
+
 end
 
-
---UPDATE
+-- UPDATE
 function Enemies.update()
 
-
-
-
 end
 
-
-
---DRAW
+-- DRAW
 function Enemies.draw()
-	
-	local animation = Enemies.animation[Enemies.curentAnimation] ;
-	
-	for i=1 , #animation  do
-	
-		
-		love.graphics.draw(animation[i],Enemies.vector2.x ,Enemies.vector2.y);
-		
-		
-	end
-			--BARE DE VIE 
-		love.graphics.setColor(1,0,0);
-		love.graphics.rectangle(
-			'fill',
-			Enemies.vector2.x+50,
-			Enemies.vector2.y + 270 ,
-			3*Enemies.state.life,	
-			10
-		);
-		love.graphics.setColor(1,1,1);
-	
-	
-	end
+
+    local animation = Enemies.animation[Enemies.curentAnimation];
+
+    for i = 1, #animation do
+
+        love.graphics.draw(animation[i], Enemies.vector2.x, Enemies.vector2.y);
+
+    end
+    -- BARE DE VIE 
+    love.graphics.setColor(0, 0, 1);
+    local centerBar = Enemies.vector2.x + ((Enemies.width / 2) - (Enemies.state.life));
+    love.graphics.rectangle('fill', centerBar, Enemies.vector2.y + Enemies.height, 3 * Enemies.state.life, 10);
+    love.graphics.setColor(1, 1, 1);
+    love.graphics.print(Enemies.state.life .. '/' .. Enemies.state.maxLife, Enemies.vector2.x + (Enemies.width / 1.8),
+    Enemies.vector2.y + (Enemies.height - 8));
+
+end
 return Enemies;

@@ -1,6 +1,6 @@
 local screenManager ={};
 
-local gameReso ={ width = 1920 , height = 1080 };
+ screenManager.gameReso ={ width = 1920 , height = 1080 };
  screenManager.ratioScreen={height = 1 ,width = 1};
 local curentDimensions={};
 
@@ -23,8 +23,8 @@ love.window.setMode(
 function screenManager.UpdateRatio()
 
 	curentDimensions.width , curentDimensions.height = love.graphics.getDimensions();
-	screenManager.ratioScreen.height =  curentDimensions.height  / gameReso.height;
-	screenManager.ratioScreen.width =  curentDimensions.width  / gameReso.width;
+	screenManager.ratioScreen.height =  curentDimensions.height  / screenManager.gameReso.height;
+	screenManager.ratioScreen.width =  curentDimensions.width  / screenManager.gameReso.width;
 
 	
 
