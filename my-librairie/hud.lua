@@ -18,16 +18,20 @@ hud.object = {
                     y = 1035
                 },
                 text = 'End of Tours'
-				
+
             }
 
-		},
-		action= function()
-			cardeGenerator.clearHand();
-			cardeGenerator.tirage(5);
-		end
-	},
-	btnLife = {
+        },
+        width = 0,
+        height = 0,
+
+        action = function()
+            if hero.actor.state.dead ~= true and Enemies.curentEnemy.state.dead ~= true then
+                Tour = 'Enemy'
+            end
+        end
+    },
+    btnLife = {
 
         img = love.graphics.newImage("img/hud/Button-life.png"),
         vector2 = {
@@ -43,9 +47,11 @@ hud.object = {
                 text = ''
             }
 
-		}
+        },
+        width = 0,
+        height = 0
     },
-	btnMenu = {
+    btnMenu = {
 
         img = love.graphics.newImage("img/hud/Button-Menu.png"),
         vector2 = {
@@ -61,9 +67,11 @@ hud.object = {
                 text = ''
             }
 
-		}
-	},
-	btnAllCard = {
+        },
+        width = 0,
+        height = 0
+    },
+    btnAllCard = {
 
         img = love.graphics.newImage("img/hud/Button-all-card.png"),
         vector2 = {
@@ -79,11 +87,12 @@ hud.object = {
                 text = ''
             }
 
-		},
-		action= function()
-			cardeGenerator.clearHand();
-			cardeGenerator.tirage(5);
-		end
+        },
+        width = 0,
+        height = 0,
+        action = function()
+ 
+        end
     },
     footerBar = {
 
@@ -101,7 +110,9 @@ hud.object = {
                 text = ''
             }
 
-        }
+        },
+        width = 0,
+        height = 0
 
     },
     cardDeck = {
@@ -120,7 +131,9 @@ hud.object = {
                 text = 0
             }
 
-        }
+        },
+        width = 0,
+        height = 0
 
     },
     cardGraveyard = {
@@ -139,7 +152,9 @@ hud.object = {
                 text = 0
             }
 
-        }
+        },
+        width = 0,
+        height = 0
     },
     energie = {
 
@@ -157,10 +172,63 @@ hud.object = {
                 text = 0
             }
 
-        }
+        },
+        width = 0,
+        height = 0
     },
+    btnQuiter = {
 
-    Attack = {
+        img = love.graphics.newImage("img/hud/Button-fin-de-tour.png"),
+        vector2 = {
+            x = 650,
+            y = 300
+        },
+        value = {
+            {
+                vector2 = {
+                    x = 680,
+                    y = 315
+                },
+                text = 'Go To Menu'
+
+            }
+
+        },
+        width = 0,
+        height = 0,
+
+        action = function()
+            scene.curent = 'Menu'
+        end
+    },
+    btnNewPartie = {
+
+        img = love.graphics.newImage("img/hud/Button-fin-de-tour.png"),
+        vector2 = {
+            x = 1100,
+            y = 300
+        },
+        value = {
+            {
+                vector2 = {
+                    x = 1130,
+                    y = 315
+                },
+                text = 'New Partie'
+
+            }
+
+        },
+        width = 0,
+        height = 0,
+
+        action = function()
+
+            scene.curent = 'gameplay';
+            scene.gameplay.rezetGame();
+        end
+    }
+    --[[  Attack = {
 
         img = love.graphics.newImage("img/hud/HubAttack.png"),
         vector2 = {
@@ -176,9 +244,11 @@ hud.object = {
                 text = 0
             }
 
-        }
-    },
-    Deffence = {
+        },
+        width = 0,
+        height = 0
+    }, ]]
+    --[[   Deffence = {
 
         img = love.graphics.newImage("img/hud/Hud-Defence.png"),
         vector2 = {
@@ -194,9 +264,11 @@ hud.object = {
                 text = 0
             }
 
-        }
-    },
-    prisme = {
+        },
+        width = 0,
+        height = 0
+    }, ]]
+    --[[    prisme = {
 
         img = love.graphics.newImage("img/hud/power-magical.png"),
         vector2 = {
@@ -212,12 +284,14 @@ hud.object = {
                 text = 0
             }
 
-        }
-    }
+        },
+        width = 0,
+        height = 0
+    } ]]
 
 };
 
-function hud.init()
+function hud.load()
 
     for key, value in pairs(hud.object) do
 
@@ -230,71 +304,57 @@ function hud.init()
 end
 function hud.hover(action)
 
-    local objet = {
-        name = '',
-        info = '',
-        validate = false
-    };
 
-    local x, y = love.mouse.getPosition();
-    x = x / screen.ratioScreen.width;
-    y = y / screen.ratioScreen.height;
 
     for key, value in pairs(hud.object) do
 
-        if (x >= value.vector2.x and x <= value.vector2.x + value.width and y >= value.vector2.y and y <=
-			value.vector2.y + value.height) then
-				
-			if (action == nil) then
-				
-                objet.name = key;
-                objet.info = value;
-                objet.validate = true;
+        if ( screen.mouse.X >= value.vector2.x and screen.mouse.X <= value.vector2.x + value.width and screen.mouse.Y >= value.vector2.y and screen.mouse.Y <=
+            value.vector2.y + value.height) then
 
-				return objet;
-			else
+            if (action == nil) then
 
-				hud.action(value,action,key);
-			--	return true;
+            
+
+                return true;
+            else
+
+                hud.action(value, action, key);
+                --	return true;
             end
         end
 
     end
     if (action == nil) then
-		return objet;
-	else
-		return false;	
+        return false;
+    else
+        return false;
     end
 
 end
 
-function hud.action(p_hudElement,action,nameElement)
-	print(nameElement)
-	if(p_hudElement.action==nil)then return false end
-	
-	p_hudElement.action();
+function hud.action(p_hudElement, action, nameElement)
+    if (p_hudElement.action == nil) then
+        return false
+    end
 
-
+    p_hudElement.action();
 
 end
-
 
 function hud.draw()
 
     for key, value in pairs(hud.object) do
 
-        love.graphics.draw(value.img, value.vector2.x, value.vector2.y);
-        love.graphics.setNewFont(20);
+        if key ~= 'btnNewPartie' and key ~= 'btnQuiter' then
+            love.graphics.draw(value.img, value.vector2.x, value.vector2.y);
+            love.graphics.setNewFont(20);
 
-        for i, info in pairs(value.value) do
-
-            if info ~= nil and info.text ~= '' then
-
+            for i = 1, #value.value do
+                local info = value.value[i];
                 love.graphics.print(info.text, info.vector2.x, info.vector2.y);
-
             end
-        end
 
+        end
     end
 
 end

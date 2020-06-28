@@ -9,18 +9,22 @@ love.window.setTitle("Tactique Cards")
 love.window.setFullscreen(false)
 
 -- REQUIRE
-screen = require("my-librairie/responsive");
-cardeGenerator = require("my-librairie/cardeGenerator");
 hudGameplay = require("my-librairie/hud");
-local scene = require("my-librairie/sceneManager");
-
-
+cardeGenerator = require("my-librairie/cardeGenerator");
+screen = require("my-librairie/responsive");
+scene = require("my-librairie/sceneManager");
+dt = 0.07;
+effect = require("ressources/effect");
+lerp = require("my-librairie/lerp");
+-- Returns the distance between two points.
+function math.dist(x1,y1, x2,y2) return ((x2-x1)^2+(y2-y1)^2)^0.5 end
 -- VARIABLES
 
 -- INIT
-function love.load()
+function love.load (  )
 
-    scene.load();
+    print(dt);
+    scene.load(dt);
 
 end
 
@@ -37,9 +41,10 @@ function love.draw()
 
     love.graphics.push()
     love.graphics.scale(screen.ratioScreen.width, screen.ratioScreen.height)
-
+  
     scene.draw();
-
+    effect.draw();
+    love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
     love.graphics.pop()
 
 end

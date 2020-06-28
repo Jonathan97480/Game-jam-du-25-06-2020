@@ -23,7 +23,8 @@ function actor.create(p_name, p_animation, p_vector2)
             maxLife = 80;
             power = 8,
             degat = 0,
-            armor = 0
+            armor = 0,
+            dead = false
 
         },
 

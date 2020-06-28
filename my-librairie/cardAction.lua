@@ -2,36 +2,52 @@ local action = {};
 
 function action.Apllique(p_card)
     --[[ POWER USE  ]]
-    if hero.state.power < p_card.PowerBlowCard then
+    if hero.actor.state.power < p_card.PowerBlowCard then
         return false;
     end
-    hero.state.power = hero.state.power - p_card.PowerBlowCard;
+    hero.actor.state.power = hero.actor.state.power - p_card.PowerBlowCard;
     --[[ HERO-HEAL ]]
     if (p_card.effect.Hero.heal ~= nil) then
 
-        hero.state.life = hero.state.life + p_card.effect.Hero.heal;
+        hero.actor.state.life = hero.actor.state.life + p_card.effect.Hero.heal;
 
-        if hero.state.life > hero.state.maxLife then
+        if hero.actor.state.life > hero.actor.state.maxLife then
 
-            hero.state.life = hero.state.maxLife;
+            hero.actor.state.life = hero.actor.state.maxLife;
 
         end
     end
     --[[ HERO-ARMOR ]]
     if (p_card.effect.Hero.Deffence ~= nil) then
 
-        hero.state.armor = hero.state.armor + p_card.effect.Hero.Deffence;
+        hero.actor.state.armor = hero.actor.state.armor + p_card.effect.Hero.Deffence;
 
     end
     --[[ Henemy APlique Degat ]]
     if (p_card.effect.Enemy.Degat ~= nil) then
-        
-        if(Enemies.state.life >0)then
-           
-            Enemies.state.life = Enemies.state.life - p_card.effect.Enemy.Degat;
+
+        local degat = p_card.effect.Enemy.Degat;
+
+        if Enemies.curentEnemy.state.armor > degat then
+
+            Enemies.curentEnemy.state.armor = Enemies.curentEnemy.state.armor - degat;
+            degat = 0;
         else
-            Enemies.state.Dead = true ;
+            degat = degat - Enemies.curentEnemy.state.armor;
+            Enemies.curentEnemy.state.armor = 0;
         end
+        effect.efect.attack.vector2.x = Enemies.curentEnemy.vector2.x 
+        effect.efect.attack.vector2.y = Enemies.curentEnemy.vector2.y + (Enemies.curentEnemy.height/2)-40
+
+        effect.efect.attack.speed =0.1;
+        effect.efect.attack.isplay=true
+        Enemies.curentEnemy.state.life = Enemies.curentEnemy.state.life - degat;
+
+        if Enemies.curentEnemy.state.life <= 0 then
+            Enemies.curentEnemy.state.dead = true;
+            Enemies.curentEnemy.state.life = 0;
+        end
+
     end
 
     return true

@@ -1,5 +1,5 @@
 -- REQUIRE
-local screen = require("my-librairie/responsive");
+
 local CardAction = require("my-librairie/cardAction");
 local hud = require("my-librairie/hud");
 
@@ -20,8 +20,8 @@ function card.create(p_cardName, p_ilustration, p_description, p_power, p_effect
         local cart = {
 
             vector2 = {
-                x = 60,
-                y = 900
+                x = screen.gameReso.width - 337 / 2,
+                y = screen.gameReso.height - (462 / 2)
             },
             scale = {
                 x = 0.5,
@@ -47,7 +47,7 @@ function card.create(p_cardName, p_ilustration, p_description, p_power, p_effect
         -- generate canvas card
         cart.canvas = card.generate(cart)
 
-        table.insert(card.objet, cart);
+        -- table.insert(card.objet, cart);
         table.insert(card.deck, cart);
     end
 
@@ -58,31 +58,42 @@ function card.hover()
 
     local isHover = false;
 
-    local x, y = love.mouse.getPosition();
-
-    x = x / screen.ratioScreen.width;
-    y = y / screen.ratioScreen.height;
 
     for i = #card.hand, 1, -1 do
 
         value = card.hand[i];
 
-        if (x >= value.vector2.x and x <= value.vector2.x + (value.width * value.scale.x) and y >= value.vector2.y and y <=
+        if ( screen.mouse.X >= value.vector2.x and screen.mouse.X <= value.vector2.x + (value.width * value.scale.x) and screen.mouse.Y >= value.vector2.y and screen.mouse.Y <=
             value.vector2.y + (value.height * value.scale.y) and isHover == false) then
 
-            local objet = hud.hover();
+           
 
-            if (objet.validate == false) then
+            if (hud.hover()==false) then
+
                 value.scale.x = 1;
                 value.scale.y = 1;
 
-                card.dragAndDrop(x, y, value, i);
+                local isDown = love.mouse.isDown(1);
 
-                -- DEBUG
-                love.graphics.setColor(1, 0, 0);
-                love.graphics.rectangle('line', value.vector2.x, value.vector2.y, value.width * value.scale.x,
-                                        value.height * value.scale.y);
-                love.graphics.setColor(1, 1, 1);
+                if (isDown) then
+                    -- DRAG CART MOUSE
+                    value.vector2.y = screen.mouse.Y-(value.height / 2);
+                    value.vector2.x = screen.mouse.X-(value.width / 2);
+
+                else
+
+                    if value.vector2.y <= 500 and hero.actor.state.power > 0 then
+                        
+                        if CardAction.Apllique(value) then
+
+                            table.insert(card.Graveyard, card.hand[i]);
+                            table.remove(card.hand, i);
+                            card.positioneHand();
+                        end
+                    else
+                        value.vector2.y = 600;
+                    end
+                end
 
             end
 
@@ -90,11 +101,17 @@ function card.hover()
 
         else
 
-            value.vector2.y = value.oldVector2.y;
-            value.vector2.x = value.oldVector2.x;
+            if math.dist(value.vector2.x, value.vector2.y, value.oldVector2.x, value.oldVector2.y) > 5 then
 
+                lerp.x(value.vector2, value.oldVector2, 80);
+                value.vector2.y = value.oldVector2.y;
+            else
+
+                value.vector2.x = value.oldVector2.x;
+            end
             value.scale.x = 0.5;
             value.scale.y = 0.5;
+
         end
 
     end
@@ -102,43 +119,15 @@ end
 
 function card.clearHand()
 
-    for key, value in pairs(card.hand) do
-
+    for i = 1, #card.hand do
+        local value = card.hand[i];
         table.insert(card.Graveyard, value);
-
     end
 
     card.hand = {};
 
 end
 
--- DRAG CART MOUSE
-function card.dragAndDrop(p_x, p_y, cart, p_cardNumber)
-
-    -- check is down
-    if love.mouse.isDown(1) then
-
-        cart.vector2.y = p_y - (cart.height / 2);
-        cart.vector2.x = p_x - (cart.width / 2);
-
-    else
-
-        -- Reset Position Cart
-
-        if cart.vector2.y <= 500 then
-            if CardAction.Apllique(cart) then
-
-                table.insert(card.Graveyard, card.hand[p_cardNumber]);
-                table.remove(card.hand, p_cardNumber);
-                card.positioneHand();
-            end
-        else
-            cart.vector2.y = 600;
-        end
-
-    end
-
-end
 -- Return canvas 
 function card.generate(p_cart)
 
@@ -161,7 +150,7 @@ function card.generate(p_cart)
     love.graphics.setNewFont(20);
     love.graphics.print(p_cart.description, 66, 271);
     love.graphics.setNewFont(25);
-    love.graphics.print(p_cart.name, 125, 20);
+    love.graphics.print(p_cart.name, 100, 20);
 
     -- re-enable drawing to the main screen
     love.graphics.setCanvas();
@@ -173,13 +162,14 @@ end
 function card.tirage(p_numbercardHand)
 
     -- Check that there are cards in the deck
-    if (#card.deck ~= 0) then
+    if (#card.deck > 1) then
         pioche(p_numbercardHand);
     else
 
         for key, value in pairs(card.Graveyard) do
             table.insert(card.deck, value);
         end
+
         card.Graveyard = {};
         pioche(p_numbercardHand);
     end
@@ -198,6 +188,12 @@ function pioche(p_numbercardHand)
 
             local cardNumber = math.random(1, #card.deck);
             local curentCart = card.deck[cardNumber];
+            curentCart.vector2 = {
+
+                x = screen.gameReso.width - 337 / 2,
+                y = screen.gameReso.height - (462 / 2)
+
+            } 
 
             table.insert(card.hand, curentCart);
 
@@ -205,6 +201,7 @@ function pioche(p_numbercardHand)
         end
 
         card.positioneHand();
+        print(#card.hand)
     end
 
 end
@@ -215,12 +212,14 @@ function card.positioneHand()
 
     for i = 1, #card.hand do
         local curentCart = card.hand[i];
-        curentCart.vector2 = {
+
+        curentCart.oldVector2 = {
             x = 0,
             y = 0
         };
-        curentCart.vector2.x = curentCart.vector2.x + ((curentCart.width / 2) * (i + 1));
-        curentCart.oldVector2.x = curentCart.vector2.x;
+        curentCart.oldVector2.x = curentCart.oldVector2.x + ((curentCart.width / 2) * (i + 1));
+        curentCart.oldVector2.y = screen.gameReso.height - curentCart.height / 2;
+
     end
 
 end

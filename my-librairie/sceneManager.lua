@@ -24,6 +24,7 @@ function scene.load()
 
         scene.gameplay.load();
     elseif scene.curent == "Menu" then
+        scene.menu.load();
     end
 
 end
@@ -32,8 +33,10 @@ function scene.update()
     if (scene.curent == "gameplay") then
 
         scene.gameplay.update();
+
     elseif scene.curent == "Menu" then
 
+        scene.menu.update();
     end
 end
 
