@@ -29,14 +29,14 @@ function scene.load()
 
 end
 
-function scene.update()
+function scene.update(dt)
     if (scene.curent == "gameplay") then
 
-        scene.gameplay.update();
+        scene.gameplay.update(dt);
 
     elseif scene.curent == "Menu" then
 
-        scene.menu.update();
+        scene.menu.update(dt);
     end
 end
 

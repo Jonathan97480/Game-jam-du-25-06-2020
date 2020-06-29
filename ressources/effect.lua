@@ -1,5 +1,7 @@
 local effects = {}
-effects.efect = {};
+effects.efect = {
+
+};
 effects.efect.attack = {}
 effects.efect.attack = {
     animation = nil,
@@ -44,11 +46,11 @@ function AddEffect(frame)
     return animation
 end
 
-function effects.draw()
+function effects.draw(dt)
 
     local value = effects.efect.attack;
     if value.isplay then
-        value.curentTime = value.curentTime + dt;
+        value.curentTime = value.curentTime + delta;
         if value.curentTime >= value.speed then
             value.curentTime = 0;
             if value.curentFrame < #value.animation then
@@ -59,7 +61,7 @@ function effects.draw()
 
                 value.curentFrame = 1;
                 value.curentTime = 0;
-                value.isplay = false;
+                effects.efect.attack.isplay = false;
             end
         end
         love.graphics.draw(value.animation[value.curentFrame], value.vector2.x, value.vector2.y, value.rotation,

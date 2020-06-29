@@ -13,7 +13,7 @@ local curentDimensions = {};
 screenManager.Syncro = true;
 screenManager.FullScreen = false;
 screenManager.resizable = true;
-
+screenManager.getWindow ={};
 local isHover = false;
 
 
@@ -34,6 +34,7 @@ function screenManager.UpdateRatio()
     curentDimensions.width, curentDimensions.height = love.graphics.getDimensions();
     screenManager.ratioScreen.height = curentDimensions.height / screenManager.gameReso.height;
 	screenManager.ratioScreen.width = curentDimensions.width / screenManager.gameReso.width;
+    screenManager.getWindow = curentDimensions;
 
 	x, y = love.mouse.getPosition();
     screenManager.mouse.X = x / screenManager.ratioScreen.width;

@@ -1,10 +1,30 @@
 local action = {};
+local listeAction = {};
+local ongoingAction = false;
 
 function action.Apllique(p_card)
     --[[ POWER USE  ]]
+
     if hero.actor.state.power < p_card.PowerBlowCard then
         return false;
     end
+    table.insert(listeAction, p_card);
+    return true
+end
+
+function action.update()
+
+    if ongoingAction == false and listeAction[1]~=nil and effect.efect.attack.isplay==false then
+
+        ongoingAction = true;
+        action.play(listeAction[1])
+
+    end
+
+end
+
+function action.play(p_card)
+
     hero.actor.state.power = hero.actor.state.power - p_card.PowerBlowCard;
     --[[ HERO-HEAL ]]
     if (p_card.effect.Hero.heal ~= nil) then
@@ -24,7 +44,7 @@ function action.Apllique(p_card)
 
     end
     --[[ Henemy APlique Degat ]]
-    if (p_card.effect.Enemy.Degat ~= nil) then
+    if p_card.effect.Enemy.Degat ~= nil then
 
         local degat = p_card.effect.Enemy.Degat;
 
@@ -36,11 +56,11 @@ function action.Apllique(p_card)
             degat = degat - Enemies.curentEnemy.state.armor;
             Enemies.curentEnemy.state.armor = 0;
         end
-        effect.efect.attack.vector2.x = Enemies.curentEnemy.vector2.x 
-        effect.efect.attack.vector2.y = Enemies.curentEnemy.vector2.y + (Enemies.curentEnemy.height/2)-40
+        effect.efect.attack.vector2.x = Enemies.curentEnemy.vector2.x
+        effect.efect.attack.vector2.y = Enemies.curentEnemy.vector2.y + (Enemies.curentEnemy.height / 2) - 40
 
-        effect.efect.attack.speed =0.1;
-        effect.efect.attack.isplay=true
+        effect.efect.attack.speed = 0.1;
+        effect.efect.attack.isplay = true
         Enemies.curentEnemy.state.life = Enemies.curentEnemy.state.life - degat;
 
         if Enemies.curentEnemy.state.life <= 0 then
@@ -50,7 +70,7 @@ function action.Apllique(p_card)
 
     end
 
-    return true
+    table.remove(listeAction, 1);
+    ongoingAction = false;
 end
-
 return action;

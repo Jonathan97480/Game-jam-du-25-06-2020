@@ -4,34 +4,33 @@ actor.set = {};
 
 function actor.create(p_name, p_animation, p_vector2)
 
-    local newActor = {
+    local newActor = {};
 
-        name = p_name,
-        nameDeck = "",
+    newActor.name = p_name
+    newActor.nameDeck = ""
 
-        vector2 = p_vector2,
+    newActor.vector2 = p_vector2
 
-        animation = {},
-        curentAnimation = 'idle',
+    newActor.animation = {}
+    newActor.curentAnimation = 'idle'
 
-        width = 0,
-        height = 0,
+    newActor.width = 0
+    newActor.height = 0
 
-        state = {
+    newActor.state = {
 
-            life = 80,
-            maxLife = 80;
-            power = 8,
-            degat = 0,
-            armor = 0,
-            dead = false
+        life = 80,
+        maxLife = 80,
+        power = 8,
+        degat = 0,
+        armor = 0,
+        dead = false
 
-        },
+    }
 
-        sfx = {},
-        sound = {}
+    newActor.sfx = {}
+    newActor.sound = {}
 
-    };
     for key, value in pairs(p_animation) do
 
         newActor.animation[key] = {}
@@ -43,6 +42,7 @@ function actor.create(p_name, p_animation, p_vector2)
             table.insert(newActor.animation[key], img);
 
         end
+
     end
 
     actor.get.size(newActor);

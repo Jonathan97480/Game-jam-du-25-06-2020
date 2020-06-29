@@ -1,6 +1,5 @@
 -- REQUIRE
 
-local CardAction = require("my-librairie/cardAction");
 local hud = require("my-librairie/hud");
 
 local cardBackGround = love.graphics.newImage('img/card/CardTheme/card.jpg');
@@ -8,44 +7,44 @@ local cardDecoration = love.graphics.newImage('img/card/CardTheme/decoration.png
 local CardPastille = love.graphics.newImage('img/card/CardTheme/power.png');
 
 local card = {};
-card.objet = {};
+--[[ LA MAIN DU JOUER ]]
 card.hand = {};
+--[[ LE DECK ]]
 card.deck = {};
+--[[ LE SIMETIERE ]]
 card.Graveyard = {};
 
 function card.create(p_cardName, p_ilustration, p_description, p_power, p_effect, p_cont)
     for i = 1, p_cont do
-        -- body
 
-        local cart = {
-
-            vector2 = {
-                x = screen.gameReso.width - 337 / 2,
-                y = screen.gameReso.height - (462 / 2)
-            },
-            scale = {
-                x = 0.5,
-                y = 0.5
-            },
-            name = p_cardName,
-            card = cardBackGround,
-            decoration = cardDecoration,
-            ilustration = love.graphics.newImage(p_ilustration),
-            powerPastille = CardPastille,
-            description = p_description,
-            PowerBlowCard = p_power,
-            oldVector2 = {
-                x = 60,
-                y = 900
-            },
-            effect = p_effect
-        }
+        local cart = {};
+        cart.vector2 = 
+        {
+            x = screen.gameReso.width - 337 / 2,
+            y = screen.gameReso.height - (462 / 2)
+        };
+        cart.scale = {
+            x = 0.5,
+            y = 0.5
+        };
+        cart.name = p_cardName;
+        cart.card = cardBackGround;
+        cart.decoration = cardDecoration;
+        cart.ilustration = love.graphics.newImage(p_ilustration);
+        cart.powerPastille = CardPastille;
+        cart.description = p_description;
+        cart.PowerBlowCard = p_power;
+        cart.oldVector2 = {
+            x = 60,
+            y = 900
+        };
+        cart.effect = p_effect;
 
         local Width, Height = cart.card:getDimensions();
         cart.height = Height;
         cart.width = Width;
         -- generate canvas card
-        cart.canvas = card.generate(cart)
+        cart.canvas = card.generate(cart);
 
         -- table.insert(card.objet, cart);
         table.insert(card.deck, cart);
@@ -54,21 +53,18 @@ function card.create(p_cardName, p_ilustration, p_description, p_power, p_effect
 end
 
 -- HOVER MOUSE DETECTION 
-function card.hover()
+function card.hover(dt)
 
-    local isHover = false;
 
 
     for i = #card.hand, 1, -1 do
 
         value = card.hand[i];
 
-        if ( screen.mouse.X >= value.vector2.x and screen.mouse.X <= value.vector2.x + (value.width * value.scale.x) and screen.mouse.Y >= value.vector2.y and screen.mouse.Y <=
-            value.vector2.y + (value.height * value.scale.y) and isHover == false) then
+        if screen.mouse.X >= value.vector2.x and screen.mouse.X <= value.vector2.x + (value.width * value.scale.x) and
+            screen.mouse.Y >= value.vector2.y and screen.mouse.Y <= value.vector2.y + (value.height * value.scale.y) and Tour ~= "transition" then
 
-           
-
-            if (hud.hover()==false) then
+            if (hud.hover() == false) then
 
                 value.scale.x = 1;
                 value.scale.y = 1;
@@ -76,41 +72,42 @@ function card.hover()
                 local isDown = love.mouse.isDown(1);
 
                 if (isDown) then
-                    -- DRAG CART MOUSE
-                    value.vector2.y = screen.mouse.Y-(value.height / 2);
-                    value.vector2.x = screen.mouse.X-(value.width / 2);
+                    -- DRAG CART MOUSE POSITION
+                    value.vector2.y = screen.mouse.Y - (value.height / 2);
+                    value.vector2.x = screen.mouse.X - (value.width / 2);
 
                 else
+                    --[[ Applique car si elle est deplaser go  moin a 300pixel de haut  ]]
+                    if value.vector2.y <= 400 and hero.actor.state.power >= 0 then
 
-                    if value.vector2.y <= 500 and hero.actor.state.power > 0 then
-                        
                         if CardAction.Apllique(value) then
-
+                            --[[ Reset POsition card to Right bottom Screen ]]
+                            value.vector2.x = screen.gameReso.width - 168.5;
+                            value.vector2.y = screen.gameReso.height - 231;
+                            --[[ On enleve la carde de la main du jouer et on la met dans le simetiere  ]]
                             table.insert(card.Graveyard, card.hand[i]);
                             table.remove(card.hand, i);
+                            --[[ est on reposition les carte restant dans la main du jouer  ]]
                             card.positioneHand();
+
                         end
-                    else
-                        value.vector2.y = 600;
+                    elseif value.vector2.y >580 and isDown ==false then
+
+                      lerp (value.vector2, {x=value.vector2.x,y=600},4);
                     end
                 end
 
             end
 
-            isHover = true;
-
+       
         else
 
-            if math.dist(value.vector2.x, value.vector2.y, value.oldVector2.x, value.oldVector2.y) > 5 then
-
-                lerp.x(value.vector2, value.oldVector2, 80);
-                value.vector2.y = value.oldVector2.y;
-            else
-
-                value.vector2.x = value.oldVector2.x;
-            end
+          local Arrival= lerp(value.vector2, value.oldVector2, 4);
+            
+           
             value.scale.x = 0.5;
             value.scale.y = 0.5;
+  
 
         end
 
@@ -175,6 +172,7 @@ function card.tirage(p_numbercardHand)
     end
 
 end
+
 function pioche(p_numbercardHand)
 
     -- We check that there are enough cards in the deck
@@ -188,12 +186,6 @@ function pioche(p_numbercardHand)
 
             local cardNumber = math.random(1, #card.deck);
             local curentCart = card.deck[cardNumber];
-            curentCart.vector2 = {
-
-                x = screen.gameReso.width - 337 / 2,
-                y = screen.gameReso.height - (462 / 2)
-
-            } 
 
             table.insert(card.hand, curentCart);
 
@@ -201,10 +193,11 @@ function pioche(p_numbercardHand)
         end
 
         card.positioneHand();
-        print(#card.hand)
+      
     end
 
 end
+
 function card.positioneHand()
 
     hudGameplay.object.cardDeck.value[1].text = #card.deck;

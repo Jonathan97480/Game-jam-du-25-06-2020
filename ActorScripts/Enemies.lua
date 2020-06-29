@@ -87,7 +87,7 @@ function playTour()
     if Enemies.timerAttack <= 0 then
 
         Enemies.timerAttack = Enemies.timerDefautl;
-        Tour = 'Player';
+        Tour = 'transition';
         Enemies.isAttack = true;
         if (hero.actor.state.dead ~= true) then
             cardeGenerator.clearHand();
@@ -100,7 +100,7 @@ function playTour()
         end
         return;
     else
-        Enemies.timerAttack = Enemies.timerAttack - dt;
+        Enemies.timerAttack = Enemies.timerAttack - delta;
     end
 
 end

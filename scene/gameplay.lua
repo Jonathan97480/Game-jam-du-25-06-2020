@@ -5,8 +5,8 @@ local lockClick = false;
 local hero = require("ActorScripts/hero");
 local Enemies = require("ActorScripts/Enemies");
 local cards = require("ressources/card");
-
-Tour = 'player';
+ CardAction = require("my-librairie/cardAction");
+Tour = 'transition';
 -- VARIABLE
 
 -- LOAD
@@ -22,7 +22,7 @@ end
 -- UPDATE
 function gameplay.update(dt)
 
-    cardeGenerator.hover();
+    cardeGenerator.hover(dt);
 
     if love.mouse.isDown(1) and lockClick == false then
         lockClick = true;
@@ -36,7 +36,7 @@ function gameplay.update(dt)
         Enemies.update(dt)
 
     end
-
+    CardAction.update();
 end
 
 -- DRAW
@@ -47,7 +47,7 @@ function gameplay.draw()
     Enemies.draw();
     -- DRAW CARD
     for key, value in pairs(cardeGenerator.hand) do
-
+    
         love.graphics.draw(value.canvas, value.vector2.x, value.vector2.y, 0, value.scale.x, value.scale.y);
 
     end
