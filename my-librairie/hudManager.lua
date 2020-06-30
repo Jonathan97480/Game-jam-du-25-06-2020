@@ -1,8 +1,7 @@
-local screen = require("my-librairie/responsive");
 
 -- LOAD IMG HUD
-local hud = {};
-hud.object = {
+local hudManager = {};
+hudManager.object = {
 
     btnFinDeTour = {
 
@@ -291,9 +290,9 @@ hud.object = {
 
 };
 
-function hud.load()
+function hudManager.load()
 
-    for key, value in pairs(hud.object) do
+    for key, value in pairs(hudManager.object) do
 
         width, height = value.img:getDimensions();
 
@@ -302,11 +301,11 @@ function hud.load()
 
     end
 end
-function hud.hover(action)
+function hudManager.hover(action)
 
 
 
-    for key, value in pairs(hud.object) do
+    for key, value in pairs(hudManager.object) do
 
         if ( screen.mouse.X >= value.vector2.x and screen.mouse.X <= value.vector2.x + value.width and screen.mouse.Y >= value.vector2.y and screen.mouse.Y <=
             value.vector2.y + value.height) then
@@ -318,7 +317,7 @@ function hud.hover(action)
                 return true;
             else
 
-                hud.action(value, action, key);
+                hudManager.action(value, action, key);
                 --	return true;
             end
         end
@@ -332,7 +331,7 @@ function hud.hover(action)
 
 end
 
-function hud.action(p_hudElement, action, nameElement)
+function hudManager.action(p_hudElement, action, nameElement)
     if (p_hudElement.action == nil) then
         return false
     end
@@ -341,9 +340,9 @@ function hud.action(p_hudElement, action, nameElement)
 
 end
 
-function hud.draw()
+function hudManager.draw()
 
-    for key, value in pairs(hud.object) do
+    for key, value in pairs(hudManager.object) do
 
         if key ~= 'btnNewPartie' and key ~= 'btnQuiter' then
             love.graphics.draw(value.img, value.vector2.x, value.vector2.y);
@@ -358,4 +357,4 @@ function hud.draw()
     end
 
 end
-return hud;
+return hudManager;

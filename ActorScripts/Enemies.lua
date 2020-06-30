@@ -1,4 +1,4 @@
-Enemies = {
+local Enemies = {
     curentEnemy = {},
     listeEnemies = {},
     healthBar = love.graphics.newImage('img/Actor/Enemy/HudLifeEnemy.png'),
@@ -38,8 +38,21 @@ function Enemies.load()
     end
     --[[ Ramdon select Enemy ]]
     Enemies.curentEnemy = Enemies.listeEnemies[math.random(1, #Enemies.listeEnemies)];
+    Enemies.curentEnemy.state.chancePassTour = 0;
 end
+function Enemies.next()
 
+    Enemies.rezet();
+    Enemies.curentEnemy = Enemies.listeEnemies[math.random(1, #Enemies.listeEnemies)];
+
+end
+function Enemies.rezet()
+    Enemies.curentEnemy.state.life = Enemies.curentEnemy.state.maxLife;
+    Enemies.curentEnemy.state.armor = 0;
+    Enemies.curentEnemy.state.chancePassTour = 0;
+    Enemies.curentEnemy.state.dead = false;
+
+end
 -- UPDATE
 function Enemies.update(dt)
     if Tour == 'Enemy' then
@@ -49,8 +62,21 @@ end
 
 function playTour()
 
-    local shield = math.random(1, 10);
-    if Enemies.isAttack then
+    if (math.random(0, 40) < Enemies.curentEnemy.state.chancePassTour) then
+
+        Tour = 'transition';
+
+        card.clearHand();
+        card.tirage(5);
+
+        print('Enemy a passer son tour ')
+
+        Enemies.curentEnemy.state.chancePassTour = 0;
+
+        return;
+
+    elseif Enemies.isAttack then
+        local shield = math.random(1, 10);
         if shield > 2 and shield <= 4 then
             --[[ TODO:ANIMATION GIVE SHIELD ]]
             Enemies.curentEnemy.state.armor = math.random(10, 30);
@@ -67,11 +93,11 @@ function playTour()
                 hero.actor.state.armor = 0;
             end
             --[[ TODO:ANIMATION DE LATTACK ]]
-            effect.efect.attack.vector2.x = hero.actor.vector2.x 
-            effect.efect.attack.vector2.y = hero.actor.vector2.y + (hero.actor.height/2)-40
-    
-            effect.efect.attack.speed =0.1;
-            effect.efect.attack.isplay=true
+            effect.efect.attack.vector2.x = hero.actor.vector2.x
+            effect.efect.attack.vector2.y = hero.actor.vector2.y + (hero.actor.height / 2) - 40
+
+            effect.efect.attack.speed = 0.1;
+            effect.efect.attack.isplay = true
             hero.actor.state.life = hero.actor.state.life - degat;
 
             if hero.actor.state.life < 0 then
@@ -84,20 +110,16 @@ function playTour()
             Enemies.isAttack = false;
         end
     end
+
     if Enemies.timerAttack <= 0 then
 
         Enemies.timerAttack = Enemies.timerDefautl;
-        Tour = 'transition';
         Enemies.isAttack = true;
-        if (hero.actor.state.dead ~= true) then
-            cardeGenerator.clearHand();
-            cardeGenerator.tirage(5);
-            hero.actor.state.power = 8;
-        else
-            --[[ TODO:ADD GAME OVER ]]
-            print('Your Dead');
-            -- body    
-        end
+
+        Tour = 'transition';
+        card.clearHand();
+        card.tirage(5);
+
         return;
     else
         Enemies.timerAttack = Enemies.timerAttack - delta;

@@ -50,9 +50,15 @@ menu.button = {
         },
         action = function()
 
-            scene.gameplay.rezetGame();
+            if hero.actor.state==nil then
+                hero.load();
+                Enemies.load();
+                print('ok')
+            else
+                scene.gameplay.rezetGame();
+            end
             scene.curent = 'gameplay';
-            cardeGenerator.tirage(5);
+            card.tirage(5);
 
         end
     },
@@ -145,9 +151,8 @@ end
 function menu.draw()
 
     love.graphics.draw(menu.illustration.background.img, 0, 0);
-    love.graphics.draw(menu.illustration.title.img,
-                        menu.illustration.title.vector2.x,
-                        menu.illustration.title.vector2.y);
+    love.graphics
+        .draw(menu.illustration.title.img, menu.illustration.title.vector2.x, menu.illustration.title.vector2.y);
 
     for key, value in pairs(menu.button) do
         love.graphics.setColor(value.color.curent);

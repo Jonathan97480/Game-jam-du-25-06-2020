@@ -62,11 +62,23 @@ function action.play(p_card)
         effect.efect.attack.speed = 0.1;
         effect.efect.attack.isplay = true
         Enemies.curentEnemy.state.life = Enemies.curentEnemy.state.life - degat;
-
+        --[[ Quand l'enemy est mort  ]]
         if Enemies.curentEnemy.state.life <= 0 then
+            --[[ State Enemy Fixe ]]
             Enemies.curentEnemy.state.dead = true;
             Enemies.curentEnemy.state.life = 0;
+            --[[ Next Enemy ]]
+            --TODO:Add Animation Change Enemy
+            Enemies.next()
+            
+
         end
+
+    end
+    if  p_card.effect.Enemy.chancePassedTour~=nil then
+
+        Enemies.curentEnemy.state.chancePassTour =  Enemies.curentEnemy.state.chancePassTour+ p_card.effect.Enemy.chancePassedTour;
+
 
     end
 

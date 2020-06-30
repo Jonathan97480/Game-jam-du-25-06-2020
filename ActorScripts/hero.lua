@@ -33,7 +33,13 @@ function hero.load()
     hero.actor.state.life = 80;
     hero.actor.state.maxLife = hero.actor.state.life;
 end
-
+function hero.rezet()
+    hero.actor.state.life =  hero.actor.state.maxLife;
+    hero.actor.state.armor = 0;
+    hero.actor.state.power = 8;
+    hero.actor.state.dead = false;
+    
+end
 -- UPDATE
 function hero.update()
 
@@ -80,7 +86,7 @@ function hero.draw()
         love.graphics.setColor(1, 1, 1)
     end
     -- POWER DRAW TEXT
-    hudGameplay.object.energie.value[1].text = hero.actor.state.power;
+    hud.object.energie.value[1].text = hero.actor.state.power;
 
     --[[ GAME OVER ]]
     if hero.actor.state.dead ~= false then
@@ -91,7 +97,7 @@ function hero.draw()
         love.graphics.print('Would you like to start over', 600, 190);
         love.graphics.setNewFont(15);
 
-        for key, value in pairs(hudGameplay.object) do
+        for key, value in pairs(hud.object) do
             if key == 'btnNewPartie' or key == 'btnQuiter' then
 
                 love.graphics.draw(value.img, value.vector2.x, value.vector2.y);
