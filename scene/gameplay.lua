@@ -2,10 +2,10 @@ local gameplay = {};
 
 -- REQUIRE
 
-local hero = require("ActorScripts/hero");
- Enemies = require("ActorScripts/Enemies");
+local hero = require("ActorScripts/player/hero");
+ Enemies = require("ActorScripts/Enemy/Enemies");
 local cards = require("ressources/card");
-CardAction = require("my-librairie/card-librairie/cardAction");
+CardAction = require("my-librairie/card-librairie/cardEffect/cardAction");
 Tour = 'transition';
 -- VARIABLE
 local timerTransition = 0;
@@ -14,14 +14,16 @@ function gameplay.load()
     effect.load();
     hud.load();
     for key, value in pairs(cards) do
+
         card.create(value.name, value.ImgIlustration, value.Description, value.PowerBlow, value.Effect, 2);
+        
     end
 
 end
 
 -- UPDATE
 function gameplay.update(dt)
-
+ 
     if Tour == "player" then
         
         if hero.actor.state.dead~=true then
@@ -58,6 +60,7 @@ function gameplay.update(dt)
         card.hover();
         
     end
+  
 end
 
 -- DRAW

@@ -15,7 +15,7 @@ screen = require("my-librairie/responsive");
 scene = require("my-librairie/sceneManager");
 delta = 0;
 effect = require("ressources/effect");
-myFonction = require("my-librairie/lerp");
+myFonction = require("my-librairie/myFunction");
 
 
 -- Returns the distance between two points.
@@ -24,7 +24,7 @@ function math.dist(x1, y1, x2, y2)
 end
 
 -- VARIABLES
-
+DefaultColor =love.graphics.getColor();
 -- INIT
 function love.load()
 
@@ -40,7 +40,7 @@ function love.update(dt)
     scene.update(dt);
     screen.UpdateRatio(dt);
     
-    
+    effect.update();
 
 end
 

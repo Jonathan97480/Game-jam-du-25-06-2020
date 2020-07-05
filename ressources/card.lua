@@ -8,7 +8,7 @@ local Cards = {
         Effect = {
             Hero = {},
             Enemy = {
-                Degat = 2
+                attack = 2
             },
             Deck = {
                 CheckCard = 'Prayer of the two sisters',
@@ -30,7 +30,7 @@ local Cards = {
         Effect = {
             Hero = {},
             Enemy = {
-                Degat = 5,
+                attack = 5,
                 AttackReduction = 25
             },
             Deck = {},
@@ -71,7 +71,7 @@ local Cards = {
         Effect = {
             Hero = {
                 Epine = 50,
-                Deffence = 8
+                shield = 8
             },
             Enemy = {},
             Deck = {},
@@ -112,7 +112,7 @@ local Cards = {
         Effect = {
             Hero = {},
             Enemy = {
-                Degat = 10
+                attack = 10
             },
             Deck = {
 
@@ -159,7 +159,7 @@ local Cards = {
         PowerBlow = 2,
         Effect = {
             Hero = {
-                Deffence = 4
+                shield = 4
             },
             Enemy = {
                 
@@ -186,7 +186,7 @@ return Cards
 --[[ 
 Hero={
     Attack =0,
-    Deffence =0,
+    shield =0,
     power =0,
     heal =0,
     PowerReductionBlow = 0,
@@ -195,7 +195,7 @@ Hero={
 
 },
 Enemy={
-    reductDegatEnemy =0,
+    reductattackEnemy =0,
     EnemyPassTour= false
 },
 Deck={

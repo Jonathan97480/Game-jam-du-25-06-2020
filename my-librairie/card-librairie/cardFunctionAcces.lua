@@ -2,8 +2,10 @@
 local generateCard = require("my-librairie/card-librairie/cardGenerator");
 local cardsInHand = require("my-librairie/card-librairie/repositioningCardsInHand");
 local cardOver = require("my-librairie/card-librairie/cardOver");
+local func = require("my-librairie/card-librairie/cardEffect/cardFunction");
 
 local cards = {};
+cards.func = func;
 cards.hand = {};
 --[[ LE DECK ]]
 cards.deck = {};
@@ -20,7 +22,7 @@ function cards.hover(dt)
     cardOver.hover(dt);
 end
 
-cards.clearHand=function ()
+cards.clearHand = function()
 
     for i = 1, #cards.hand do
         local value = cards.hand[i];
@@ -37,7 +39,6 @@ function cards.tirage(p_numbercardHand)
 
     cardsInHand.tirage(p_numbercardHand);
 end
-
 
 --[[ GENERATION CARD ]]
 function cards.positioneHand()

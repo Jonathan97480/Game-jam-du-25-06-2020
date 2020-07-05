@@ -1,75 +1,110 @@
 local effects = {}
-effects.efect = {
-
-};
-effects.efect.attack = {}
-effects.efect.attack = {
-    animation = nil,
-    curentFrame = 1,
-    speed = 1,
-    curentTime = 0,
-    scale = {
-        x = 1,
-        y = 1
-    },
-    rotation = 0,
-    vector2 = {
-        x = 0,
-        y = 0
-    },
-    isplay = false
-}
+effects.efect = {};
+effects.liste = {};
+effects.efect.attack = {};
+effects.efect.attack = {};
 
 function effects.load()
-    effects.efect.attack.animation = AddEffect({
-        "img/effect/attaque-base/frame-0.png",
-        "img/effect/attaque-base/frame-1.png",
-        "img/effect/attaque-base/frame-2.png",
-        "img/effect/attaque-base/frame-3.png",
-        "img/effect/attaque-base/frame-4.png",
-        "img/effect/attaque-base/frame-5.png",
-        "img/effect/attaque-base/frame-6.png",
-        "img/effect/attaque-base/frame-7.png"
+    effects.efect.attack = addEffect({
+        "img/effect/Attaque-base/frame-",
+        5
+    });
+    effects.efect.heal = addEffect({
+        "img/effect/heal/bonuss-heal-",
+        4
+    });
+    effects.efect.heal.speed =0.2;
+    effects.efect.epine = addEffect({
+        "img/effect/epine/bonuss-epine-",
+        5
+    });
+    effects.efect.bonusAttack = addEffect({
+        "img/effect/degat/bonuss-degat-",
+        5
     });
 
 end
+effects.play = function(p_NamEffect)
+
+    table.insert(effects.liste, p_NamEffect)
+
+end
+
+function effects.update()
+    if #effects.liste ~= 0 then
+
+        if effects.efect[effects.liste[1].name].isplay ~= true then
+
+            effects.efect[effect.liste[1].name].vector2 = effect.liste[1].vector2;
+            effects.efect[effect.liste[1].name].isplay = true;
+
+        end
+    end
+end
+
+function addEffect(p_patchImg)
+    local myeffect = {}
+    myeffect.animation = nil;
+    myeffect.curentFrame = 1;
+    myeffect.speed = 0.1;
+    myeffect.curentTime = 0;
+    myeffect.scale = {
+        x = 1,
+        y = 1
+    }
+    myeffect.rotation = 0;
+    myeffect.vector2 = {
+        x = 0,
+        y = 0
+    }
+    myeffect.isplay = false;
+    myeffect.animation = AddFrame(p_patchImg);
+    return myeffect;
+end
 
 --[[ Frame is Array  ]]
-function AddEffect(frame)
+function AddFrame(p_frame)
     local animation = {}
-    for i = 1, #frame do
-        local value = frame[i];
-        local frame = love.graphics.newImage(value)
+
+    for i = 1, p_frame[2] do
+
+        local frame = love.graphics.newImage(p_frame[1] .. i .. '.png')
+
         table.insert(animation, frame);
+
     end
 
     return animation
 end
 
-function effects.draw(dt)
+function effects.draw()
 
-    local value = effects.efect.attack;
-    if value.isplay then
-        value.curentTime = value.curentTime + delta;
-        if value.curentTime >= value.speed then
-            value.curentTime = 0;
-            if value.curentFrame < #value.animation then
+    for key, value in pairs(effect.efect) do
+     
+        if  effect.efect[key].isplay then
+        
+            effect.efect[key].curentTime = effect.efect[key].curentTime + delta;
+            if effect.efect[key].curentTime >= effect.efect[key].speed then
+                effect.efect[key].curentTime = 0;
+                if effect.efect[key].curentFrame < #effect.efect[key].animation then
 
-                value.curentFrame = value.curentFrame + 1;
-                value.curentTime = 0;
+                    effect.efect[key].curentFrame = effect.efect[key].curentFrame + 1;
+                    effect.efect[key].curentTime = 0;
+                else
+
+                    effect.efect[key].curentFrame = 1;
+                    effect.efect[key].curentTime = 0;
+                    effect.efect[key].isplay = false;
+                end
+            end
+            if  effect.efect[key].isplay then
+                love.graphics.draw(effect.efect[key].animation[effect.efect[key].curentFrame], effect.efect[key].vector2.x, effect.efect[key].vector2.y, effect.efect[key].rotation,
+                effect.efect[key].scale.x, effect.efect[key].scale.y);
             else
-
-                value.curentFrame = 1;
-                value.curentTime = 0;
-                effects.efect.attack.isplay = false;
+                table.remove(effects.liste, 1);
             end
         end
-        love.graphics.draw(value.animation[value.curentFrame], value.vector2.x, value.vector2.y, value.rotation,
-                           value.scale.x, value.scale.y);
     end
-    -- end
-    
-
 end
 
 return effects

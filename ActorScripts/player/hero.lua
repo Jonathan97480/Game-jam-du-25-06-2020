@@ -1,5 +1,5 @@
 hero = {};
-local healthBar = love.graphics.newImage('img/Actor/hero/HudLifeHero.png');
+
 local shield = love.graphics.newImage('img/Actor/hero/Hub-Shield2.png');
 local debug = {};
 local backGround = love.graphics.newImage("img/BackGround/zonedeConbat-1.png");
@@ -28,14 +28,14 @@ function hero.load()
         }
     }, {
         x = 383,
-        y = 638
+        y = 400
     });
     hero.actor.state.life = 80;
     hero.actor.state.maxLife = hero.actor.state.life;
 end
 function hero.rezet()
     hero.actor.state.life =  hero.actor.state.maxLife;
-    hero.actor.state.armor = 0;
+    hero.actor.state.shield = 0;
     hero.actor.state.power = 8;
     hero.actor.state.dead = false;
     
@@ -60,31 +60,8 @@ function hero.draw()
     end
     -- BARE DE VIE 
 
-    local healtBarPosition = {
-        x = hero.actor.vector2.x + ((hero.actor.width / 2) - (hero.actor.state.maxLife / 0.5)),
-        y = hero.actor.vector2.y + hero.actor.height
-    }
-
-    love.graphics.setColor(0, 0, 1);
-
-    love.graphics
-        .rectangle('fill', healtBarPosition.x, healtBarPosition.y + 4, 336 * (hero.actor.state.life / 100) * 1.25, 10);
-
-    love.graphics.setColor(1, 1, 1);
-
-    love.graphics.draw(healthBar, healtBarPosition.x, healtBarPosition.y, 0, 1.5, 2);
-
-    love.graphics.print(hero.actor.state.life .. '/' .. hero.actor.state.maxLife, hero.actor.vector2.x + (hero.actor.width / 1.8),
-                        hero.actor.vector2.y + (hero.actor.height - 8));
-
-    if hero.actor.state.armor > 0 then
-
-        love.graphics.draw(shield, healtBarPosition.x - 30, healtBarPosition.y - 20, 0, 1.5, 1.5);
-        love.graphics.setNewFont(40);
-        love.graphics.setColor(1, 0, 1)
-        love.graphics.print(hero.actor.state.armor, healtBarPosition.x - 12, healtBarPosition.y - 10);
-        love.graphics.setColor(1, 1, 1)
-    end
+    myFonction.drawLifeBarStatus(hero.actor,'bleu');
+    
     -- POWER DRAW TEXT
     hud.object.energie.value[1].text = hero.actor.state.power;
 

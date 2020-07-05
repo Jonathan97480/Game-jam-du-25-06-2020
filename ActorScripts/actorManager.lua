@@ -12,7 +12,7 @@ function actor.create(p_name, p_animation, p_vector2)
     newActor.vector2 = p_vector2;
 
     newActor.animation = {};
-    newActor.animation.isplay = false;
+    newActor.animation.isPlay = false;
     newActor.curentAnimation = 'idle';
 
     newActor.width = 0;
@@ -24,8 +24,9 @@ function actor.create(p_name, p_animation, p_vector2)
         maxLife = 80,
         power = 8,
         degat = 0,
-        armor = 0,
+        shield = 0,
         dead = false,
+        epine = 0,
         chancePassTour = 0
     };
 
@@ -38,6 +39,62 @@ function actor.create(p_name, p_animation, p_vector2)
 
     actor.get.size(newActor);
 
+    newActor.animation.playAction = function(p_type, p_value, p_actorB)
+
+        if p_type == 'attack' and p_actorB == nil then
+            print("Actor B pour l'attack non definie");
+            return;
+        end
+
+        if p_type == 'attack' then
+            effect.play({
+                name = 'attack',
+                vector2 = {
+                    x = p_actorB.vector2.x,
+                    y = p_actorB.vector2.y + (p_actorB.height / 2) - 40
+                }
+            });
+            print(p_actorB.name .. ' a subis une attack de ' .. p_value)
+            p_actorB.state.life = p_actorB.state.life - p_value;
+            if (p_actorB.state.life <= 0) then
+                p_actorB.state.life = 0;
+                p_actorB.state.dead = true;
+            end
+        elseif p_type == 'heal' then
+            effect.play({
+                name = 'heal',
+                vector2 = {
+                    x = newActor.vector2.x,
+                    y = newActor.vector2.y
+                }
+            });
+
+            -- TODO: play heal animation and effect
+            newActor.state.life = newActor.state.life + p_value;
+            print(newActor.name .. ' vous avez subis un heal de ' .. p_value)
+
+        elseif p_type == 'shield' then
+
+            -- TODO: play shield animation and effect
+            newActor.state.shield = newActor.state.shield + p_value;
+            print(newActor.name .. ' vous avez  une armure de ' .. p_value)
+
+        elseif p_type == 'epine' then
+
+            effect.play({
+                name = 'epine',
+                vector2 = {
+                    x = newActor.vector2.x ,
+                    y = newActor.vector2.y 
+                }
+            });
+            -- TODO: play Epine animation and effect
+            newActor.state.epine = newActor.state.epine + p_value;
+            print(newActor.name .. " vous avez reçu un renvoi de degat de " .. p_value .. "%")
+
+        end
+
+    end
     return newActor;
 
 end
@@ -46,7 +103,7 @@ function actor.get.size(p_actor)
 
     for key, value in pairs(p_actor.animation) do
 
-        if (value ~= nil and value~=false) then
+        if (value ~= nil and value ~= false) then
 
             p_actor.width, p_actor.height = value[1]:getDimensions()
             return;
