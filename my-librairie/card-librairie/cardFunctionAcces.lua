@@ -14,7 +14,7 @@ cards.Graveyard = {};
 --[[ GENERATION CARD ]]
 cards.create = function(p_cardName, p_ilustration, p_description, p_power, p_effect, p_cont)
 
-    return generateCard.create(p_cardName, p_ilustration, p_description, p_power, p_effect, p_cont);
+    return generateCard.newCard(p_cardName, p_ilustration, p_description, p_power, p_effect, p_cont);
 end
 
 -- HOVER MOUSE DETECTION 

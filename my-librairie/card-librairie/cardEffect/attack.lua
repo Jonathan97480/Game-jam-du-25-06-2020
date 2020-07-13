@@ -14,7 +14,7 @@ attack.applique = function(p_card, p_actorA, p_actorB, p_value)
         p_actorB.state.shield = p_actorB.state.shield - attackValue;
 
         attackValue = 0;
-    else 
+    else
         --[[ si les degat sont superieure a l'armure on deduit de l'attack l'armure 
         est on mais l'armure a zero  ]]
         attackValue = attackValue - p_actorB.state.shield;
@@ -22,7 +22,7 @@ attack.applique = function(p_card, p_actorA, p_actorB, p_value)
     end
 
     --[[ TODO:Play animation Attack  ]]
-    p_actorA.animation.playAction('attack', attackValue,p_actorB);
+    p_actorA.animation.playAction('attack', attackValue, p_actorB);
 
 end
 

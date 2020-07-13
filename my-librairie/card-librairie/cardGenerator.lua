@@ -4,7 +4,7 @@ local CardPastille = love.graphics.newImage('img/card/CardTheme/power.png');
 local Generator={}
 
 
-function Generator.create(p_cardName, p_ilustration, p_description, p_power, p_effect, p_cont)
+function Generator.newCard(p_cardName, p_ilustration, p_description, p_power, p_effect, p_cont)
     for i = 1, p_cont do
 
         local cart = {};
@@ -33,7 +33,7 @@ function Generator.create(p_cardName, p_ilustration, p_description, p_power, p_e
         cart.height = Height;
         cart.width = Width;
         -- generate canvas card
-        cart.canvas = generate(cart);
+        cart.canvas = generateCanvasCard(cart);
 
         -- table.insert(card.objet, cart);
         table.insert(card.deck, cart);
@@ -41,7 +41,7 @@ function Generator.create(p_cardName, p_ilustration, p_description, p_power, p_e
 
 end
 
-function generate(p_cart)
+function generateCanvasCard(p_cart)
 
     -- create canvas
     local graphicsCard = love.graphics.newCanvas(337, 462);

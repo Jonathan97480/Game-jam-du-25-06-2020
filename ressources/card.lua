@@ -1,7 +1,7 @@
 local Cards = {
     --[[ CARTE 1 ]]
     {
-        name = 'Prayer of the two sisters',
+        name = 'two sisters',
         ImgIlustration = 'img/card/ilustration/Prayer of the two sisters.png',
         Description = 'If you have double\nthis card in your deck\nyoudraw a random\ncard inside',
         PowerBlow = 0,
@@ -10,13 +10,12 @@ local Cards = {
             Enemy = {
                 attack = 2
             },
-            Deck = {
-                CheckCard = 'Prayer of the two sisters',
-                GiveRandomCard = true
-
-            },
-            Graveyard = {},
-            Hand = {}
+            action = function()
+                if card.func.find('two sisters', card.deck) ~= 0 then
+                    card.func.moveTo(card.deck, 0, card.hand);
+                    card.positioneHand();
+                end
+            end
 
         },
         Cards = {}
@@ -33,11 +32,12 @@ local Cards = {
                 attack = 5,
                 AttackReduction = 25
             },
-            Deck = {},
-            Graveyard = {},
-            Hand = {
-                playCard = 'Double flick'
-            }
+            action = function()
+                local numberCard = card.func.find('Double flick', card.hand);
+                if numberCard ~= 0 then
+                    card.func.playCardInTheHand(numberCard, 0);
+                end
+            end
 
         },
         Cards = {}
@@ -53,12 +53,12 @@ local Cards = {
                 heal = 10
             },
             Enemy = {},
-            Deck = {},
-            Graveyard = {},
-            Hand = {
-                playCard = 'You plus me'
-            }
-
+            action = function()
+                local numberCard = card.func.find('You plus me', card.hand);
+                if numberCard ~= 0 then
+                    card.func.playCardInTheHand(numberCard, 0);
+                end
+            end
         },
         Cards = {}
     },
@@ -74,11 +74,13 @@ local Cards = {
                 shield = 8
             },
             Enemy = {},
-            Deck = {},
-            Graveyard = {
-                CheckCard = 'Thorn shield'
-            },
-            Hand = {}
+            action = function()
+                local numberCard = card.func.find('Thorn shield', card.Graveyard);
+                if numberCard ~= 0 then
+                    hero.actor.state.epine = hero.actor.state.epine + 50;
+                    hero.actor.state.shield = hero.actor.state.shield + 8;
+                end
+            end
 
         },
         Cards = {}
@@ -94,11 +96,12 @@ local Cards = {
             Enemy = {
                 chancePassedTour = 25
             },
-            Deck = {},
-            Graveyard = {},
-            Hand = {
-                playCard = 'See you tomorrow'
-            }
+            action = function()
+                local numberCard = card.func.find('See you tomorrow', card.hand);
+                if numberCard ~= 0 then
+                    card.func.playCardInTheHand(numberCard, 0);
+                end
+            end
 
         },
         Cards = {}
@@ -114,15 +117,15 @@ local Cards = {
             Enemy = {
                 attack = 10
             },
-            Deck = {
+            action = function()
+                local numberCard = card.func.find('A', card.deck);
+                if numberCard ~= 0 then
+                    card.func.moveTo(card.deck, numberCard, card.hand);
+                    card.positioneHand();
+                end
+            end
 
-                GiveCard = 'A'
-            },
-            Graveyard = {},
-            Hand = {},
-            Cards = {}
-
-        },
+        }
 
     },
     --[[ CARTE 7 ]]
@@ -134,22 +137,26 @@ local Cards = {
         Effect = {
             Hero = {},
             Enemy = {},
-            Deck = {
-                GiveCard = 'A'
-            },
-            Graveyard = {
-                GiveCard = 'A',
-                CheckCard = 'It will sting',
-                tranfertAlllToDeck = true
-            },
-            Hand = {},
-            Cards = {}
+            action = function()
+
+                if card.func.find('It will sting', card.Graveyard) ~= 0 then
+
+                    card.func.grveyardTomove('all', card.deck);
+
+                    local numberCard = card.func.find('A', card.deck);
+
+                    if numberCard ~= 0 then
+
+                        card.func.moveTo(card.deck, numberCard, card.hand);
+                        card.positioneHand();
+                        numberCard = 0;
+                    end
+                end
+            end
 
         },
 
-        Cards = {
-            
-        }
+        Cards = {}
     },
     --[[ CARTE 8 ]]
     {
@@ -161,21 +168,17 @@ local Cards = {
             Hero = {
                 shield = 4
             },
-            Enemy = {
-                
-            },
-            Deck = {},
-            Graveyard = {
-                CheckCard = 'Help my friend'
-            },
-            Hand = {
-               
-            },
-            Cards = {
-                DoublePower = true
-            }
+            Enemy = {},
+            action = function()
+                local numberCard = card.func.find('Help my friend', card.Graveyard);
+
+                if numberCard ~= 0 then
+                    hero.actor.state.shield = hero.actor.state.shield + 4;
+                end
+            end
 
         },
+        Cards = {}
 
     }
 

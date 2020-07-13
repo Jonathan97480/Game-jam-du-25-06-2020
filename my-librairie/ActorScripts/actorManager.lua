@@ -42,7 +42,7 @@ function actor.create(p_name, p_animation, p_vector2)
     newActor.animation.playAction = function(p_type, p_value, p_actorB)
 
         if p_type == 'attack' and p_actorB == nil then
-            print("Actor B pour l'attack non definie");
+
             return;
         end
 
@@ -54,7 +54,7 @@ function actor.create(p_name, p_animation, p_vector2)
                     y = p_actorB.vector2.y + (p_actorB.height / 2) - 40
                 }
             });
-            print(p_actorB.name .. ' a subis une attack de ' .. p_value)
+
             p_actorB.state.life = p_actorB.state.life - p_value;
             if (p_actorB.state.life <= 0) then
                 p_actorB.state.life = 0;
@@ -71,13 +71,13 @@ function actor.create(p_name, p_animation, p_vector2)
 
             -- TODO: play heal animation and effect
             newActor.state.life = newActor.state.life + p_value;
-            print(newActor.name .. ' vous avez subis un heal de ' .. p_value)
+
 
         elseif p_type == 'shield' then
 
             -- TODO: play shield animation and effect
             newActor.state.shield = newActor.state.shield + p_value;
-            print(newActor.name .. ' vous avez  une armure de ' .. p_value)
+
 
         elseif p_type == 'epine' then
 
@@ -90,7 +90,7 @@ function actor.create(p_name, p_animation, p_vector2)
             });
             -- TODO: play Epine animation and effect
             newActor.state.epine = newActor.state.epine + p_value;
-            print(newActor.name .. " vous avez reçu un renvoi de degat de " .. p_value .. "%")
+
 
         end
 

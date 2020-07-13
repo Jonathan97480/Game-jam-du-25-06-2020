@@ -1,9 +1,9 @@
-hero = {};
+local hero = {};
 
 local shield = love.graphics.newImage('img/Actor/hero/Hub-Shield2.png');
 local debug = {};
 local backGround = love.graphics.newImage("img/BackGround/zonedeConbat-1.png");
- hero.actor ={}
+hero.actor = {}
 
 function debug.table(p_table)
 
@@ -14,14 +14,14 @@ function debug.table(p_table)
     end
 end
 -- REQUIRE
-local actor = require("ActorScripts/actorManager");
+local actor = require("my-librairie/ActorScripts/actorManager");
 
 -- VARIABLE
 
 -- LOAD
 function hero.load()
     -- DECLARATION HERO
-    hero.actor={}
+    hero.actor = {}
     hero.actor = actor.create('jouer', {
         idle = {
             'img/Actor/hero/Hero.png'
@@ -34,11 +34,12 @@ function hero.load()
     hero.actor.state.maxLife = hero.actor.state.life;
 end
 function hero.rezet()
-    hero.actor.state.life =  hero.actor.state.maxLife;
+    hero.actor.state.life = hero.actor.state.maxLife;
     hero.actor.state.shield = 0;
     hero.actor.state.power = 8;
     hero.actor.state.dead = false;
-    
+    hero.actor.state.epine = 0
+
 end
 -- UPDATE
 function hero.update()
@@ -49,7 +50,7 @@ end
 function hero.draw()
 
     --[[ bakcground ]]
-    love.graphics.draw(backGround,0,0);
+    love.graphics.draw(backGround, 0, 0);
 
     local animation = hero.actor.animation[hero.actor.curentAnimation];
 
@@ -60,14 +61,18 @@ function hero.draw()
     end
     -- BARE DE VIE 
 
-    myFonction.drawLifeBarStatus(hero.actor,'bleu');
-    
+    myFonction.drawLifeBarStatus(hero.actor, 'bleu');
+
     -- POWER DRAW TEXT
-    hud.object.energie.value[1].text = hero.actor.state.power;
+    hud.object.energie.value.text = hero.actor.state.power;
 
     --[[ GAME OVER ]]
-    if hero.actor.state.dead ~= false then
+    if hero.actor.state.dead  then
+        if myFonction.mouse.click() then
 
+            hud.hover("click");
+
+        end
         love.graphics.setNewFont(80);
         love.graphics.print('GAME OVER', 700, 100);
         love.graphics.setNewFont(50);
@@ -75,19 +80,16 @@ function hero.draw()
         love.graphics.setNewFont(15);
 
         for key, value in pairs(hud.object) do
+
             if key == 'btnNewPartie' or key == 'btnQuiter' then
+
+                local info = value.value;
 
                 love.graphics.draw(value.img, value.vector2.x, value.vector2.y);
                 love.graphics.setNewFont(20);
 
-                for i, info in pairs(value.value) do
+                love.graphics.print(info.text, info.vector2.x, info.vector2.y);
 
-                    if info ~= nil and info.text ~= '' then
-
-                        love.graphics.print(info.text, info.vector2.x, info.vector2.y);
-
-                    end
-                end
             end
         end
     end

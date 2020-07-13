@@ -1,15 +1,8 @@
--- Debug Log Enable
-io.stdout:setvbuf("no")
-if arg[#arg] == "-debug" then
-    require("mobdebug").start()
-end
-
 -- ***********Config Window Game*************
 love.window.setTitle("Tactique Cards")
-love.window.setFullscreen(false)
 
 -- REQUIRE System 
-hud = require("my-librairie/hudManager");
+hud = require("my-librairie/hud/hudManager");
 card = require("my-librairie/card-librairie/cardFunctionAcces");
 screen = require("my-librairie/responsive");
 scene = require("my-librairie/sceneManager");
@@ -17,19 +10,19 @@ delta = 0;
 effect = require("ressources/effect");
 myFonction = require("my-librairie/myFunction");
 
-
 -- Returns the distance between two points.
 function math.dist(x1, y1, x2, y2)
+
     return ((x2 - x1) ^ 2 + (y2 - y1) ^ 2) ^ 0.5
+
 end
 
 -- VARIABLES
-DefaultColor =love.graphics.getColor();
+DefaultColor = love.graphics.getColor();
 -- INIT
 function love.load()
 
     scene.load(dt);
-    local a = -50;
 
 end
 
@@ -39,8 +32,11 @@ function love.update(dt)
     delta = dt
     scene.update(dt);
     screen.UpdateRatio(dt);
-    
+
     effect.update();
+    if love.keyboard.isDown('p') then
+        card.positioneHand();
+    end
 
 end
 

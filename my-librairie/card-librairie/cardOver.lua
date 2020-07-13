@@ -1,4 +1,4 @@
-local cardsHover={}
+local cardsHover = {}
 
 function cardsHover.hover(dt)
 
@@ -6,7 +6,7 @@ function cardsHover.hover(dt)
 
     local action = nil;
 
-    if myFonction.mouse.click() then
+    if myFonction.mouse.click() and Tour~='transition' then
 
         action = "click";
 
@@ -32,40 +32,45 @@ function cardsHover.hover(dt)
                         value.vector2.y = screen.mouse.Y - (value.height / 2);
                         value.vector2.x = screen.mouse.X - (value.width / 2);
                         break
-                    elseif isDown == false and value.vector2.y <= 400 then
-                        --[[ Applique car si elle est deplaser go  moin a 300pixel de haut  ]]
-                        if hero.actor.state.power >= 0 then
+
+                    elseif isDown == false then
+
+                        if value.vector2.y <= 400 then
+
+                            --[[ Applique car si elle est deplaser go  moin a 300pixel de haut  ]]
 
                             if CardAction.Apllique(value) then
-                            
-                                --[[ On enleve la carde de la main du jouer et on la met dans le simetiere  ]]
-                                table.insert(card.Graveyard, card.hand[i]);
+
                                 table.remove(card.hand, i);
-                                --[[ est on reposition les carte restant dans la main du jouer  ]]
-                                card.positioneHand();
-                                break
+                                break;
+                            else
+                                myFonction.lerp(value.vector2, {
+                                    x = value.vector2.x,
+                                    y = 600
+                                }, 4);
                             end
-                            break
+
+                        elseif value.vector2.y > 400 then
+
+                            myFonction.lerp(value.vector2, {
+                                x = value.vector2.x,
+                                y = 600
+                            }, 4);
+
                         end
-                    elseif value.vector2.y > 580 and isDown == false then
-
-                        myFonction.lerp(value.vector2, {
-                            x = value.vector2.x,
-                            y = 600
-                        }, 4);
-
                     end
-
                 else
 
-                    local Arrival = myFonction.lerp(value.vector2, value.oldVector2, 4);
+                    myFonction.lerp(value.vector2, value.oldVector2, 4);
 
                     value.scale.x = 0.5;
                     value.scale.y = 0.5;
 
                 end
             else
+                
                 myFonction.lerp(value.vector2, value.oldVector2, 4);
+
                 value.scale.x = 0.5;
                 value.scale.y = 0.5;
 

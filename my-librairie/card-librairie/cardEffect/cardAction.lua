@@ -7,12 +7,21 @@ local action = {};
 local listeAction = {};
 local ongoingAction = false;
 
-function action.Apllique(p_card)
+function action.Apllique(p_card, p_newValue)
     --[[ POWER USE  ]]
+  
+    if p_newValue == nil then
 
-    if hero.actor.state.power < p_card.PowerBlowCard then
+        p_newValue = p_card.PowerBlowCard;
+
+    end
+
+    if hero.actor.state.power < p_newValue then
+
         return false;
     end
+
+    hero.actor.state.power = hero.actor.state.power - p_newValue;
     table.insert(listeAction, p_card);
     return true
 end
@@ -32,21 +41,19 @@ function action.update()
 end
 
 function action.play(p_card)
-
     --[[ 
                             ----------------------
                                     HEAL
                             ----------------------
                          ]]
 
-    hero.actor.state.power = hero.actor.state.power - p_card.PowerBlowCard;
-    
+
     --[[ HERO-HEAL ]]
     if (p_card.effect.Hero.heal ~= nil) then
 
         heal.give(p_card, hero.actor, p_card.effect.Hero.heal);
     end
-    --[[ ENELY-HEAL ]]
+    --[[ ENEMY-HEAL ]]
     if (p_card.effect.Enemy.heal ~= nil) then
 
         heal.give(p_card, Enemies.curentEnemy, p_card.effect.Enemy.heal);
@@ -113,12 +120,26 @@ function action.play(p_card)
 
         Enemies.curentEnemy.state.chancePassTour = Enemies.curentEnemy.state.chancePassTour +
                                                        p_card.effect.Enemy.chancePassedTour;
-        print(hero.actor.name .. ' a infliger un maluse a ' .. Enemies.curentEnemy.name .. ' il hora ' ..
-                  Enemies.curentEnemy.state.chancePassTour .. '% de passer son tour');
+
     end
 
+    if (p_card.effect.action ~= nil) then
+        p_card.effect.action();
+
+
+    end
     --[[ on retire la card des action a faire est on hotorise une nouvelle action  ]]
     table.remove(listeAction, 1);
+
+
+    p_card.vector2.x = screen.gameReso.width;
+    p_card.vector2.y = screen.gameReso.height - p_card.height / 2;
+
+    --[[ On enleve la  carde de la main du jouer et on la met dans le simetiere  ]]
+    table.insert(card.Graveyard, p_card);
+   
+    --[[ est on reposition les carte restant dans la main du jouer  ]]
+    card.positioneHand();
     ongoingAction = false;
 end
 return action;

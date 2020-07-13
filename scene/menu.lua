@@ -53,12 +53,12 @@ menu.button = {
             if hero.actor.state==nil then
                 hero.load();
                 Enemies.load();
-                print('ok')
+                card.tirage(5);
             else
                 scene.gameplay.rezetGame();
             end
             scene.curent = 'gameplay';
-            card.tirage(5);
+
 
         end
     },

@@ -1,7 +1,7 @@
 local myFunction = {}
 local lockClick = false;
 
---[[ Icon BAre status load  ]]
+--[[ Icon Bare status load  ]]
 local shield = love.graphics.newImage('img/Actor/Enemy/Hub-Shield2.png');
 local epineIcon = love.graphics.newImage('img/icon/bonus-epine-icon.png');
 local bonussAttackIcon = love.graphics.newImage('img/icon/bonuss-attack-icon.png');
