@@ -2,11 +2,11 @@
 love.window.setTitle("Tactique Cards")
 
 -- REQUIRE System 
+json = require("my-librairie/json");
 hud = require("my-librairie/hud/hudManager");
 card = require("my-librairie/card-librairie/cardFunctionAcces");
 screen = require("my-librairie/responsive");
 scene = require("my-librairie/sceneManager");
-delta = 0;
 effect = require("ressources/effect");
 myFonction = require("my-librairie/myFunction");
 
@@ -18,11 +18,16 @@ function math.dist(x1, y1, x2, y2)
 end
 
 -- VARIABLES
+--[[ global ]]
+delta = 0;
 DefaultColor = love.graphics.getColor();
+--[[ Local ]]
+
 -- INIT
 function love.load()
 
     scene.load(dt);
+    
 
 end
 
