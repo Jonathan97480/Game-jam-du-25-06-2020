@@ -1,0 +1,12 @@
+-- scene/gameplay.lua (ensure these calls exist in yours)
+-- At top:
+AI = require("my-librairie/ai/controller")
+
+-- In gameplay.load():
+-- if AI and AI.load then AI.load() end
+
+-- In gameplay.update(dt) after your card.hover(dt):
+-- if AI and AI.update then AI.update(dt) end
+
+-- In gameplay.draw() after hud.draw():
+-- if AI and AI.draw then AI.draw() end
