@@ -3,16 +3,40 @@
 local gameplay = {}
 
 local DEBUG_GAMEPLAY = true
-local function log(...) if DEBUG_GAMEPLAY then print(...) end end
-local function logf(fmt, ...) if DEBUG_GAMEPLAY then print(string.format(fmt, ...)) end end
+local function _to_text(...)
+    local t = {}
+    for i = 1, select('#', ...) do t[i] = tostring(select(i, ...)) end; return table.concat(t, ' ')
+end
+local function log(...)
+    if not DEBUG_GAMEPLAY then return end
+    local gf = rawget(_G, 'globalFunction')
+    local txt = _to_text(...)
+    if gf and gf.log and gf.log.info then
+        gf.log.info(txt)
+    else
+        print(txt)
+    end
+end
+
+local function logf(fmt, ...)
+    if not DEBUG_GAMEPLAY then return end
+    local gf = rawget(_G, 'globalFunction')
+    local txt = string.format(fmt, ...)
+    if gf and gf.log and gf.log.info then
+        gf.log.info(txt)
+    else
+        print(txt)
+    end
+end
+
 local function safecall(where, fn, ...)
     if type(fn) ~= "function" then
-        if DEBUG_GAMEPLAY then print(("[safe] %s: fn=nil"):format(where)) end
+        if DEBUG_GAMEPLAY then logf("[safe] %s: fn=nil", where) end
         return nil
     end
     local ok, a, b, c, d = pcall(fn, ...)
     if not ok then
-        if DEBUG_GAMEPLAY then print(("[safe] %s: ERREUR -> %s"):format(where, tostring(a))) end
+        if DEBUG_GAMEPLAY then logf("[safe] %s: ERREUR -> %s", where, tostring(a)) end
         return nil
     end
     return a, b, c, d
@@ -32,6 +56,7 @@ Enemies                       = require("my-librairie/ActorScripts/Enemy/Enemies
 local AI                      = require("my-librairie/ai/controller")
 local CardsIA                 = require("ressources/cardsIA")
 local actor                   = _G.actorManager or require("my-librairie/actorManager")
+local res                     = require("res")
 
 -- Règles de pioche
 local HAND_MAX                = 5
@@ -85,7 +110,7 @@ local function drawAtStartOfPlayerTurn()
     -- Si un overlay bloque, on marque juste l'intention et on sort (on re-tentera plus tard)
     if Transition and Transition.canDeal and not Transition.canDeal() then
         if not gameplay.__overlayBlockWarned then
-            print("[draw] bloqué: transition/overlay (pioche reportée)")
+            log("[draw] bloqué: transition/overlay (pioche reportée)")
             gameplay.__overlayBlockWarned = true
         end
         gameplay._pendingDrawThisTurn = true
@@ -102,10 +127,10 @@ local function drawAtStartOfPlayerTurn()
     end
 
     if drawCount > 0 then
-        print(("[draw] début de tour joueur → tirage %d (hand=%d → cible=%d)"):format(drawCount, #hand, HAND_MAX))
+        logf("[draw] début de tour joueur → tirage %d (hand=%d → cible=%d)", drawCount, #hand, HAND_MAX)
         Card.tirage(drawCount, true, 'HeroDeck')
     else
-        print(("[draw] main déjà pleine (hand=%d / max=%d)"):format(#hand, HAND_MAX))
+        logf("[draw] main déjà pleine (hand=%d / max=%d)", #hand, HAND_MAX)
     end
 
     -- Pioche effectuée (ou inutile) → plus rien en attente
@@ -150,7 +175,7 @@ function gameplay.load()
     log("[gameplay.load]")
     local heroDeck = Card.createDeck('HeroDeck')
     local enemyDeck = Card.createDeck('EnemyDeck')
-    print("[debug] gameplay.load -> heroDeck=", tostring(heroDeck and heroDeck.name or nil), " enemyDeck=",
+    log("[debug] gameplay.load -> heroDeck=", tostring(heroDeck and heroDeck.name or nil), " enemyDeck=",
         tostring(enemyDeck and enemyDeck.name or nil))
     -- Acteurs / Effets
     safecall("Hero.load", function() return Hero and Hero.load and Hero.load() end)
@@ -163,11 +188,11 @@ function gameplay.load()
         safecall("Card.loadCards(player)", function() return Card.loadCards(cardsPlayer, "Hero", "globalDeck") end)
         -- diagnostic: after loadCards, print deck sizes
         local gd = Card.getDeckByName and Card.getDeckByName('globalDeck')
-        print("[debug] after loadCards -> globalDeck size=", gd and #gd.cards or 0)
+        log("[debug] after loadCards -> globalDeck size=", gd and #gd.cards or 0)
         log("[cards] load IA")
-        safecall("Card.loadCards(ai)", function() return Card.loadCards(cardsPlayer, "Enemy", "EnemyDeck") end)
+        safecall("Card.loadCards(ai)", function() return Card.loadCards(CardsIA, "Enemy", "EnemyDeck") end)
         local ed = Card.getDeckByName and Card.getDeckByName('EnemyDeck')
-        print("[debug] after loadCards IA -> EnemyDeck size=", ed and #ed.cards or 0)
+        log("[debug] after loadCards IA -> EnemyDeck size=", ed and #ed.cards or 0)
     end
 
     if Card and Card.shuffleDeck then
@@ -177,14 +202,14 @@ function gameplay.load()
     if Card and Card.MoveCardNumberCardDeckToDeck then
         safecall("Card.ensureMaxPlayerDeck(10)",
             function()
-                print("[debug] before MoveCardNumberCardDeckToDeck -> globalDeck=",
+                log("[debug] before MoveCardNumberCardDeckToDeck -> globalDeck=",
                     (Card.getDeckByName and Card.getDeckByName('globalDeck')) and
                     #(Card.getDeckByName('globalDeck').cards) or 0,
                     " HeroDeck=",
                     (Card.getDeckByName and Card.getDeckByName('HeroDeck')) and #(Card.getDeckByName('HeroDeck').cards) or
                     0)
                 local ok = Card.MoveCardNumberCardDeckToDeck('globalDeck', 'HeroDeck', 10)
-                print("[debug] after MoveCardNumberCardDeckToDeck -> globalDeck=",
+                log("[debug] after MoveCardNumberCardDeckToDeck -> globalDeck=",
                     (Card.getDeckByName and Card.getDeckByName('globalDeck')) and
                     #(Card.getDeckByName('globalDeck').cards) or 0,
                     " HeroDeck=",
@@ -199,9 +224,22 @@ function gameplay.load()
     safecall("AI.load", function() return AI and AI.load and AI.load() end)
     safecall("Transition.load", function() return Transition and Transition.load and Transition.load() end)
 
+    -- footer image for gameplay HUD (draw only on gameplay)
+    if res and res.image then
+        gameplay._footer = res.image('img/hud/footer-bare.jpg')
+    end
+
     if heroDeck and enemyDeck and Card.hand and Card.graveyard then
         logf("[card] tailles -> player:%d  ai:%d  hand:%d  grave:%d",
             #heroDeck.cards, #enemyDeck.cards, #Card.hand.cards, #Card.graveyard.cards)
+    end
+
+    -- push HUD overlay only when entering gameplay
+    local ok, hud_overlay = pcall(require, "scene/hud_overlay")
+    if ok and hud_overlay and scene and scene.add then
+        local inst = scene:add(hud_overlay)
+        -- scene:add does not call load(); ensure HUD is initialized now
+        if inst and type(inst.load) == 'function' then pcall(inst.load, inst) end
     end
 
     -- NOTE: debug auto-draw removed to ensure overlay_start shows the player's full deck
@@ -279,6 +317,13 @@ function gameplay.draw()
     safecall("Card.drawHand", function() return Card and Card.drawHand and Card.drawHand() end)
 
     safecall("AI.draw", function() return AI and AI.draw and AI.draw() end)
+
+    -- draw footer bar (only on gameplay)
+    if gameplay._footer then
+        local f = gameplay._footer
+        local fh = (type(f.getHeight) == 'function' and f:getHeight()) or 0
+        pcall(function() love.graphics.draw(f, 0, screen.gameReso.height - fh) end)
+    end
 end
 
 function gameplay.endTurn()
@@ -286,7 +331,7 @@ function gameplay.endTurn()
     if Transition and Transition.requestEndTurn then
         ok = Transition.requestEndTurn()
     end
-    print(ok and "[hud] fin de tour: OK" or "[hud] fin de tour: ignorée")
+    log((ok and "[hud] fin de tour: OK") or "[hud] fin de tour: ignorée")
 end
 
 function gameplay.rezetGame()
