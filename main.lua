@@ -98,6 +98,11 @@ function love.draw()
   love.graphics.push()
   love.graphics.scale(screen.ratioScreen.width, screen.ratioScreen.height)
   scene:draw() -- ← deux-points
+  -- draw global logs panel if enabled (globalFunction may be set by module)
+  local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
+  if gf and gf.drawLogs then
+    gf.drawLogs()
+  end
   effect.draw()
   love.graphics.print("Current FPS: " .. tostring(love.timer.getFPS()), 10, 10)
   love.graphics.pop()
@@ -113,5 +118,10 @@ function love.mousereleased(x, y, button)
 end
 
 function love.keypressed(key, scancode, isrepeat)
+  -- toggle global logs with F12 if available
+  if key == "f12" then
+    local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
+    if gf and gf.log and gf.log.toggle then gf.log.toggle() end
+  end
   scene:emit("keypressed", key, scancode, isrepeat)
 end
