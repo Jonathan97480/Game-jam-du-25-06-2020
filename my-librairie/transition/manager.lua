@@ -410,7 +410,10 @@ function Transition.update(dt)
                 Transition._heroPrevLife      = (Hero and Hero.actor and Hero.actor.state and Hero.actor.state.life) or
                     nil
                 -- on définie le nombre d'action maximum de l'ennemi
-                Transition._enemyMaxPlays     = math.max(2, math.ceil((pmax > 0 and pmax or 6) / 2))
+                local pmax                    = (Enemies and Enemies.curentEnemy and Enemies.curentEnemy.state and Enemies.curentEnemy.state.powerMax) or
+                6
+                pmax                          = tonumber(pmax) or 6
+                Transition._enemyMaxPlays     = math.max(2, math.ceil(pmax / 2))
 
                 dprint(string.format("[enemy] startTurn (maxPlays=%d)", Transition._enemyMaxPlays))
 
