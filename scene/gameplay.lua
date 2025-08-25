@@ -56,7 +56,7 @@ Enemies                       = require("my-librairie/ActorScripts/Enemy/Enemies
 local AI                      = require("my-librairie/ai/controller")
 local CardsIA                 = require("ressources/cardsIA")
 local actor                   = _G.actorManager or require("my-librairie/actorManager")
-local res                     = require("res")
+local res                     = require("my-librairie.resource_cache")
 
 -- Règles de pioche
 local HAND_MAX                = 5

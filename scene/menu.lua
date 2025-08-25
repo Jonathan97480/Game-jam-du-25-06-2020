@@ -16,14 +16,16 @@ end
 local menu        = {}
 menu.illustration = {}
 
+local res = require("my-librairie.resource_cache")
+
 --[[ Arrière-plan & titre ]]
 menu.illustration.background = {
-    img = love.graphics.newImage('img/Menu/BackGround.jpg'),
+    img = res.image('img/Menu/BackGround.jpg'),
     vector2 = { x = 0, y = 0 }
 }
 
 menu.illustration.title = {
-    img = love.graphics.newImage('img/Menu/Titre.png'),
+    img = res.image('img/Menu/Titre.png'),
     vector2 = {
         x = screen.gameReso.width / 2,
         y = screen.gameReso.height / 0.5
@@ -151,7 +153,7 @@ function menu.draw()
 
     for _, value in pairs(menu.button) do
         love.graphics.setColor(value.color.curent)
-        love.graphics.setNewFont(60)
+    love.graphics.setFont(res.font(60))
         love.graphics.print(value.texte, value.vector2.x, value.vector2.y)
     end
     love.graphics.setColor(1, 1, 1)

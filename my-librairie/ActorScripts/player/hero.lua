@@ -1,8 +1,9 @@
 local hero = {};
 
-local shield = love.graphics.newImage('img/Actor/hero/Hub-Shield2.png');
-local debug = {};
-local backGround = love.graphics.newImage("img/BackGround/zonedeConbat-1.png");
+local res = require("my-librairie.resource_cache")
+local shield = res.image('img/Actor/hero/Hub-Shield2.png')
+local debug = {}
+local backGround = res.image("img/BackGround/zonedeConbat-1.png")
 hero.actor = {}
 
 --[[

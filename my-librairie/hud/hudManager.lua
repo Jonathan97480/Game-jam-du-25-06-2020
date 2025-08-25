@@ -1,4 +1,4 @@
-local res = require("res")
+local res = require("my-librairie.resource_cache")
 local gameplay = require("scene.gameplay")
 local responsive = require("my-librairie/responsive")
 -- optional unified input helper (mouse + joystick)

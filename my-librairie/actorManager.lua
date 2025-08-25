@@ -3,6 +3,7 @@
 -- Module + alias public (compat)
 local actor = {}
 local actorManager = actor -- alias retourné par require
+local res = require("my-librairie.resource_cache")
 -- Alias global de compat au cas où certains scripts utilisent _G.actorManager directement
 rawset(_G, "actorManager", actor)
 
@@ -66,7 +67,7 @@ function actor.addAnimation(p_animTable, p_animation)
     for state, paths in pairs(p_animation) do
         p_animTable[state] = {}
         for _, path in ipairs(paths) do
-            local ok, img = pcall(love.graphics.newImage, path)
+                local ok, img = pcall(res.image, path)
             if ok and img then table.insert(p_animTable[state], img) end
         end
     end

@@ -3,14 +3,16 @@
 local globalFunction = {}
 local lockClick = false
 
---[[ Icon Bare status load  ]]
-local shield = love.graphics.newImage('img/Actor/Enemy/Hub-Shield2.png')
-local epineIcon = love.graphics.newImage('img/icon/bonus-epine-icon.png')
-local bonussAttackIcon = love.graphics.newImage('img/icon/bonuss-attack-icon.png')
+local res = require("my-librairie.resource_cache")
+
+--[[ Icon Bare status load (use resource cache) ]]
+local shield = res.image('img/Actor/Enemy/Hub-Shield2.png')
+local epineIcon = res.image('img/icon/bonus-epine-icon.png')
+local bonussAttackIcon = res.image('img/icon/bonuss-attack-icon.png')
 
 local lifeBar = {
-    red = love.graphics.newImage('img/Actor/Enemy/HudLifeEnemy.png'),
-    bleu = love.graphics.newImage('img/Actor/hero/HudLifeHero.png'),
+    red = res.image('img/Actor/Enemy/HudLifeEnemy.png'),
+    bleu = res.image('img/Actor/hero/HudLifeHero.png'),
     color_red = { 1, 0, 0 },
     color_bleu = { 0, 0, 1 }
 }
@@ -204,9 +206,9 @@ function drawBonus(p_actor, color, position)
     -- Shield icon
     if (p_actor.state.shield or 0) > 0 then
         love.graphics.draw(shield, position.x - 30, position.y - 20, 0, 1.5, 1.5)
-        local oldFont = love.graphics.getFont()
-        local f40 = love.graphics.newFont(40)
-        love.graphics.setFont(f40)
+    local oldFont = love.graphics.getFont()
+    local f40 = res.font(40)
+    love.graphics.setFont(f40)
         love.graphics.print(p_actor.state.shield, position.x - 12, position.y - 10)
         love.graphics.setFont(oldFont)
     end
