@@ -8,6 +8,7 @@ local function _safeRequire(name)
     return nil
 end
 local myFonction = rawget(_G, "myFonction") or _safeRequire("my-librairie/myFunction")
+local input = _safeRequire("my-librairie/inputManager") or (rawget(_G, "inputManager") and rawget(_G, "inputManager"))
 
 local M = {}
 
@@ -38,15 +39,15 @@ local function _lerpTable(vec2, target, speed, dt)
 end
 
 function M.UX_hover(x, y, w, h, scale)
-    if myFonction and myFonction.mouse and myFonction.mouse.hover then
-        return myFonction.mouse.hover(x, y, w, h, scale)
+    if input and input.hover then
+        return input.hover(x, y, w, h, scale)
     end
     return _hoverRect(x, y, w, h, scale)
 end
 
 function M.UX_click(isDown, wasDown)
-    if myFonction and myFonction.mouse and myFonction.mouse.click then
-        return myFonction.mouse.click()
+    if input and input.click then
+        return input.click()
     end
     return _justClicked(isDown, wasDown)
 end

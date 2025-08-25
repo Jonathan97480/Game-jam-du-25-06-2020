@@ -22,7 +22,15 @@ function I.init()
         cursor.x, cursor.y = screen.mouse.X, screen.mouse.Y
     else
         local ok, mx, my = pcall(function() return love.mouse.getPosition() end)
-        if ok and mx then cursor.x, cursor.y = mx, my end
+        if ok and mx then
+            -- convert window coords to game-space if screen.ratioScreen is available
+            if rawget(_G, "screen") and screen.ratioScreen and screen.ratioScreen.width and screen.ratioScreen.height then
+                cursor.x = mx / screen.ratioScreen.width
+                cursor.y = my / screen.ratioScreen.height
+            else
+                cursor.x, cursor.y = mx, my
+            end
+        end
     end
 end
 
@@ -53,14 +61,19 @@ function I.update(dt)
         cursor.x = cursor.x + ax * sensitivity * (dt or 0.016)
         cursor.y = cursor.y + ay * sensitivity * (dt or 0.016)
     else
-        -- fallback to mouse position
+        -- fallback to mouse position (convert to game-space)
         local okm, mx, my = pcall(function() return love.mouse.getPosition() end)
         if okm and mx then
+            local gx, gy = mx, my
+            if rawget(_G, "screen") and screen.ratioScreen and screen.ratioScreen.width and screen.ratioScreen.height then
+                gx = mx / screen.ratioScreen.width
+                gy = my / screen.ratioScreen.height
+            end
             -- if mouse moved significantly, switch source
-            if mx ~= cursor.x or my ~= cursor.y then
+            if gx ~= cursor.x or gy ~= cursor.y then
                 activeSource = 'mouse'
             end
-            cursor.x, cursor.y = mx, my
+            cursor.x, cursor.y = gx, gy
         end
     end
 
