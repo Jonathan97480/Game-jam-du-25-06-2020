@@ -21,8 +21,11 @@ function I.init()
     if rawget(_G, "screen") and screen.mouse and screen.mouse.X then
         cursor.x, cursor.y = screen.mouse.X, screen.mouse.Y
     else
-        local ok, mx, my = pcall(function() return love.mouse.getPosition() end)
-        if ok and mx then
+        local mx, my
+        if rawget(_G, "love") and love.mouse and love.mouse.getPosition then
+            mx, my = love.mouse.getPosition()
+        end
+        if mx then
             -- convert window coords to game-space if screen.ratioScreen is available
             if rawget(_G, "screen") and screen.ratioScreen and screen.ratioScreen.width and screen.ratioScreen.height then
                 cursor.x = mx / screen.ratioScreen.width
@@ -37,8 +40,11 @@ end
 function I.update(dt)
     -- detect joystick
     local joysticks = {}
-    local ok, list = pcall(function() return love.joystick.getJoysticks() end)
-    if ok and type(list) == 'table' and #list > 0 then
+    local list
+    if rawget(_G, "love") and love.joystick and love.joystick.getJoysticks then
+        list = love.joystick.getJoysticks()
+    end
+    if type(list) == 'table' and #list > 0 then
         joystick = list[1]
     else
         joystick = nil
@@ -47,9 +53,13 @@ function I.update(dt)
     -- read axes if joystick
     local ax, ay = 0, 0
     if joystick then
-        local ok2, axes = pcall(function() return { joystick:getAxes() } end)
-        if ok2 and type(axes) == 'table' and #axes >= 2 then
-            ax, ay = axes[1] or 0, axes[2] or 0
+        if joystick.getAxes then
+            local axes = { joystick:getAxes() }
+            if type(axes) == 'table' and #axes >= 2 then
+                ax, ay = axes[1] or 0, axes[2] or 0
+            else
+                ax, ay = 0, 0
+            end
         else
             ax, ay = 0, 0
         end
@@ -62,8 +72,11 @@ function I.update(dt)
         cursor.y = cursor.y + ay * sensitivity * (dt or 0.016)
     else
         -- fallback to mouse position (convert to game-space)
-        local okm, mx, my = pcall(function() return love.mouse.getPosition() end)
-        if okm and mx then
+        local mx, my
+        if rawget(_G, "love") and love.mouse and love.mouse.getPosition then
+            mx, my = love.mouse.getPosition()
+        end
+        if mx then
             local gx, gy = mx, my
             if rawget(_G, "screen") and screen.ratioScreen and screen.ratioScreen.width and screen.ratioScreen.height then
                 gx = mx / screen.ratioScreen.width
@@ -86,17 +99,17 @@ function I.update(dt)
     -- action button state
     local actionDown = false
     -- mouse primary
-    local okm, mdown = pcall(function() return love.mouse.isDown(1) end)
-    if okm and mdown then actionDown = actionDown or mdown end
+    if rawget(_G, "love") and love.mouse and love.mouse.isDown then
+        local mdown = love.mouse.isDown(1)
+        if mdown then actionDown = actionDown or mdown end
+    end
     -- gamepad A (if available)
     if joystick then
-        local okb, pressed = pcall(function()
-            if joystick.isGamepad and joystick:isGamepad() and joystick.isGamepadDown then
-                return joystick:isGamepadDown('a')
-            end
-            return false
-        end)
-        if okb and pressed then actionDown = actionDown or pressed end
+        local pressed = false
+        if joystick.isGamepad and joystick:isGamepad() and joystick.isGamepadDown then
+            pressed = joystick:isGamepadDown('a')
+        end
+        if pressed then actionDown = actionDown or pressed end
     end
 
     prevAction = prevAction or false
