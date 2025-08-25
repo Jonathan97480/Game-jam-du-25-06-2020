@@ -26,6 +26,13 @@ local function _getCursor()
     return 0, 0
 end
 
+-- logging helper
+local function _logf(fmt, ...)
+    local gf = rawget(_G, 'globalFunction')
+    local text = string.format(fmt, ...)
+    if gf and gf.log and gf.log.info then gf.log.info(text) else print(text) end
+end
+
 M._getDragState = function()
     return draggedCard, draggedIndex
 end
@@ -91,7 +98,8 @@ function M.hover(dt)
         end
     end
     local action = UX.UX_click(isDown, mouseWasDown) and "click" or nil
-    if DEBUG then print("[Card.Interaction] isDown", isDown, "mouseWasDown", mouseWasDown, "action", action) end
+    if DEBUG then _logf("[Card.Interaction] isDown=%s mouseWasDown=%s action=%s", tostring(isDown),
+            tostring(mouseWasDown), tostring(action)) end
 
     if tour ~= 'player' then
         if draggedCard or Common.__dragLock then
@@ -128,7 +136,8 @@ function M.hover(dt)
             local _card = Common.hand.cards[i]
             if not _card._playing and not _card.locked then
                 if UX.UX_hover(_card.vector2.x, _card.vector2.y, _card.width, _card.height, _card.scale) then
-                    topOverI = i; if DEBUG then print("[Card.Interaction] topOverI", topOverI, _card.name) end; break
+                    topOverI = i; if DEBUG then _logf("[Card.Interaction] topOverI %s %s", tostring(topOverI),
+                            tostring(_card.name)) end; break
                 end
             end
         end
@@ -137,7 +146,7 @@ function M.hover(dt)
     local active = draggedCard or hoveredCard
     if DEBUG then
         local dcName = draggedCard and draggedCard.name or nil
-        print("[Card.Interaction] active index", topOverI, "dragged", dcName)
+        _logf("[Card.Interaction] active index=%s dragged=%s", tostring(topOverI), tostring(dcName))
     end
 
     for i = 1, #Common.hand.cards do
@@ -166,7 +175,8 @@ function M.hover(dt)
                 local dropY = my
                 local playLine = rawget(_G, "CARD_PLAY_LINE_Y") or 400
                 local inZone = (dropY <= playLine)
-                if DEBUG then print("[Card.Interaction] dropY", dropY, "playLine", playLine, "inZone", inZone) end
+                if DEBUG then _logf("[Card.Interaction] dropY=%s playLine=%s inZone=%s", tostring(dropY),
+                        tostring(playLine), tostring(inZone)) end
                 if inZone then
                     local Card = rawget(_G, "Card")
                     local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)
@@ -192,8 +202,8 @@ function M.hover(dt)
                     _card._grabDY = gy - _card.vector2.y
                     if i ~= #Common.hand.cards then Layout.bringToFront(i) end
                     if DEBUG then
-                        print("[Card.Interaction] start drag", i, _card.name, "grabDX", _card._grabDX, "grabDY",
-                            _card._grabDY)
+                        _logf("[Card.Interaction] start drag %s %s grabDX=%s grabDY=%s", tostring(i),
+                            tostring(_card.name), tostring(_card._grabDX), tostring(_card._grabDY))
                     end
                 end
             else
@@ -209,7 +219,7 @@ function M.hover(dt)
     end
 
     mouseWasDown = isDown
-    if DEBUG and not isDown and draggedCard == nil then print("[Card.Interaction] mouse up, no draggedCard") end
+    if DEBUG and not isDown and draggedCard == nil then _logf("[Card.Interaction] mouse up, no draggedCard") end
 end
 
 return M

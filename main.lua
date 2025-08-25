@@ -78,9 +78,9 @@ Retour : aucune valeur (nil).
 function love.update(dt)
   _G.deltaTime = dt
   screen.UpdateRatio(dt)
+  if inputManager and inputManager.update then inputManager.update(dt) end
   scene:update(dt) -- ← deux-points
   effect.update(dt)
-  if inputManager and inputManager.update then inputManager.update(dt) end
   --[[  if love.keyboard.isDown('p') then
     Card.positioneHand(dt)
   end ]]

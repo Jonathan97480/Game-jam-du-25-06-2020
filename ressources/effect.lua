@@ -25,7 +25,9 @@ local function addFrames(basePrefix, count)
         if img then
             t[i] = img
         else
-            print("Erreur lors du chargement de l'image :", basePrefix .. i .. ".png")
+            local gf = rawget(_G, 'globalFunction')
+            local msg = "Erreur lors du chargement de l'image : " .. tostring(basePrefix .. i .. ".png")
+            if gf and gf.log and gf.log.warn then gf.log.warn(msg) else print(msg) end
         end
     end
     return t

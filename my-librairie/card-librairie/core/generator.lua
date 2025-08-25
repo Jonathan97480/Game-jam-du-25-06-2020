@@ -10,31 +10,60 @@ function M.loadCards(cardsRessources, actortag, deckName)
     local deck
     if deckName == nil then deckName = "globalDeck" end
     if type(cardsRessources) ~= "table" then
-        dprint("[card.loadCards] cardsRessources n'est pas une table :", type(cardsRessources))
-        return
+        if Common and Common.dprint then
+            Common.dprint("[card.loadCards] cardsRessources n'est pas une table :",
+                type(cardsRessources))
+        else
+            print("[card.loadCards] cardsRessources n'est pas une table :",
+                type(cardsRessources))
+        end
+        return false
     end
     if type(actortag) ~= "string" then
-        dprint("[card.loadCards] actortag n'est pas une string :", type(actortag))
-        return
+        if Common and Common.dprint then
+            Common.dprint("[card.loadCards] actortag n'est pas une string :", type(actortag))
+        else
+            print("[card.loadCards] actortag n'est pas une string :", type(actortag))
+        end
+        return false
     end
     if type(deckName) ~= "string" then
-        dprint("[card.loadCards] deckName n'est pas une string :", type(deckName))
-        return
+        if Common and Common.dprint then
+            Common.dprint("[card.loadCards] deckName n'est pas une string :", type(deckName))
+        else
+            print("[card.loadCards] deckName n'est pas une string :", type(deckName))
+        end
+        return false
     end
 
-    if not Common.getisDeckExistsByDeck(deckName) then
-        dprint("[card.loadCards] deck n'existe pas :", deckName .. " on va le créer")
-        deck = Common.createDeck(deckName)
-    else
+    -- Ensure the named deck exists and obtain a reference to it.
+    deck = Common.getDeckByName(deckName)
+    if not deck then
+        if Common and Common.dprint then
+            Common.dprint("[card.loadCards] deck n'existe pas :", deckName, " -> création")
+        else
+            print("[card.loadCards] deck n'existe pas :", deckName, " -> création")
+        end
+        Common.createDeck(deckName)
         deck = Common.getDeckByName(deckName)
     end
     if deck == nil then
-        dprint("[card.loadCards] deck est nil :", deckName)
-        return
+        if Common and Common.dprint then
+            Common.dprint("[card.loadCards] impossible d'obtenir le deck :", deckName)
+        else
+            print(
+                "[card.loadCards] impossible d'obtenir le deck :", deckName)
+        end
+        return false
     end
     if not deck or type(deck) ~= "table" then
-        dprint("[card.loadCards] deck n'est pas valide :", type(deck))
-        return
+        if Common and Common.dprint then
+            Common.dprint("[card.loadCards] deck n'est pas valide :", type(deck))
+        else
+            print(
+                "[card.loadCards] deck n'est pas valide :", type(deck))
+        end
+        return false
     end
 
     for _, _card in ipairs(cardsRessources) do
@@ -61,9 +90,19 @@ function M.loadCards(cardsRessources, actortag, deckName)
             card._isGrabbed = false
             card.locked = false
             deck:addCard(card)
-            dprint(("[card.loadCards] carte ajoutée au deck '%s' : %s"):format(deckName, card.name))
+            if Common and Common.dprint then
+                Common.dprint(("[card.loadCards] carte ajoutée au deck '%s' : %s"):format(
+                    deckName, card.name))
+            else
+                print(("[card.loadCards] carte ajoutée au deck '%s' : %s"):format(deckName,
+                    card.name))
+            end
         else
-            dprint("[card.loadCards] carte n'est pas valide :", type(_card))
+            if Common and Common.dprint then
+                Common.dprint("[card.loadCards] carte n'est pas valide :", type(_card))
+            else
+                print("[card.loadCards] carte n'est pas valide :", type(_card))
+            end
         end
     end
 end

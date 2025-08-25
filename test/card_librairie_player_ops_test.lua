@@ -21,4 +21,7 @@ Card.positionHand()
 assert(card.vector2.x and type(card.vector2.x) == "number", "La carte n'a pas de position x après positionHand")
 assert(card.vector2.y and type(card.vector2.y) == "number", "La carte n'a pas de position y après positionHand")
 
-print("[TEST] player_ops.lua : OK")
+-- print("[TEST] player_ops.lua : OK")
+local gf = rawget(_G, 'globalFunction')
+local _msg = "[TEST] player_ops.lua : OK"
+if gf and gf.log and gf.log.info then gf.log.info(_msg) else print(_msg) end

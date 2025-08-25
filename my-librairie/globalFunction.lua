@@ -324,17 +324,32 @@ function globalFunction.log.toggle() globalFunction.log.show = not globalFunctio
 function globalFunction.drawLogs(opts)
     opts = opts or {}
     if not globalFunction.log.show then return end
+
+    -- prefer game-space resolution when available (makes the panel readable)
+    local screen = rawget(_G, 'screen')
+    local gw = (screen and screen.gameReso and screen.gameReso.width) or 800
+    local gh = (screen and screen.gameReso and screen.gameReso.height) or 600
+
     local x = opts.x or 10
     local y = opts.y or 40
-    local w = opts.w or 800
-    local h = opts.h or 300
+    local w = opts.w or (gw - 20)
+    local h = opts.h or math.min(300, gh - y - 20)
     local bg = opts.bg or { 0, 0, 0, 0.6 }
+
+    love.graphics.push()
     -- background
     love.graphics.setColor(bg)
     love.graphics.rectangle("fill", x - 6, y - 6, w + 12, h + 12)
     love.graphics.setColor(1, 1, 1)
-    local lineH = opts.lineHeight or 16
-    local start = math.max(1, #globalFunction.log.entries - math.floor(h / lineH) + 1)
+
+    -- cached font for logs (avoid re-creating every frame)
+    globalFunction._logFont = globalFunction._logFont or love.graphics.newFont(16)
+    local oldFont = love.graphics.getFont()
+    love.graphics.setFont(globalFunction._logFont)
+
+    local lineH = opts.lineHeight or globalFunction._logFont:getHeight()
+    local maxLines = math.floor(h / lineH)
+    local start = math.max(1, #globalFunction.log.entries - maxLines + 1)
     local idx = 0
     for i = start, #globalFunction.log.entries do
         idx = idx + 1
@@ -345,17 +360,50 @@ function globalFunction.drawLogs(opts)
         local text = string.format("%s [%s:%s] %s", timestr, e.src, e.func, e.text)
         love.graphics.print(text, x, y + (idx - 1) * lineH)
     end
+
+    love.graphics.setFont(oldFont)
     love.graphics.setColor(1, 1, 1)
+    love.graphics.pop()
 end
 
 -- Export logs to a file (returns true on success)
 function globalFunction.log.exportToFile(path)
-    path = path or ("game_logs_" .. os.date("%Y%m%d_%H%M%S") .. ".log")
+    -- ensure target directory exists
+    local dir = "gameLogs"
+    pcall(function()
+        if type(love) == 'table' and love.filesystem and type(love.filesystem.createDirectory) == 'function' then
+            love.filesystem.createDirectory(dir)
+        end
+    end)
+
+    path = path or (dir .. "/" .. "game_logs_" .. os.date("%Y%m%d_%H%M%S") .. ".log")
+
+    -- try normal io.open first
     local ok, f = pcall(function() return io.open(path, "w") end)
     if not ok or not f then
+        -- fallback to love.filesystem.write when available (useful in sandboxed runtimes)
+        if type(love) == 'table' and love.filesystem and type(love.filesystem.write) == 'function' then
+            local content = {}
+            for i = 1, #globalFunction.log.entries do
+                local e = globalFunction.log.entries[i]
+                local timestr = os.date('%Y-%m-%d %H:%M:%S', e.t)
+                local line = string.format("%s [%s] [%s:%s] %s\n", timestr, LEVEL_NAME[e.level], e.src, e.func, e.text)
+                content[#content + 1] = line
+            end
+            local joined = table.concat(content)
+            local succ, serr = pcall(function() love.filesystem.write(path, joined) end)
+            if succ then
+                print("[LOG] exported " .. tostring(#globalFunction.log.entries) .. " entries to " .. tostring(path))
+                return true
+            else
+                print("[LOG] cannot write to file via love.filesystem: " .. tostring(serr))
+                return false
+            end
+        end
         print("[LOG] cannot open file for writing: " .. tostring(path))
         return false
     end
+
     for i = 1, #globalFunction.log.entries do
         local e = globalFunction.log.entries[i]
         local timestr = os.date('%Y-%m-%d %H:%M:%S', e.t)

@@ -44,7 +44,37 @@ local effect       = rawget(_G, "effect") or require("ressources/effect")
 local actorManager = rawget(_G, "actorManager") or require("my-librairie/actorManager")
 
 local DEBUG_CARD   = true
-local function dprint(...) if DEBUG_CARD then print(...) end end
+
+-- helper logging bridge -> unified globalFunction.log with fallback to print
+local function _to_text(...)
+    local t = {}
+    for i = 1, select('#', ...) do t[i] = tostring(select(i, ...)) end
+    return table.concat(t, ' ')
+end
+
+local function _gf_log(level, ...)
+    local txt = _to_text(...)
+    local gf = rawget(_G, 'globalFunction')
+    if gf and gf.log then
+        if level == 'error' and gf.log.error then
+            gf.log.error(txt); return
+        end
+        if level == 'warn' and gf.log.warn then
+            gf.log.warn(txt); return
+        end
+        if level == 'info' and gf.log.info then
+            gf.log.info(txt); return
+        end
+        if level == 'ok' and gf.log.ok then
+            gf.log.ok(txt); return
+        end
+    end
+    print(txt)
+end
+
+local function dprint(...)
+    if DEBUG_CARD then _gf_log('info', ...) end
+end
 Common.DEBUG_CARD = DEBUG_CARD
 Common.dprint     = dprint
 
@@ -215,10 +245,10 @@ function Common.tirage(count, animate, nameDeck)
     count = count or 1
     local currentDeck = Common.getDeckByName(nameDeck)
     if (currentDeck == nil) then
-        print("Le deck spécifié n'existe pas.")
+        _gf_log('warn', "Le deck spécifié n'existe pas.")
         return
     end
-    print(string.format("[debug] Common.tirage -> demande %d depuis '%s' (deck size before=%d)", count,
+    _gf_log('info', string.format("[debug] Common.tirage -> demande %d depuis '%s' (deck size before=%d)", count,
         tostring(nameDeck), #currentDeck.cards))
     if count <= 0 then return end
     local actuallyDrawn = 0
@@ -234,7 +264,7 @@ function Common.tirage(count, animate, nameDeck)
     end
     if actuallyDrawn == 0 then return end
     Common._updateHandTargets()
-    print(string.format("[debug] Common.tirage -> tiré %d cartes (hand now=%d, deck now=%d)", actuallyDrawn,
+    _gf_log('info', string.format("[debug] Common.tirage -> tiré %d cartes (hand now=%d, deck now=%d)", actuallyDrawn,
         #Common.hand.cards, #currentDeck.cards))
     local n = #Common.hand.cards
     local startIndex = n - actuallyDrawn + 1
@@ -285,11 +315,11 @@ end
 
 function Common.getisDeckExistsByDeck(deck)
     if not (deck and type(deck) == "table") then
-        print("Le deck n'est pas valide.")
+        _gf_log('warn', "Le deck n'est pas valide.")
         return false
     end
     if not (deck.name and type(deck.name) == "string") then
-        print("Le nom du deck n'est pas valide.")
+        _gf_log('warn', "Le nom du deck n'est pas valide.")
         return false
     end
     for _, d in ipairs(Common.deck) do

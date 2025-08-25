@@ -1,8 +1,17 @@
 -- scene/menu.lua
 
 -- Fallbacks robustes (si les globals ne sont pas encore posés)
-local screen      = rawget(_G, "screen") or require("my-librairie/responsive")
-local scene       = rawget(_G, "scene") or require("my-librairie/sceneManager")
+local screen = rawget(_G, "screen") or require("my-librairie/responsive")
+local scene  = rawget(_G, "scene") or require("my-librairie/sceneManager")
+
+-- helper de log local : utilise globalFunction.log.info si présent, sinon print
+local function _log(...)
+    if rawget(_G, 'globalFunction') and globalFunction.log and globalFunction.log.info then
+        globalFunction.log.info(...)
+    else
+        print(...)
+    end
+end
 
 local menu        = {}
 menu.illustration = {}
@@ -21,10 +30,14 @@ menu.illustration.title = {
     }
 }
 
+-- Footer (barre en bas)
+-- footer removed from menu; drawn only in gameplay
+
 -- Boutons
 menu.button = {
 
     play = {
+        cmd = 'play',
         texte = 'Play',
         width = 180,
         height = 60,
@@ -41,19 +54,20 @@ menu.button = {
     Paramètres : (aucun)
     Retour : aucune valeur (nil).
     ]]
-        action = function()
-            print("[menu] Play cliqué → switch vers gameplay")
-            local ok, mod = pcall(require, "scene.gameplay")
-            if not ok or not mod then
-                print("[menu] require('scene.gameplay') a échoué :", tostring(mod))
-                ok, mod = pcall(require, "scene/gameplay")
-                if not ok or not mod then
-                    print("[menu] require('scene/gameplay') a aussi échoué :", tostring(mod))
-                    return
+        action = function(btn)
+            -- btn correspond au bouton cliqué (transmis depuis menu.hover)
+            if btn and btn.cmd == 'play' then
+                _log("[menu] Play cliqué → switch vers gameplay")
+                -- Utiliser scene:switch pour demander au sceneManager de charger la scène
+                local okSwitch, tgt = pcall(function() return scene:switch("scene.gameplay") end)
+                if not okSwitch or not tgt then
+                    _log("[menu] scene:switch('scene.gameplay') a échoué, tentative alternative")
+                    local okSwitch2, tgt2 = pcall(function() return scene:switch("scene/gameplay") end)
+                    if not okSwitch2 or not tgt2 then
+                        _log("[menu] impossible de switcher vers gameplay : aucune require/switch n'a fonctionné")
+                    end
                 end
             end
-            scene:switch(mod) -- on passe la table directement
-            scene:push("scene/hud_overlay")
         end
 
     },
@@ -69,7 +83,7 @@ menu.button = {
             normal = { 1, 1, 1 },
             click  = { 1, 0, 0 },
         },
-        action = function()
+        action = function(_)
             -- Si tu as une scène credits, décommente la ligne suivante :
             -- scene:switch("scene.credits")
             print("[menu] TODO: scène 'credits' non configurée.")
@@ -87,7 +101,7 @@ menu.button = {
             normal = { 1, 1, 1 },
             click  = { 1, 0, 0 },
         },
-        action = function()
+        action = function(_)
             love.window.close()
         end
     }
@@ -127,6 +141,12 @@ Retour : nil
 ]]
 function menu.draw()
     love.graphics.draw(menu.illustration.background.img, 0, 0)
+    -- footer: centré en bas
+    if menu.illustration.footer and menu.illustration.footer.img then
+        local f = menu.illustration.footer.img
+        local fh = (type(f.getHeight) == 'function' and f:getHeight()) or 0
+        love.graphics.draw(f, 0, screen.gameReso.height - fh)
+    end
     love.graphics.draw(menu.illustration.title.img, menu.illustration.title.vector2.x, menu.illustration.title.vector2.y)
 
     for _, value in pairs(menu.button) do
@@ -148,21 +168,24 @@ function menu.hover()
     local okc, cursor = pcall(require, "my-librairie/cursor")
     local mx, my = 0, 0
     if okc and cursor and cursor.get then mx, my = cursor.get() end
-    local isDown = false
-    if input_ok and input and input.state then
-        local s = input.state(); isDown = (s == 'pressed' or s == 'held')
+    -- detecter un "just pressed" (appui) plutôt que l'état pressed/held pour éviter
+    -- les problèmes de timing dus à l'ordre d'update
+    local isClickNow = false
+    if input_ok and input and input.justPressed then
+        isClickNow = input.justPressed()
     else
         local okI, iface = pcall(require, "my-librairie/inputInterface")
-        if okI and iface and iface.isActionDown then isDown = iface.isActionDown() end
+        if okI and iface and iface.justPressedAction then isClickNow = iface.justPressedAction() end
     end
     for _, value in pairs(menu.button) do
         local inside = (mx >= value.vector2.x) and (mx <= value.vector2.x + value.width) and (my >= value.vector2.y) and
             (my <= value.vector2.y + value.height)
         if inside then
-            if isDown and not isclick then
+            if isClickNow and not isclick then
                 isclick = true
                 value.color.curent = value.color.click
-                value.action()
+                -- transmettre le bouton courant à la fonction d'action
+                value.action(value)
                 break
             else
                 value.color.curent = value.color.hover

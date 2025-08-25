@@ -38,7 +38,11 @@ Transition._enemyMaxPlays     = 0
 Transition._heroPrevLife      = nil
 
 -- ==== Utils ====
-local function dprint(...) print("[transition]   ", ...) end
+local function dprint(...)
+    local gf = rawget(_G, 'globalFunction')
+    local txt = table.concat({"[transition]", ...}, ' ')
+    if gf and gf.log and gf.log.info then gf.log.info(txt) else print(txt) end
+end
 --[[
     Fonction utilitaire pour initialiser le générateur de nombres aléatoires
 ]]
@@ -55,7 +59,7 @@ end
 ]]
 local function _setTour(tag)
     if _G.Tour ~= tag then
-        print("[transition]    Tour -> " .. tostring(tag));
+        dprint("[transition]    Tour -> " .. tostring(tag))
         _G.Tour = tag
         return tag
     end
@@ -242,6 +246,13 @@ function Transition.update(dt)
         -- Remplissage de la puissance du joueur
         _refillPowerForActor(Hero.actor)
 
+        -- diagnostic: log tailles des decks avant d'afficher l'overlay de début
+        do
+            local hero = (Card and Card.getDeckByName and Card.getDeckByName("HeroDeck")) or nil
+            local global = (Card and Card.getDeckByName and (Card.getDeckByName("globalDeck") or Card.getDeckByName("GlobalDeck"))) or nil
+            dprint(string.format("[overlay.debug] avant push -> HeroDeck=%d globalDeck=%d",
+                hero and (#hero.cards) or 0, global and (#global.cards) or 0))
+        end
         -- on affiche l'overlay de début de tour
         SceneManager:push("scene/overlay_start"); dprint("[overlay] push overlay_start")
 
@@ -546,14 +557,14 @@ function Transition.requestEndTurn()
         dprint("[transition] [endTurn] OK")
         return true
     end
-    print("[transition] [endTurn] ignorée"); return false
+    dprint("[transition] [endTurn] ignor e9e"); return false
 end
 
 --[[
     Gestion de la mort de l'ennemi
 ]]
 function Transition.onEnemyDied()
-    dprint("enemy died -> victory_check");
+    dprint("enemy died -> victory_check")
     -- on entre dans l'état de victoire
     _enter("victory_check")
 end

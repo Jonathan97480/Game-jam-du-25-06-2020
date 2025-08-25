@@ -38,8 +38,18 @@ local AI                      = {
 }
 
 -- ---------- LOG / SAFE ----------
-local function log(...) if AI.DEBUG then print(...) end end
-local function logf(fmt, ...) if AI.DEBUG then print(string.format(fmt, ...)) end end
+local function _to_text(...)
+  local t = {}
+  for i = 1, select('#', ...) do t[i] = tostring(select(i, ...)) end; return table.concat(t, ' ')
+end
+local function log(...) if AI.DEBUG then
+    local gf = rawget(_G, 'globalFunction'); local txt = _to_text(...); if gf and gf.log and gf.log.info then gf.log
+          .info(txt) else print(txt) end
+  end end
+local function logf(fmt, ...) if AI.DEBUG then
+    local gf = rawget(_G, 'globalFunction'); local txt = string.format(fmt, ...); if gf and gf.log and gf.log.info then
+      gf.log.info(txt) else print(txt) end
+  end end
 local function safecall(tag, fn, ...)
   if type(fn) ~= "function" then
     logf("[AI][safe:%s] fn=nil", tostring(tag))
@@ -100,9 +110,9 @@ local function _autoWireTelegraph()
     if type(Telegraph.setEnabled) == "function" then
       Telegraph:setEnabled(true)
     end
-    print("[AI] Telegraph auto-câblé depuis le contrôleur.")
+    log("[AI] Telegraph auto-câblé depuis le contrôleur.")
   else
-    print("[AI] Telegraph indisponible (require a échoué) : visuel désactivé.")
+    log("[AI] Telegraph indisponible (require a échoué) : visuel désactivé.")
   end
 end
 
@@ -487,7 +497,7 @@ function AI.load()
   AI.busy, AI.running, AI._endSent, AI.enemy, AI._badDtWarned =
       false, false, false, nil, false
   _autoWireTelegraph() -- auto-câblage visuel si dispo
-  print("[AI] Contrôleur simple chargé")
+  log("[AI] Contrôleur simple chargé")
 end
 
 function AI:startTurn(enemy)
@@ -512,7 +522,7 @@ function AI:update(dt)
 
   if type(e) ~= "table" or type(e.state) ~= "table" then
     if not self._endSent and Transition and Transition.requestEndTurn then
-      print("[AI] pas d'ennemi valide → fin de tour")
+      log("[AI] pas d'ennemi valide → fin de tour")
       Transition.requestEndTurn()
       self._endSent = true
     end

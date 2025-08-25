@@ -11,6 +11,18 @@ local inputManager = _safeRequire("my-librairie/inputManager")
 -- Layered HUD Manager
 local hud = {}
 
+-- small logging helpers -> use globalFunction.log if present, fallback to print
+local function _to_text(...)
+  local t = {}
+  for i = 1, select('#', ...) do t[i] = tostring(select(i, ...)) end
+  return table.concat(t, ' ')
+end
+local function _logf(fmt, ...)
+  local gf = rawget(_G, 'globalFunction')
+  local txt = string.format(fmt, ...)
+  if gf and gf.log and gf.log.info then gf.log.info(txt) else print(txt) end
+end
+
 -- Debug flags
 local HUD_DEBUG_ENERGY = false
 -- expose flag for runtime toggle (will be set into hud)
@@ -364,7 +376,7 @@ function hud.setBottomBarBg(path, x, y, h)
       end
     else
       el.img = nil
-      if print then print("[HUD] Bottom bar BG not found: " .. tostring(path)) end
+      _logf("[HUD] Bottom bar BG not found: %s", tostring(path))
     end
   else
     el.img = nil
@@ -712,7 +724,7 @@ function hud.drawCard(card, x, y, opts)
   local parentPosition = opts.parentPosition or { x = 0, y = 0 }
 
   if (not card) then
-    if print then print("[HUD] la fonction hud.drawCard n'a pas reçu de carte en paramètre") end
+    _logf("[HUD] la fonction hud.drawCard n'a pas reçu de carte en paramètre")
     return
   end
 

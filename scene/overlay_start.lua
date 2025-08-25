@@ -40,7 +40,7 @@ local function mouse()
         if okI and iface and iface.isActionDown then
             down = iface.isActionDown()
         else
-            down = globalFunction.mouse.click()         -- Use inputManager instead
+            down = globalFunction.mouse.click() -- Use inputManager instead
         end
     end
     return mx, my, down
@@ -48,9 +48,30 @@ end
 local function buildDeckPlayerSnapshot()
     deckPlayerSnapshot = {}
     local deckPlayer = Card.getDeckByName("HeroDeck")
-    if not deckPlayer then
-        print("Deck non trouver dans la fonction buildDeckPlayerSnapshot")
-        return
+    local gf = rawget(_G, 'globalFunction')
+    if not deckPlayer or (deckPlayer and type(deckPlayer.cards) == 'table' and #deckPlayer.cards == 0) then
+        local msg = "Deck 'HeroDeck' non trouvé ou vide dans buildDeckPlayerSnapshot, tentative heuristique"
+        if gf and gf.log and gf.log.warn then gf.log.warn(msg) else print(msg) end
+        -- heuristic: search available decks for a name containing 'hero'
+        if Card and Card.deckList then
+            for _, d in ipairs(Card.deckList() or {}) do
+                if d and d.name and tostring(d.name):lower():find('hero') then
+                    deckPlayer = d
+                    if gf and gf.log and gf.log.info then
+                        gf.log.info("Deck heuristique trouvé:", d.name)
+                    else
+                        print(
+                            "Deck heuristique trouvé:", d.name)
+                    end
+                    break
+                end
+            end
+        end
+        if not deckPlayer then
+            local msg2 = "Aucun deck joueur trouvé après heuristique"
+            if gf and gf.log and gf.log.warn then gf.log.warn(msg2) else print(msg2) end
+            return {}
+        end
     end
     if not Card or not deckPlayer.cards then return end
     local n = math.min(#deckPlayer.cards, 10)
