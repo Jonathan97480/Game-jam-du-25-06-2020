@@ -16,7 +16,7 @@ end
 local menu        = {}
 menu.illustration = {}
 
-local res = require("my-librairie.resource_cache")
+local res         = require("my-librairie.resource_cache")
 
 --[[ Arrière-plan & titre ]]
 menu.illustration.background = {
@@ -153,7 +153,7 @@ function menu.draw()
 
     for _, value in pairs(menu.button) do
         love.graphics.setColor(value.color.curent)
-    love.graphics.setFont(res.font(60))
+        love.graphics.setFont(res.font(60))
         love.graphics.print(value.texte, value.vector2.x, value.vector2.y)
     end
     love.graphics.setColor(1, 1, 1)

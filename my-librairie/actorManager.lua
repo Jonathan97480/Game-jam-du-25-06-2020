@@ -67,7 +67,7 @@ function actor.addAnimation(p_animTable, p_animation)
     for state, paths in pairs(p_animation) do
         p_animTable[state] = {}
         for _, path in ipairs(paths) do
-                local ok, img = pcall(res.image, path)
+            local ok, img = pcall(res.image, path)
             if ok and img then table.insert(p_animTable[state], img) end
         end
     end
