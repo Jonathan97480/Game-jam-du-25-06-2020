@@ -355,6 +355,13 @@ function hud.setBottomBarBg(path, x, y, h)
     if ok and img then
       el.img = img
       el.h   = h or (img.getHeight and img:getHeight()) or el.h or 0
+      -- if no explicit y provided, anchor footer to bottom of game resolution
+      if (y == nil) then
+        local gh = (responsive and responsive.gameReso and responsive.gameReso.height) or nil
+        if gh and el.h then
+          el.y = gh - el.h
+        end
+      end
     else
       el.img = nil
       if print then print("[HUD] Bottom bar BG not found: " .. tostring(path)) end
@@ -482,6 +489,9 @@ function hud.load()
       end,
     })
   end
+  -- Ensure bottom footer background is set (can be overridden by HUD_BOTTOM_BG_PATH in main.lua)
+  local bottom_path = rawget(_G, "HUD_BOTTOM_BG_PATH") or 'img/hud/footer-bare.jpg'
+  hud.setBottomBarBg(bottom_path, 0)
 end
 
 --[[

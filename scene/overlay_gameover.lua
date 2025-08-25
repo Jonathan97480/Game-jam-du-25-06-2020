@@ -17,14 +17,7 @@ end
 function overlay.update(self, dt)
     local mx, my = 0, 0
     local okc, cursor = pcall(require, "my-librairie/cursor")
-    if okc and cursor and cursor.get then
-        mx, my = cursor.get()
-    else
-        local ok2, x, y = pcall(function() return love.mouse.getPosition() end)
-        if ok2 then
-            mx = x or 0; my = y or 0
-        end
-    end
+    if okc and cursor and cursor.get then mx, my = cursor.get() end
     hot = 0
     local w, h = love.graphics.getWidth(), love.graphics.getHeight()
     local bw, bh = 240, 52

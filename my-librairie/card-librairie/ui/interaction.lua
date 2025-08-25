@@ -75,8 +75,18 @@ function M.hover(dt)
                 local st = gf.mouse.state()
                 isDown = (st == 'pressed' or st == 'held')
             else
-                local ok, v = pcall(function() return love.mouse.isDown(1) end)
-                isDown = ok and (v == true) or false
+                local okG, gf = pcall(require, "my-librairie/globalFunction")
+                if okG and gf and gf.mouse and gf.mouse.state then
+                    local st = gf.mouse.state()
+                    isDown = (st == 'pressed' or st == 'held')
+                else
+                    local okI2, iface2 = pcall(require, "my-librairie/inputInterface")
+                    if okI2 and iface2 and iface2.isActionDown then
+                        isDown = iface2.isActionDown()
+                    else
+                        isDown = false
+                    end
+                end
             end
         end
     end

@@ -35,8 +35,6 @@ love.window.setMode(1280, 720, {
 local function _getRawMouse()
     local ok, cur = pcall(require, "my-librairie/cursor")
     if ok and cur and cur.get then return cur.get() end
-    local ok2, x, y = pcall(function() return love.mouse.getPosition() end)
-    if ok2 then return x or 0, y or 0 end
     return 0, 0
 end
 

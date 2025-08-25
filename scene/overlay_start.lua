@@ -40,8 +40,7 @@ local function mouse()
         if okI and iface and iface.isActionDown then
             down = iface.isActionDown()
         else
-            local ok, v = pcall(function() return love.mouse.isDown(1) end)
-            down = ok and (v == true) or false
+            down = globalFunction.mouse.click()         -- Use inputManager instead
         end
     end
     return mx, my, down
