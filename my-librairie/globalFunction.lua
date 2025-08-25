@@ -67,13 +67,30 @@ globalFunction.mouse.hover = function(x, y, width, height, scale)
         sx = scale.x or scale[1] or 1
         sy = scale.y or scale[2] or 1
     end
-    local mx, my = screen.mouse.X, screen.mouse.Y
+    local function _getCursor()
+        local okc, cursor = pcall(require, "my-librairie/cursor")
+        if okc and cursor and cursor.get then return cursor.get() end
+        return 0, 0
+    end
+    local mx, my = _getCursor()
     return (mx >= x and mx <= x + width * sx and my >= y and my <= y + height * sy)
 end
 
 --[[ Click «front edge» compatible avec l'existant ]]
 globalFunction.mouse.click = function()
-    local down = love.mouse.isDown(1)
+    local down = false
+    local okInp, inp = pcall(require, "my-librairie/inputManager")
+    if okInp and inp and inp.state then
+        local s = inp.state(); down = (s == 'pressed' or s == 'held')
+    else
+        local okI, iface = pcall(require, "my-librairie/inputInterface")
+        if okI and iface and iface.isActionDown then
+            down = iface.isActionDown()
+        else
+            local ok, v = pcall(function() return love.mouse.isDown(1) end)
+            down = ok and v or false
+        end
+    end
     if down and lockClick == false then
         lockClick = true
         return true -- front-edge (press)
@@ -87,7 +104,20 @@ end
 
 -- (Optionnel) États de clic si besoin plus tard (pressed/held/released/idle)
 globalFunction.mouse.state = function()
-    local down = love.mouse.isDown(1)
+    local down = false
+    local okInp, inp = pcall(require, "my-librairie/inputManager")
+    if okInp and inp and inp.state then
+        local s = inp.state()
+        if s == 'pressed' or s == 'held' then down = true end
+    else
+        local okI, iface = pcall(require, "my-librairie/inputInterface")
+        if okI and iface and iface.isActionDown then
+            down = iface.isActionDown()
+        else
+            local ok, v = pcall(function() return love.mouse.isDown(1) end)
+            down = ok and v or false
+        end
+    end
     if down and not lockClick then
         lockClick = true
         return "pressed"

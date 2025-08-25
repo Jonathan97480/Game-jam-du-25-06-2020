@@ -83,10 +83,10 @@ function M:draw()
                 -- fonction pour dessiner les cartes
 
                 function()
+                    local okc, cursor = pcall(require, "my-librairie/cursor")
+                    local mouseX, mouseY = 0, 0
+                    if okc and cursor and cursor.get then mouseX, mouseY = cursor.get() end
                     for i = 1, #self._cardSaved do
-                        --detecter si la sourie survole la carte
-                        local mouseX = screen.mouse.X
-                        local mouseY = screen.mouse.Y
                         local cardX = 50 + panelInformation.position.x
                         local cardY = 120 + (i - 1) * 240 + panelInformation.position.y
                         local cardW = self._cardSaved[i].width * 0.5

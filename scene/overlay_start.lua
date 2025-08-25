@@ -15,10 +15,35 @@ local BTN_W, BTN_H = 280, 56
 local btn = { x = 0, y = 0, w = BTN_W, h = BTN_H }
 
 local function isOver(x, y, w, h, mx, my) return mx >= x and mx <= x + w and my >= y and my <= y + h end
+local function _safeRequire(name)
+    local ok, mod = pcall(require, name)
+    if ok then return mod end
+    return nil
+end
+local input = _safeRequire("my-librairie/inputManager")
 local function mouse()
-    local mx = (screen.mouse and screen.mouse.X) or (love.mouse and ({ love.mouse.getPosition() })[1]) or 0
-    local my = (screen.mouse and screen.mouse.Y) or (love.mouse and ({ love.mouse.getPosition() })[2]) or 0
-    local down = love.mouse and love.mouse.isDown(1)
+    local mx, my = 0, 0
+    local down = false
+    local okc, cursor = pcall(require, "my-librairie/cursor")
+    if okc and cursor and cursor.get then
+        mx, my = cursor.get()
+    else
+        local ok, x, y = pcall(function() return love.mouse.getPosition() end)
+        if ok then
+            mx = x or 0; my = y or 0
+        end
+    end
+    if input and input.state then
+        local s = input.state(); down = (s == 'pressed' or s == 'held')
+    else
+        local okI, iface = pcall(require, "my-librairie/inputInterface")
+        if okI and iface and iface.isActionDown then
+            down = iface.isActionDown()
+        else
+            local ok, v = pcall(function() return love.mouse.isDown(1) end)
+            down = ok and (v == true) or false
+        end
+    end
     return mx, my, down
 end
 local function buildDeckPlayerSnapshot()

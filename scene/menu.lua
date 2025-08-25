@@ -144,14 +144,20 @@ Paramètres : (aucun)
 Retour : nil
 ]]
 function menu.hover()
-    local isDown = love.mouse.isDown(1)
+    local input_ok, input = pcall(require, "my-librairie/inputManager")
+    local okc, cursor = pcall(require, "my-librairie/cursor")
+    local mx, my = 0, 0
+    if okc and cursor and cursor.get then mx, my = cursor.get() end
+    local isDown = false
+    if input_ok and input and input.state then
+        local s = input.state(); isDown = (s == 'pressed' or s == 'held')
+    else
+        local okI, iface = pcall(require, "my-librairie/inputInterface")
+        if okI and iface and iface.isActionDown then isDown = iface.isActionDown() end
+    end
     for _, value in pairs(menu.button) do
-        local inside =
-            (screen.mouse.X >= value.vector2.x) and
-            (screen.mouse.X <= value.vector2.x + value.width) and
-            (screen.mouse.Y >= value.vector2.y) and
-            (screen.mouse.Y <= value.vector2.y + value.height)
-
+        local inside = (mx >= value.vector2.x) and (mx <= value.vector2.x + value.width) and (my >= value.vector2.y) and
+            (my <= value.vector2.y + value.height)
         if inside then
             if isDown and not isclick then
                 isclick = true

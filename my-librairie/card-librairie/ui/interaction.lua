@@ -1,7 +1,11 @@
-local Common                    = require("my-librairie/card-librairie/core/common")
-local UX                        = require("my-librairie/card-librairie/ui/ux")
-local screen                    = rawget(_G, "screen") or require("my-librairie/responsive")
-local Layout                    = require("my-librairie/card-librairie/ui/layout")
+local Common         = require("my-librairie/card-librairie/core/common")
+local UX             = require("my-librairie/card-librairie/ui/ux")
+local screen         = rawget(_G, "screen") or require("my-librairie/responsive")
+local Layout         = require("my-librairie/card-librairie/ui/layout")
+local okInput, input = pcall(require, "my-librairie/inputManager")
+if not okInput then input = nil end
+local okI, inputI = pcall(require, "my-librairie/inputInterface")
+if not okI then inputI = nil end
 
 local M                         = {}
 
@@ -14,6 +18,12 @@ local function _lerpTable(vec2, target, speed)
     local a = math.min(1, dt * (speed or 10))
     vec2.x = vec2.x + (target.x - vec2.x) * a
     vec2.y = vec2.y + (target.y - vec2.y) * a
+end
+
+local function _getCursor()
+    local ok, cur = pcall(require, "my-librairie/cursor")
+    if ok and cur and cur.get then return cur.get() end
+    return 0, 0
 end
 
 M._getDragState = function()
@@ -51,13 +61,23 @@ end
 function M.hover(dt)
     local tour = rawget(_G, "Tour")
     local isDown = false
-    if love and love.mouse and love.mouse.isDown then
-        local ok, v = pcall(function() return love.mouse.isDown(1) end)
-        if not ok then
-            local ok2, v2 = pcall(function() return love.mouse.isDown() end)
-            isDown = (ok2 and (v2 == true)) or false
+    if input and input.state then
+        local s = input.state()
+        isDown = (s == 'pressed' or s == 'held')
+    else
+        local okI, iface = pcall(require, "my-librairie/inputInterface")
+        if okI and iface and iface.isActionDown then
+            isDown = iface.isActionDown()
         else
-            isDown = (v == true)
+            -- fallback to robust globalFunction.mouse.state if available
+            local okG, gf = pcall(require, "my-librairie/globalFunction")
+            if okG and gf and gf.mouse and gf.mouse.state then
+                local st = gf.mouse.state()
+                isDown = (st == 'pressed' or st == 'held')
+            else
+                local ok, v = pcall(function() return love.mouse.isDown(1) end)
+                isDown = ok and (v == true) or false
+            end
         end
     end
     local action = UX.UX_click(isDown, mouseWasDown) and "click" or nil
@@ -122,10 +142,7 @@ function M.hover(dt)
             _card._targetScale.x, _card._targetScale.y = _card.scale.x, _card.scale.y
         elseif _card == draggedCard then
             _card.scale.x, _card.scale.y = 1.05, 1.05
-            local ex = (screen and screen.mouse and screen.mouse.X) or (love.mouse and ({ love.mouse.getPosition() })[1]) or
-                0
-            local ey = (screen and screen.mouse and screen.mouse.Y) or (love.mouse and ({ love.mouse.getPosition() })[2]) or
-                0
+            local ex, ey = _getCursor()
             ex = ex - (_card._grabDX or _card.width / 2)
             ey = ey - (_card._grabDY or _card.height / 2)
             _card.vector2.x, _card.vector2.y = ex, ey
@@ -135,11 +152,7 @@ function M.hover(dt)
             if not isDown then
                 draggedCard, draggedIndex = nil, nil
                 Common.__dragLock = false
-                local mx, my =
-                    (screen and screen.mouse and screen.mouse.X) or (love.mouse and ({ love.mouse.getPosition() })[1]) or
-                    0,
-                    (screen and screen.mouse and screen.mouse.Y) or (love.mouse and ({ love.mouse.getPosition() })[2]) or
-                    0
+                local mx, my = _getCursor()
                 local dropY = my
                 local playLine = rawget(_G, "CARD_PLAY_LINE_Y") or 400
                 local inZone = (dropY <= playLine)
@@ -164,10 +177,9 @@ function M.hover(dt)
                 if isDown and not mouseWasDown and not draggedCard then
                     draggedCard, draggedIndex = _card, i
                     Common.__dragLock = true
-                    _card._grabDX = ((screen and screen.mouse and screen.mouse.X) or (love.mouse and ({ love.mouse.getPosition() })[1]) or 0) -
-                        _card.vector2.x
-                    _card._grabDY = ((screen and screen.mouse and screen.mouse.Y) or (love.mouse and ({ love.mouse.getPosition() })[2]) or 0) -
-                        _card.vector2.y
+                    local gx, gy = _getCursor()
+                    _card._grabDX = gx - _card.vector2.x
+                    _card._grabDY = gy - _card.vector2.y
                     if i ~= #Common.hand.cards then Layout.bringToFront(i) end
                     if DEBUG then
                         print("[Card.Interaction] start drag", i, _card.name, "grabDX", _card._grabDX, "grabDY",

@@ -1,6 +1,13 @@
 local res = require("res")
 local gameplay = require("scene.gameplay")
 local responsive = require("my-librairie/responsive")
+-- optional unified input helper (mouse + joystick)
+local _safeRequire = function(name)
+  local ok, mod = pcall(require, name)
+  if ok then return mod end
+  return nil
+end
+local inputManager = _safeRequire("my-librairie/inputManager")
 -- Layered HUD Manager
 local hud = {}
 
@@ -119,6 +126,13 @@ local function dimsFrom(el)
   local w = el.w or (el.img and el.img.getWidth and el.img:getWidth()) or 0
   local h = el.h or (el.img and el.img.getHeight and el.img:getHeight()) or 0
   return w, h
+end
+
+-- helper: prefer unified inputInterface cursor, then screen.mouse, then love.mouse.getPosition()
+local function _getCursor()
+  local ok, cur = pcall(require, "my-librairie/cursor")
+  if ok and cur and cur.get then return cur.get() end
+  return 0, 0
 end
 
 -- Public API
@@ -417,48 +431,20 @@ Paramètres :
 Retour : aucune valeur (nil).
 ]]
 function hud.load()
-  -- Auto bottom bar background if not yet created
-  if not hud.get('bottom_bar_bg') then
-    local path = _G.HUD_BOTTOM_BG_PATH
-    if not path then
-      local candidates = {
-        'img/hud/footer-bare.jpg', 'img/hud/footer-bare.png',
-        'img/hud/footer-barre.png', 'img/hud/footer-barre.jpg',
-        'img/hud/footer-bar.png', 'img/hud/footer-bar.jpg'
-      }
-      for _, p in ipairs(candidates) do
-        local ok = pcall(res.image, p)
-        if ok then
-          path = p; break
-        end
-      end
-    end
-    local y = (screen and screen.gameReso and screen.gameReso.height and (screen.gameReso.height - 68))
-        or (love.graphics.getHeight() - 68)
-    hud.setBottomBarBg(path, 0, y, 68)
-    if not path and print then print('[HUD] footer: no image found -> fallback band will be drawn') end
-  end
+  -- initialize HUD defaults
+  local x, y = _getCursor()
+  hud.addButton('end_turn', {
+    img = 'img/hud/Button-fin-de-tour.png',
+    x = 1283,
+    y = 1019,
+    layer = 'button',
+    text = 'End of Tours',
+    tx = 1310,
+    ty = 1035,
+    --[[ onClick: appel au gameplay ]]
+    onClick = function() gameplay.endTurn() end,
+  })
 
-  -- Default bottom HUD elements (idempotent)
-  if not hud.get('end_turn') then
-    hud.addButton('end_turn', {
-      img = 'img/hud/Button-fin-de-tour.png',
-      x = 1283,
-      y = 1019,
-      layer = 'button',
-      text = 'End of Tours',
-      tx = 1310,
-      ty = 1035,
-      --[[
-      Fonction : onClick
-      Rôle : Fonction « On click » liée à la logique du jeu.
-      Paramètres :
-        - (aucun)
-      Retour : aucune valeur (nil).
-      ]]
-      onClick = function() gameplay.endTurn() end,
-    })
-  end
   if not hud.get('energy_icon') then
     hud.addIcon('energy_icon', { img = 'img/hud/nombre de coup.png', x = 127, y = 745, layer = 'props' })
     -- use robust global lookup (Hero or hero) to avoid mismatched global naming
@@ -544,15 +530,14 @@ Retour : aucune valeur (nil).
 ]]
 function hud.hover(a, b)
   local action, x, y
+  -- use central cursor helper (unified input) to get coordinates
   if type(a) == "string" then
     action = a
-    x = (screen and screen.mouse and screen.mouse.X) or 0
-    y = (screen and screen.mouse and screen.mouse.Y) or 0
+    x, y = _getCursor()
   elseif type(a) == "number" and type(b) == "number" then
     x, y = a, b
   else
-    x = (screen and screen.mouse and screen.mouse.X) or 0
-    y = (screen and screen.mouse and screen.mouse.Y) or 0
+    x, y = _getCursor()
   end
 
   -- check only interactive elements, from topmost layer to bottom

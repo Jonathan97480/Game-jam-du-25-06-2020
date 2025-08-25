@@ -13,11 +13,9 @@ local input = _safeRequire("my-librairie/inputManager") or (rawget(_G, "inputMan
 local M = {}
 
 local function _mousePos()
-    local mx = (screen and screen.mouse and screen.mouse.X) or
-        (love and love.mouse and ({ love.mouse.getPosition() })[1]) or 0
-    local my = (screen and screen.mouse and screen.mouse.Y) or
-        (love and love.mouse and ({ love.mouse.getPosition() })[2]) or 0
-    return mx, my
+    local ok, cur = pcall(require, "my-librairie/cursor")
+    if ok and cur and cur.get then return cur.get() end
+    return 0, 0
 end
 
 local function _hoverRect(x, y, w, h, scale)
