@@ -125,3 +125,10 @@ function love.keypressed(key, scancode, isrepeat)
   end
   scene:emit("keypressed", key, scancode, isrepeat)
 end
+
+function love.quit()
+  local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
+  if gf and gf.log and gf.log.exportToFile then
+    pcall(function() gf.log.exportToFile() end)
+  end
+end

@@ -270,4 +270,104 @@ rawset(_G, "globalFunction", globalFunction)
 rawset(_G, "myFunction", globalFunction)
 rawset(_G, "myFonction", globalFunction)
 
+-- ============================
+-- Centralized logging utility
+-- ============================
+globalFunction.log = {}
+
+-- config
+globalFunction.log.maxEntries = 200
+globalFunction.log.show = false -- toggle on/off
+globalFunction.log.entries = {} -- circular buffer
+
+local LEVEL = { OK = 0, INFO = 1, WARN = 2, ERROR = 3 }
+local LEVEL_NAME = { [0] = "OK", [1] = "INFO", [2] = "WARN", [3] = "ERROR" }
+local LEVEL_COLOR = {
+    [0] = { 1, 1, 1 },       -- OK = white
+    [1] = { 0.6, 0.9, 0.6 }, -- INFO = greenish
+    [2] = { 1, 0.65, 0 },    -- WARN = orange
+    [3] = { 1, 0.2, 0.2 }    -- ERROR = red
+}
+
+local function _pushLog(level, text)
+    local info = debug.getinfo(3, "nSl") or {}
+    local src = tostring(info.short_src or info.source or "?")
+    local func = tostring(info.name or "?")
+    local entry = { t = os.time(), level = level, text = tostring(text), src = src, func = func }
+    table.insert(globalFunction.log.entries, entry)
+    -- trim
+    if #globalFunction.log.entries > globalFunction.log.maxEntries then
+        table.remove(globalFunction.log.entries, 1)
+    end
+    -- also print to console for convenience
+    local prefix = string.format("[%s][%s:%s] ", LEVEL_NAME[level], src, func)
+    if level == LEVEL.ERROR then
+        print(prefix .. "ERROR: " .. tostring(text))
+    else
+        print(prefix .. tostring(text))
+    end
+end
+
+function globalFunction.log.ok(text) _pushLog(LEVEL.OK, text) end
+
+function globalFunction.log.info(text) _pushLog(LEVEL.INFO, text) end
+
+function globalFunction.log.warn(text) _pushLog(LEVEL.WARN, text) end
+
+function globalFunction.log.error(text) _pushLog(LEVEL.ERROR, text) end
+
+function globalFunction.log.clear() globalFunction.log.entries = {} end
+
+function globalFunction.log.toggle() globalFunction.log.show = not globalFunction.log.show end
+
+-- Draw logs on screen (call from love.draw when desired)
+function globalFunction.drawLogs(opts)
+    opts = opts or {}
+    if not globalFunction.log.show then return end
+    local x = opts.x or 10
+    local y = opts.y or 40
+    local w = opts.w or 800
+    local h = opts.h or 300
+    local bg = opts.bg or { 0, 0, 0, 0.6 }
+    -- background
+    love.graphics.setColor(bg)
+    love.graphics.rectangle("fill", x - 6, y - 6, w + 12, h + 12)
+    love.graphics.setColor(1, 1, 1)
+    local lineH = opts.lineHeight or 16
+    local start = math.max(1, #globalFunction.log.entries - math.floor(h / lineH) + 1)
+    local idx = 0
+    for i = start, #globalFunction.log.entries do
+        idx = idx + 1
+        local e = globalFunction.log.entries[i]
+        local col = LEVEL_COLOR[e.level] or { 1, 1, 1 }
+        love.graphics.setColor(col)
+        local timestr = os.date('%H:%M:%S', e.t)
+        local text = string.format("%s [%s:%s] %s", timestr, e.src, e.func, e.text)
+        love.graphics.print(text, x, y + (idx - 1) * lineH)
+    end
+    love.graphics.setColor(1, 1, 1)
+end
+
+-- Export logs to a file (returns true on success)
+function globalFunction.log.exportToFile(path)
+    path = path or ("game_logs_" .. os.date("%Y%m%d_%H%M%S") .. ".log")
+    local ok, f = pcall(function() return io.open(path, "w") end)
+    if not ok or not f then
+        print("[LOG] cannot open file for writing: " .. tostring(path))
+        return false
+    end
+    for i = 1, #globalFunction.log.entries do
+        local e = globalFunction.log.entries[i]
+        local timestr = os.date('%Y-%m-%d %H:%M:%S', e.t)
+        local line = string.format("%s [%s] [%s:%s] %s\n", timestr, LEVEL_NAME[e.level], e.src, e.func, e.text)
+        f:write(line)
+    end
+    f:close()
+    print("[LOG] exported " .. tostring(#globalFunction.log.entries) .. " entries to " .. tostring(path))
+    return true
+end
+
+-- auto init log entry
+globalFunction.log.info("Logger initialized")
+
 return globalFunction
