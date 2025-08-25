@@ -206,9 +206,9 @@ function drawBonus(p_actor, color, position)
     -- Shield icon
     if (p_actor.state.shield or 0) > 0 then
         love.graphics.draw(shield, position.x - 30, position.y - 20, 0, 1.5, 1.5)
-    local oldFont = love.graphics.getFont()
-    local f40 = res.font(40)
-    love.graphics.setFont(f40)
+        local oldFont = love.graphics.getFont()
+        local f40 = res.font(40)
+        love.graphics.setFont(f40)
         love.graphics.print(p_actor.state.shield, position.x - 12, position.y - 10)
         love.graphics.setFont(oldFont)
     end
@@ -379,6 +379,48 @@ function globalFunction.log.exportToFile(path)
     end)
 
     path = path or (dir .. "/" .. "game_logs_" .. os.date("%Y%m%d_%H%M%S") .. ".log")
+
+    -- prune old files in gameLogs: keep at most 10 files, else delete the oldest half
+    local function pruneGameLogs()
+        -- try os.* functions first
+        local ok, files
+        ok, files = pcall(function()
+            local t = {}
+            for fname in io.popen('dir "' .. dir .. '" /b 2>nul'):lines() do
+                table.insert(t, fname)
+            end
+            return t
+        end)
+        if not ok or not files then
+            -- fallback: try love.filesystem (may be in sandbox)
+            if type(love) == 'table' and love.filesystem and type(love.filesystem.getDirectoryItems) == 'function' then
+                local succ, items = pcall(love.filesystem.getDirectoryItems, dir)
+                if succ and type(items) == 'table' then files = items end
+            end
+        end
+        if not files or #files == 0 then return end
+
+        -- sort by name (timestamp suffix assumed) to get oldest first
+        table.sort(files)
+        local maxFiles = 10
+        if #files > maxFiles then
+            local toRemove = math.floor(#files / 2)
+            for i = 1, toRemove do
+                local fname = files[i]
+                local fpath = dir .. "/" .. fname
+                pcall(function()
+                    -- try normal io removal first
+                    os.remove(fpath)
+                end)
+                -- try love.filesystem removal as fallback
+                if type(love) == 'table' and love.filesystem and type(love.filesystem.remove) == 'function' then
+                    pcall(function() love.filesystem.remove(fpath) end)
+                end
+            end
+        end
+    end
+
+    pruneGameLogs()
 
     -- try normal io.open first
     local ok, f = pcall(function() return io.open(path, "w") end)
