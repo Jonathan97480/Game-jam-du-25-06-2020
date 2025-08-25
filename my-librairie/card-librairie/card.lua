@@ -1,9 +1,13 @@
 -- my-librairie/card-librairie/card.lua
 -- Façade : regroupe les sous-modules et expose une API compatible.
 
-local Common                      = require("my-librairie/card-librairie/common")
-local Generator                   = require("my-librairie/card-librairie/generator")
-local Player                      = require("my-librairie/card-librairie/player_ops")
+local Common                      = require("my-librairie/card-librairie/core/common")
+local Generator                   = require("my-librairie/card-librairie/core/generator")
+local UX                          = require("my-librairie/card-librairie/ui/ux")
+local Interaction                 = require("my-librairie/card-librairie/ui/interaction")
+local Play                        = require("my-librairie/card-librairie/play/play")
+local Layout                      = require("my-librairie/card-librairie/ui/layout")
+local Anim                        = require("my-librairie/card-librairie/play/anim")
 
 local Card                        = {}
 -- Assure l’existence d’une main IA
@@ -31,9 +35,9 @@ Card.getDeckByName                = Common.getDeckByName
 Card.tirage                       = Common.tirage
 
 -- >>> Expose clearHand
-Card.clearHand                    = Player.clearHand
-Card.clearHandPlayer              = Player.clearHandPlayer
-Card.clearHandEnemy               = Player.clearHandEnemy
+Card.clearHand                    = Play.clearHand
+Card.clearHandPlayer              = Play.clearHandPlayer
+Card.clearHandEnemy               = Play.clearHandEnemy
 
 -- ----- Deck Global -----
 Card.globalDeckList               = Common.globalDeckList
@@ -42,30 +46,38 @@ Card.copyToGlobal                 = Common.copyToGlobal
 Card.addFromGlobalToDeck          = Common.addFromGlobalToDeck
 
 -- ----- Affichages / accès -----
-Card.draw                         = Player.drawHand
-Card.drawHand                     = Player.drawHand
-Card.hover                        = Player.hover
+Card.draw                         = Play.drawHand
+Card.drawHand                     = Play.drawHand
+Card.hover                        = Interaction.hover
 Card.displayDeck                  = Common.displayDeck
 Card.deckList                     = Common.deckList
 Card.handList                     = Common.handList
 Card.graveyardList                = Common.graveyardList
 
 -- ----- Actions / update -----
-Card.action                       = Player.action
-Card.update                       = Player.action.update
+Card.action                       = Play.action
+Card.update                       = Play.action.update
 
 -- ----- Helpers layout (si utilisés autre part) -----
 Card._computeSlot                 = Common._computeSlot
 Card._updateHandTargets           = Common._updateHandTargets
 
 -- ----- Compat helpers (Card.func.*) -----
-Card.func                         = Player.func
-Card.onTurnChanged                = Player.onTurnChanged
-Card.resetInteractions            = Player.resetInteractions
-Card.positionHand                 = Player.positioneHand
-Card.positioneHand                = Player.positioneHand
-Card.cardToGraveyard              = Player.cardToGraveyard
+Card.func                         = Play.func
+Card.onTurnChanged                = Interaction.onTurnChanged
+Card.resetInteractions            = Interaction.resetInteractions
+Card.positionHand                 = Layout.positionHand
+Card.cardToGraveyard              = Play.cardToGraveyard
 Card.graveyardToDeckPlayer        = Common.graveyardToDeckPlayer
+-- compatibility: expose tryPlay
+Card.tryPlay                      = Play.tryPlay
+
+-- Expose sub-modules (refactor aide)
+Card.UX                           = UX
+Card.Interaction                  = Interaction
+Card.Play                         = Play
+Card.Layout                       = Layout
+Card.Anim                         = Anim
 
 -- Expose globalement
 rawset(_G, "card", Card)

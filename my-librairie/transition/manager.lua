@@ -38,7 +38,11 @@ Transition._enemyMaxPlays     = 0
 Transition._heroPrevLife      = nil
 
 -- ==== Utils ====
-local function dprint(...) print("[transition]   ", ...) end
+local function dprint(...)
+    local gf = rawget(_G, 'globalFunction')
+    local txt = table.concat({"[transition]", ...}, ' ')
+    if gf and gf.log and gf.log.info then gf.log.info(txt) else print(txt) end
+end
 --[[
     Fonction utilitaire pour initialiser le générateur de nombres aléatoires
 ]]
@@ -55,7 +59,7 @@ end
 ]]
 local function _setTour(tag)
     if _G.Tour ~= tag then
-        print("[transition]    Tour -> " .. tostring(tag));
+        dprint("[transition]    Tour -> " .. tostring(tag))
         _G.Tour = tag
         return tag
     end
@@ -88,8 +92,12 @@ local function _refillPowerForActor(acteur)
     acteur.state.power = maxp
 
     -- Mise à jour de l'affichage de l'énergie sur l'interface HUD pour le joueur
-    if acteur == (Hero and Hero.actor) and hud and hud.object and hud.object.energie and hud.object.energie.value then
-        hud.object.energie.value.text = tostring(acteur.state.power)
+    if acteur == (Hero and Hero.actor) then
+        if hud and type(hud.updateLabel) == "function" then
+            hud.updateLabel('energy_text', tostring(acteur.state.power))
+        elseif hud and hud.object and hud.object.energie and hud.object.energie.value then
+            hud.object.energie.value.text = tostring(acteur.state.power)
+        end
     end
 end
 
@@ -238,6 +246,13 @@ function Transition.update(dt)
         -- Remplissage de la puissance du joueur
         _refillPowerForActor(Hero.actor)
 
+        -- diagnostic: log tailles des decks avant d'afficher l'overlay de début
+        do
+            local hero = (Card and Card.getDeckByName and Card.getDeckByName("HeroDeck")) or nil
+            local global = (Card and Card.getDeckByName and (Card.getDeckByName("globalDeck") or Card.getDeckByName("GlobalDeck"))) or nil
+            dprint(string.format("[overlay.debug] avant push -> HeroDeck=%d globalDeck=%d",
+                hero and (#hero.cards) or 0, global and (#global.cards) or 0))
+        end
         -- on affiche l'overlay de début de tour
         SceneManager:push("scene/overlay_start"); dprint("[overlay] push overlay_start")
 
@@ -257,8 +272,24 @@ function Transition.update(dt)
     elseif STATE == "initiative_flip" then
         -- on verifie que _initiative existe dans la table Transition
         if not Transition._initiative then
-            -- on fait random pour savoir qui a l'initiative
-            Transition._initiative = (math.random() < 0.5) and "player" or "Enemy"
+            -- Allow forced initiative for testing via global FORCE_INITIATIVE ("player" or "Enemy")
+            -- or via Transition._forcedInitiative set at runtime.
+            local forced = rawget(_G, "FORCE_INITIATIVE") or Transition._forcedInitiative
+            if type(forced) == "string" then
+                local f = forced:lower()
+                if f == "player" then
+                    Transition._initiative = "player"
+                elseif f == "enemy" then
+                    Transition._initiative = "Enemy"
+                end
+                if Transition._initiative then
+                    dprint("[initiative] forced gagnant = " .. Transition._initiative)
+                end
+            end
+            -- Fallback to original random behaviour
+            if not Transition._initiative then
+                Transition._initiative = (math.random() < 0.5) and "player" or "Enemy"
+            end
             dprint("[initiative] gagnant = " .. Transition._initiative)
             -- on affiche l'overlay d'annonce de l'initiative
             SceneManager:push("scene/overlay_initiative"); dprint("[overlay] push overlay_initiative")
@@ -310,9 +341,15 @@ function Transition.update(dt)
             -- on defini le nombre de dernier coup de l'ennemi a 0
             Transition._lastEnemyActionT  = 0
             -- on defini le nombre maximum de coup de l'ennemi
-            Transition._enemyMaxPlays     = math.max(2, math.ceil((pmax > 0 and pmax or 6) / 2))
+            -- pmax/pow pouvaient être non définis (ancienne variable). On calcule depuis l'ennemi ou valeur par défaut
+            local pmax_val                = (Enemies and Enemies.curentEnemy and Enemies.curentEnemy.state and Enemies.curentEnemy.state.powerMax) or
+                6
+            local pow_val                 = (Enemies and Enemies.curentEnemy and Enemies.curentEnemy.state and Enemies.curentEnemy.state.power) or
+                pmax_val
+            Transition._enemyMaxPlays     = math.max(2, math.ceil((tonumber(pmax_val) or 6) / 2))
 
-            dprint(string.format("[enemy] startTurn (power=%d, maxPlays=%d)", pow, Transition._enemyMaxPlays))
+            dprint(string.format("[enemy] startTurn (power=%d, maxPlays=%d)", tonumber(pow_val) or 0,
+                Transition._enemyMaxPlays))
 
             -- on lance le tour de l'énemy dans la machie a état de l'ia
             if AI.startTurn then pcall(function() AI:startTurn(Enemies.curentEnemy) end) end
@@ -384,7 +421,10 @@ function Transition.update(dt)
                 Transition._heroPrevLife      = (Hero and Hero.actor and Hero.actor.state and Hero.actor.state.life) or
                     nil
                 -- on définie le nombre d'action maximum de l'ennemi
-                Transition._enemyMaxPlays     = math.max(2, math.ceil((pmax > 0 and pmax or 6) / 2))
+                local pmax                    = (Enemies and Enemies.curentEnemy and Enemies.curentEnemy.state and Enemies.curentEnemy.state.powerMax) or
+                6
+                pmax                          = tonumber(pmax) or 6
+                Transition._enemyMaxPlays     = math.max(2, math.ceil(pmax / 2))
 
                 dprint(string.format("[enemy] startTurn (maxPlays=%d)", Transition._enemyMaxPlays))
 
@@ -517,14 +557,14 @@ function Transition.requestEndTurn()
         dprint("[transition] [endTurn] OK")
         return true
     end
-    print("[transition] [endTurn] ignorée"); return false
+    dprint("[transition] [endTurn] ignor e9e"); return false
 end
 
 --[[
     Gestion de la mort de l'ennemi
 ]]
 function Transition.onEnemyDied()
-    dprint("enemy died -> victory_check");
+    dprint("enemy died -> victory_check")
     -- on entre dans l'état de victoire
     _enter("victory_check")
 end
@@ -609,6 +649,32 @@ end
 function Transition.cmdBackToMenu()
     if SceneManager and SceneManager.pop then SceneManager:pop() end;
     if SceneManager and SceneManager.switch then SceneManager:switch("scene/menu") end
+end
+
+--[[ Debug / test helpers
+    Usage:
+      rawset(_G, "FORCE_INITIATIVE", "player")  -- or "Enemy"
+      Transition.setForcedInitiative("player")
+      Transition.clearForcedInitiative()
+
+    These helpers are non-intrusive: if no forced value is set the normal
+    random behaviour remains.
+]]
+function Transition.setForcedInitiative(val)
+    if type(val) ~= "string" then return false end
+    local f = val:lower()
+    if f == "player" then
+        Transition._forcedInitiative = "player"
+        return true
+    elseif f == "enemy" then
+        Transition._forcedInitiative = "Enemy"
+        return true
+    end
+    return false
+end
+
+function Transition.clearForcedInitiative()
+    Transition._forcedInitiative = nil
 end
 
 -- Alias anti multi-require

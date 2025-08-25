@@ -58,7 +58,10 @@ local function forEachScene(sceneList, methodName, argsList)
             local ok, err = callAny(sc, methodName, argsList)
             calls = calls + 1
             if not ok and scene.debug then
-                print(("[sceneManager] %s.%s failed: %s"):format(tostring(sc.name or "scene"), methodName, tostring(err)))
+                local gf = rawget(_G, 'globalFunction')
+                local txt = ("[sceneManager] %s.%s failed: %s"):format(tostring(sc.name or "scene"), methodName,
+                    tostring(err))
+                if gf and gf.log and gf.log.error then gf.log.error(txt) else print(txt) end
             end
         end
     end
@@ -175,7 +178,7 @@ function scene:remove(sceneInstance)
             table.remove(self.list, i)
             if scene.debug then
                 print(("[sceneManager] removed scene: %s"):format(tostring(sceneInstance and sceneInstance.name or
-                "unnamed")))
+                    "unnamed")))
             end
             return true
         end

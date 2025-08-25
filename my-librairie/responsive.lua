@@ -32,7 +32,13 @@ love.window.setMode(1280, 720, {
     minheight = 720
 });
 --[[ MOUSE SCALE POSITION ]]
-local x, y = love.mouse.getPosition();
+local function _getRawMouse()
+    local ok, cur = pcall(require, "my-librairie/cursor")
+    if ok and cur and cur.get then return cur.get() end
+    return 0, 0
+end
+
+local x, y = _getRawMouse()
 screenManager.mouse = {};
 screenManager.mouse.X = x / screenManager.ratioScreen.width;
 screenManager.mouse.Y = y / screenManager.ratioScreen.height;
@@ -49,7 +55,7 @@ function screenManager.UpdateRatio(dt)
     screenManager.ratioScreen.width = curentDimensions.width / screenManager.gameReso.width;
     screenManager.getWindow = curentDimensions;
 
-    x, y = love.mouse.getPosition();
+    x, y = _getRawMouse();
     screenManager.mouse.X = x / screenManager.ratioScreen.width;
     screenManager.mouse.Y = y / screenManager.ratioScreen.height;
 end

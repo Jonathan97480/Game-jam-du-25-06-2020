@@ -11,7 +11,26 @@ Card = require("my-librairie/card-librairie/card");
 screen = require("my-librairie/responsive");
 scene = require("my-librairie/sceneManager");
 effect = require("ressources/effect");
-myFonction = require("my-librairie/myFunction");
+
+-- input manager (unified mouse/gamepad helpers)
+local okInput, inputManager = pcall(require, "my-librairie/inputManager")
+if not okInput then inputManager = nil end
+
+-- Robust loader for legacy myFunction/globalFunction utilities.
+local function safeRequireAny(list)
+  for _, name in ipairs(list) do
+    local ok, mod = pcall(require, name)
+    if ok and mod then return mod end
+  end
+  return nil
+end
+
+myFonction = rawget(_G, "myFonction")
+    or rawget(_G, "myFunction")
+    or
+    safeRequireAny({ "my-librairie/myFunction", "my-librairie.myFunction", "my-librairie/globalFunction",
+      "my-librairie.globalFunction" })
+    or {}
 local menu = require("scene/menu")
 
 -- Returns the distance between two points.
@@ -59,6 +78,7 @@ Retour : aucune valeur (nil).
 function love.update(dt)
   _G.deltaTime = dt
   screen.UpdateRatio(dt)
+  if inputManager and inputManager.update then inputManager.update(dt) end
   scene:update(dt) -- ← deux-points
   effect.update(dt)
   --[[  if love.keyboard.isDown('p') then
@@ -78,6 +98,11 @@ function love.draw()
   love.graphics.push()
   love.graphics.scale(screen.ratioScreen.width, screen.ratioScreen.height)
   scene:draw() -- ← deux-points
+  -- draw global logs panel if enabled (globalFunction may be set by module)
+  local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
+  if gf and gf.drawLogs then
+    gf.drawLogs()
+  end
   effect.draw()
   love.graphics.print("Current FPS: " .. tostring(love.timer.getFPS()), 10, 10)
   love.graphics.pop()
@@ -93,5 +118,17 @@ function love.mousereleased(x, y, button)
 end
 
 function love.keypressed(key, scancode, isrepeat)
+  -- toggle global logs with F12 if available
+  if key == "f12" then
+    local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
+    if gf and gf.log and gf.log.toggle then gf.log.toggle() end
+  end
   scene:emit("keypressed", key, scancode, isrepeat)
+end
+
+function love.quit()
+  local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
+  if gf and gf.log and gf.log.exportToFile then
+    pcall(function() gf.log.exportToFile() end)
+  end
 end

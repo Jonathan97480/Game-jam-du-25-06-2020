@@ -15,7 +15,9 @@ function overlay.load(self)
 end
 
 function overlay.update(self, dt)
-    local mx, my = love.mouse.getX(), love.mouse.getY()
+    local mx, my = 0, 0
+    local okc, cursor = pcall(require, "my-librairie/cursor")
+    if okc and cursor and cursor.get then mx, my = cursor.get() end
     hot = 0
     local w, h = love.graphics.getWidth(), love.graphics.getHeight()
     local bw, bh = 240, 52

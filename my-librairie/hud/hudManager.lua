@@ -1,9 +1,34 @@
 local res = require("res")
 local gameplay = require("scene.gameplay")
 local responsive = require("my-librairie/responsive")
-
+-- optional unified input helper (mouse + joystick)
+local _safeRequire = function(name)
+  local ok, mod = pcall(require, name)
+  if ok then return mod end
+  return nil
+end
+local inputManager = _safeRequire("my-librairie/inputManager")
 -- Layered HUD Manager
 local hud = {}
+
+-- small logging helpers -> use globalFunction.log if present, fallback to print
+local function _to_text(...)
+  local t = {}
+  for i = 1, select('#', ...) do t[i] = tostring(select(i, ...)) end
+  return table.concat(t, ' ')
+end
+local function _logf(fmt, ...)
+  local gf = rawget(_G, 'globalFunction')
+  local txt = string.format(fmt, ...)
+  if gf and gf.log and gf.log.info then gf.log.info(txt) else print(txt) end
+end
+
+-- Debug flags
+local HUD_DEBUG_ENERGY = false
+-- expose flag for runtime toggle (will be set into hud)
+hud.HUD_DEBUG_ENERGY = HUD_DEBUG_ENERGY
+-- previous energy snapshot (for change detection)
+local _prev_energy_value = nil
 
 
 -- Layers (draw order: background -> decor -> props -> card -> button)
@@ -113,6 +138,13 @@ local function dimsFrom(el)
   local w = el.w or (el.img and el.img.getWidth and el.img:getWidth()) or 0
   local h = el.h or (el.img and el.img.getHeight and el.img:getHeight()) or 0
   return w, h
+end
+
+-- helper: prefer unified inputInterface cursor, then screen.mouse, then love.mouse.getPosition()
+local function _getCursor()
+  local ok, cur = pcall(require, "my-librairie/cursor")
+  if ok and cur and cur.get then return cur.get() end
+  return 0, 0
 end
 
 -- Public API
@@ -335,9 +367,16 @@ function hud.setBottomBarBg(path, x, y, h)
     if ok and img then
       el.img = img
       el.h   = h or (img.getHeight and img:getHeight()) or el.h or 0
+      -- if no explicit y provided, anchor footer to bottom of game resolution
+      if (y == nil) then
+        local gh = (responsive and responsive.gameReso and responsive.gameReso.height) or nil
+        if gh and el.h then
+          el.y = gh - el.h
+        end
+      end
     else
       el.img = nil
-      if print then print("[HUD] Bottom bar BG not found: " .. tostring(path)) end
+      _logf("[HUD] Bottom bar BG not found: %s", tostring(path))
     end
   else
     el.img = nil
@@ -411,51 +450,25 @@ Paramètres :
 Retour : aucune valeur (nil).
 ]]
 function hud.load()
-  -- Auto bottom bar background if not yet created
-  if not hud.get('bottom_bar_bg') then
-    local path = _G.HUD_BOTTOM_BG_PATH
-    if not path then
-      local candidates = {
-        'img/hud/footer-bare.jpg', 'img/hud/footer-bare.png',
-        'img/hud/footer-barre.png', 'img/hud/footer-barre.jpg',
-        'img/hud/footer-bar.png', 'img/hud/footer-bar.jpg'
-      }
-      for _, p in ipairs(candidates) do
-        local ok = pcall(res.image, p)
-        if ok then
-          path = p; break
-        end
-      end
-    end
-    local y = (screen and screen.gameReso and screen.gameReso.height and (screen.gameReso.height - 68))
-        or (love.graphics.getHeight() - 68)
-    hud.setBottomBarBg(path, 0, y, 68)
-    if not path and print then print('[HUD] footer: no image found -> fallback band will be drawn') end
-  end
+  -- initialize HUD defaults
+  local x, y = _getCursor()
+  hud.addButton('end_turn', {
+    img = 'img/hud/Button-fin-de-tour.png',
+    x = 1283,
+    y = 1019,
+    layer = 'button',
+    text = 'End of Tours',
+    tx = 1310,
+    ty = 1035,
+    --[[ onClick: appel au gameplay ]]
+    onClick = function() gameplay.endTurn() end,
+  })
 
-  -- Default bottom HUD elements (idempotent)
-  if not hud.get('end_turn') then
-    hud.addButton('end_turn', {
-      img = 'img/hud/Button-fin-de-tour.png',
-      x = 1283,
-      y = 1019,
-      layer = 'button',
-      text = 'End of Tours',
-      tx = 1310,
-      ty = 1035,
-      --[[
-      Fonction : onClick
-      Rôle : Fonction « On click » liée à la logique du jeu.
-      Paramètres :
-        - (aucun)
-      Retour : aucune valeur (nil).
-      ]]
-      onClick = function() gameplay.endTurn() end,
-    })
-  end
   if not hud.get('energy_icon') then
     hud.addIcon('energy_icon', { img = 'img/hud/nombre de coup.png', x = 127, y = 745, layer = 'props' })
-    local val = (hero and hero.actor and hero.actor.state and hero.actor.state.power) or 0
+    -- use robust global lookup (Hero or hero) to avoid mismatched global naming
+    local H = rawget(_G, "Hero") or rawget(_G, "hero")
+    local val = (H and H.actor and H.actor.state and H.actor.state.power) or 0
     hud.addLabel('energy_text', { text = tostring(val), x = 158, y = 768, layer = 'props' })
   end
   if not hud.get('deck_icon') then
@@ -488,6 +501,9 @@ function hud.load()
       end,
     })
   end
+  -- Ensure bottom footer background is set (can be overridden by HUD_BOTTOM_BG_PATH in main.lua)
+  local bottom_path = rawget(_G, "HUD_BOTTOM_BG_PATH") or 'img/hud/footer-bare.jpg'
+  hud.setBottomBarBg(bottom_path, 0)
 end
 
 --[[
@@ -506,7 +522,8 @@ Retour : aucune valeur (nil).
 
 function hud.update(dt)
   --update label value
-  local val = (hero and hero.actor and hero.actor.state and hero.actor.state.power) or 0
+  local H = rawget(_G, "Hero") or rawget(_G, "hero")
+  local val = (H and H.actor and H.actor.state and H.actor.state.power) or 0
   hud.updateLabel('energy_text', tostring(val))
   hud.updateLabel('deck_count', tostring(#(Card and Card.deck or {})))
   hud.updateLabel('graveyard_count', tostring(#(Card and Card.graveyard or {})))
@@ -535,15 +552,14 @@ Retour : aucune valeur (nil).
 ]]
 function hud.hover(a, b)
   local action, x, y
+  -- use central cursor helper (unified input) to get coordinates
   if type(a) == "string" then
     action = a
-    x = (screen and screen.mouse and screen.mouse.X) or 0
-    y = (screen and screen.mouse and screen.mouse.Y) or 0
+    x, y = _getCursor()
   elseif type(a) == "number" and type(b) == "number" then
     x, y = a, b
   else
-    x = (screen and screen.mouse and screen.mouse.X) or 0
-    y = (screen and screen.mouse and screen.mouse.Y) or 0
+    x, y = _getCursor()
   end
 
   -- check only interactive elements, from topmost layer to bottom
@@ -708,7 +724,7 @@ function hud.drawCard(card, x, y, opts)
   local parentPosition = opts.parentPosition or { x = 0, y = 0 }
 
   if (not card) then
-    if print then print("[HUD] la fonction hud.drawCard n'a pas reçu de carte en paramètre") end
+    _logf("[HUD] la fonction hud.drawCard n'a pas reçu de carte en paramètre")
     return
   end
 

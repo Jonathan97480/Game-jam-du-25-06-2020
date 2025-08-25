@@ -6,4 +6,14 @@
         "undefined-global"
     ],
     "CodeGPT.apiKey": "Ollama",
+    "spellright.language": [
+        "fr"
+    ],
+    "spellright.documentTypes": [
+        "latex",
+        "plaintext",
+        "html",
+        "scss",
+        "xml"
+    ],
 }
