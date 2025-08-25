@@ -14,3 +14,6 @@ tests/
 *.bak
 *.orig
 *.swp
+
+# Dossier contenant les logs runtime exportés (ne pas versionner)
+gameLogs/
