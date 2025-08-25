@@ -1,11 +1,31 @@
 -- my-librairie/ActorScripts/Enemy/Enemies.lua
-local Enemies    = {
+local Enemies = {
     curentEnemy  = nil,
     listeEnemies = {}
 }
 
-local actor      = require("my-librairie/actorManager")
-local myFonction = rawget(_G, "myFonction") or require("my-librairie/myFunction")
+local actor   = require("my-librairie/actorManager")
+
+-- Robust loader for the legacy utility module. Try global aliases first,
+-- then several require paths (both dot and slash), finally fallback to an
+-- empty table to avoid crashing the whole game if the module is missing.
+local function safeRequire(paths)
+    for _, name in ipairs(paths) do
+        local ok, mod = pcall(require, name)
+        if ok and mod then return mod end
+    end
+    return nil
+end
+
+local myFonction = rawget(_G, "myFonction")
+    or rawget(_G, "myFunction")
+    or safeRequire({
+        "my-librairie/myFunction",
+        "my-librairie.myFunction",
+        "my-librairie/globalFunction",
+        "my-librairie.globalFunction",
+    })
+    or {}
 
 
 -- Sécurise l'état d'un ennemi (toujours un state table numérisé)

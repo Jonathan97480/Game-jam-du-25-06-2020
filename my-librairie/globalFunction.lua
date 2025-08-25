@@ -1,5 +1,6 @@
--- myFunction.lua
-local myFunction = {}
+-- globalFunction.lua (renamed from myFunction.lua)
+-- Provides utility functions previously exported as myFunction.
+local globalFunction = {}
 local lockClick = false
 
 --[[ Icon Bare status load  ]]
@@ -19,7 +20,7 @@ local lifeBar = {
 -- a, b: tables {x, y}
 -- t: «vitesse» (ex: 10). On le multiplie par Delta (dt global) si dispo
 ----------------------------------------------------------------
-myFunction.lerp = function(a, b, t)
+globalFunction.lerp = function(a, b, t)
     -- sécurité des tables
     a.x      = a.x or 0; a.y = a.y or 0
     b.x      = b.x or 0; b.y = b.y or 0
@@ -57,10 +58,10 @@ myFunction.lerp = function(a, b, t)
     return moved
 end
 
-myFunction.mouse = {}
+globalFunction.mouse = {}
 
 --[[ Hover robuste: gère scale nil / partiel ]]
-myFunction.mouse.hover = function(x, y, width, height, scale)
+globalFunction.mouse.hover = function(x, y, width, height, scale)
     local sx, sy = 1, 1
     if type(scale) == "table" then
         sx = scale.x or scale[1] or 1
@@ -71,7 +72,7 @@ myFunction.mouse.hover = function(x, y, width, height, scale)
 end
 
 --[[ Click «front edge» compatible avec l'existant ]]
-myFunction.mouse.click = function()
+globalFunction.mouse.click = function()
     local down = love.mouse.isDown(1)
     if down and lockClick == false then
         lockClick = true
@@ -85,7 +86,7 @@ myFunction.mouse.click = function()
 end
 
 -- (Optionnel) États de clic si besoin plus tard (pressed/held/released/idle)
-myFunction.mouse.state = function()
+globalFunction.mouse.state = function()
     local down = love.mouse.isDown(1)
     if down and not lockClick then
         lockClick = true
@@ -103,8 +104,8 @@ end
     Just pressed mouse button (front-edge)
     Renvoie true uniquement lors de la première pression
 ]]
-myFunction.mouse.justPressed = function()
-    local s = myFunction.mouse.state()
+globalFunction.mouse.justPressed = function()
+    local s = globalFunction.mouse.state()
     return s == "pressed"
 end
 
@@ -112,18 +113,15 @@ end
     Just released mouse button (front-edge)
     Renvoie true uniquement lors de la première relâche
 ]]
-myFunction.mouse.justReleased = function()
-    local s = myFunction.mouse.state()
+globalFunction.mouse.justReleased = function()
+    local s = globalFunction.mouse.state()
     return s == "released"
 end
 
 --[[ End Turn hotkeys
     E ou Return ou Space pendant le tour joueur.
 ]]
-myFunction.endTurnHotkeys = function()
-    -- petits helpers clavier: on teste "front-edge" en se basant sur love.keyboard.isDown,
-    -- ou, si tu as déjà love.keypressed ailleurs, tu peux appeler Transition.requestEndTurn() là-bas.
-    -- Ici version simple: E ou Return ou Space pendant le tour joueur.
+globalFunction.endTurnHotkeys = function()
     if _G.Tour ~= 'player' then return end
     if love.keyboard.isDown('e') or love.keyboard.isDown('return') or love.keyboard.isDown('space') then
         if Transition and Transition.requestEndTurn then
@@ -133,7 +131,8 @@ myFunction.endTurnHotkeys = function()
 end
 
 --[[ Draw Life bar status ]]
-function myFunction.drawLifeBarStatus(p_actor, p_Colorbar)
+function globalFunction.drawLifeBarStatus(p_actor, p_Colorbar)
+    if type(p_actor) ~= 'table' or type(p_actor.state) ~= 'table' then return end
     local maxLife = tonumber(p_actor.state.maxLife) or 1
     if maxLife <= 0 then maxLife = 1 end
     local life     = math.max(0, math.min(tonumber(p_actor.state.life) or 0, maxLife))
@@ -145,9 +144,14 @@ function myFunction.drawLifeBarStatus(p_actor, p_Colorbar)
         color = lifeBar.color_bleu
     end
 
+    local vx = (p_actor.vector2 and p_actor.vector2.x) or 0
+    local vy = (p_actor.vector2 and p_actor.vector2.y) or 0
+    local w = p_actor.width or 0
+    local h = p_actor.height or 0
+
     local position = {
-        x = p_actor.vector2.x + ((p_actor.width / 2) - (maxLife / 0.5)),
-        y = p_actor.vector2.y + p_actor.height - 88
+        x = vx + ((w / 2) - (maxLife / 0.5)),
+        y = vy + h - 88
     }
 
     love.graphics.setColor(color)
@@ -158,8 +162,8 @@ function myFunction.drawLifeBarStatus(p_actor, p_Colorbar)
 
     love.graphics.print(
         life .. '/' .. maxLife,
-        p_actor.vector2.x + (p_actor.width / 1.8),
-        p_actor.vector2.y + (p_actor.height - 8)
+        vx + (w / 1.8),
+        vy + (h - 8)
     )
 
     drawBonus(p_actor, color, position)
@@ -167,12 +171,15 @@ end
 
 --[[ Draw bonus (shield, épine, bonus-attack) ]]
 function drawBonus(p_actor, color, position)
+    if not (p_actor and p_actor.state) then return end
     -- Shield icon
     if (p_actor.state.shield or 0) > 0 then
         love.graphics.draw(shield, position.x - 30, position.y - 20, 0, 1.5, 1.5)
-        love.graphics.setNewFont(40)
+        local oldFont = love.graphics.getFont()
+        local f40 = love.graphics.newFont(40)
+        love.graphics.setFont(f40)
         love.graphics.print(p_actor.state.shield, position.x - 12, position.y - 10)
-        love.graphics.setNewFont(20)
+        love.graphics.setFont(oldFont)
     end
     -- Epine icon
     if (p_actor.state.epine or 0) > 0 then
@@ -190,7 +197,7 @@ end
     @param seen Une table pour suivre les références circulaires (optionnelle)
     @return Une nouvelle table clonée
 ]]
-table.clone = function(orig, seen)
+local function _table_clone(orig, seen)
     if type(orig) ~= "table" then
         return orig
     end
@@ -203,14 +210,35 @@ table.clone = function(orig, seen)
     seen[orig] = copy
 
     for k, v in pairs(orig) do
-        copy[table.clone(k, seen)] = table.clone(v, seen)
+        copy[_table_clone(k, seen)] = _table_clone(v, seen)
     end
 
     return setmetatable(copy, getmetatable(orig))
 end
 
--- Aliases globaux pour compat (certains scripts utilisent "myFonction")
-rawset(_G, "myFunction", myFunction)
-rawset(_G, "myFonction", myFunction)
+-- Expose clone via module
+globalFunction.clone = _table_clone
 
-return myFunction
+-- Ensure legacy code using table.clone still works: provide a safe fallback
+if type(table) == 'table' and type(table.clone) ~= 'function' then
+    table.clone = _table_clone
+end
+
+-- Try to load centralized input manager and delegate mouse helpers to it.
+local ok, input = pcall(require, "my-librairie/inputManager")
+if ok and type(input) == 'table' then
+    globalFunction.mouse = globalFunction.mouse or {}
+    globalFunction.mouse.hover = input.hover
+    globalFunction.mouse.click = input.click
+    globalFunction.mouse.state = input.state
+    globalFunction.mouse.justPressed = input.justPressed
+    globalFunction.mouse.justReleased = input.justReleased
+    globalFunction.endTurnHotkeys = input.endTurnHotkeys
+end
+
+-- Aliases globaux pour compat (certains scripts utilisent "myFonction")
+rawset(_G, "globalFunction", globalFunction)
+rawset(_G, "myFunction", globalFunction)
+rawset(_G, "myFonction", globalFunction)
+
+return globalFunction

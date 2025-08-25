@@ -11,7 +11,26 @@ Card = require("my-librairie/card-librairie/card");
 screen = require("my-librairie/responsive");
 scene = require("my-librairie/sceneManager");
 effect = require("ressources/effect");
-myFonction = require("my-librairie/myFunction");
+
+-- input manager (unified mouse/gamepad helpers)
+local okInput, inputManager = pcall(require, "my-librairie/inputManager")
+if not okInput then inputManager = nil end
+
+-- Robust loader for legacy myFunction/globalFunction utilities.
+local function safeRequireAny(list)
+  for _, name in ipairs(list) do
+    local ok, mod = pcall(require, name)
+    if ok and mod then return mod end
+  end
+  return nil
+end
+
+myFonction = rawget(_G, "myFonction")
+    or rawget(_G, "myFunction")
+    or
+    safeRequireAny({ "my-librairie/myFunction", "my-librairie.myFunction", "my-librairie/globalFunction",
+      "my-librairie.globalFunction" })
+    or {}
 local menu = require("scene/menu")
 
 -- Returns the distance between two points.
@@ -61,6 +80,7 @@ function love.update(dt)
   screen.UpdateRatio(dt)
   scene:update(dt) -- ← deux-points
   effect.update(dt)
+  if inputManager and inputManager.update then inputManager.update(dt) end
   --[[  if love.keyboard.isDown('p') then
     Card.positioneHand(dt)
   end ]]
