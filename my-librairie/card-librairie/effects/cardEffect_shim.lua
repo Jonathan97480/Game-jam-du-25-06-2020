@@ -113,7 +113,7 @@ end
 
 
 -- Fonction pour calculer les bonus d'attaque actuels
-function Common.calculateAttackBonus(target)
+function calculateAttackBonus(target)
     if not (target and target.state and target.state.forceAugmented) then return 0 end
 
     local totalBonus = 0
@@ -127,13 +127,13 @@ function Common.calculateAttackBonus(target)
 end
 
 -- Fonction pour calculer la réduction d'attaque totale
-function Common.calculateAttackReduction(target)
+function calculateAttackReduction(target)
     if not (target and target.state) then return 0 end
     return tonumber(target.state.attackReduction or 0) or 0
 end
 
 -- Fonction pour calculer le coût d'énergie modifié
-function Common.calculateModifiedEnergyCost(baseCost, target)
+function calculateModifiedEnergyCost(baseCost, target)
     if not target or not target.state then return baseCost end
 
     local increase = tonumber(target.state.energyCostIncrease or 0) or 0
@@ -162,14 +162,14 @@ function Effect.applyCardEffect(card, source, target)
     -- Appliquer les effets sur l'acteur (celui qui joue la carte)
     if sourceIsHero then
         -- Le héros joue la carte, donc actorEffects s'appliquent au héros
-        Common._applyEffectSet(source, actorEffects, source)
+        Effect._applyEffectSet(source, actorEffects, source)
         -- Et enemyEffects s'appliquent à l'ennemi (target)
-        Common._applyEffectSet(target, enemyEffects, source)
+        Effect._applyEffectSet(target, enemyEffects, source)
     else
         -- L'ennemi joue la carte, donc actorEffects s'appliquent à l'ennemi
-        Common._applyEffectSet(source, actorEffects, source)
+        Effect._applyEffectSet(source, actorEffects, source)
         -- Et enemyEffects s'appliquent au héros (target)
-        Common._applyEffectSet(target, enemyEffects, source)
+        Effect._applyEffectSet(target, enemyEffects, source)
     end
 
     -- Exécuter la fonction action personnalisée si elle existe
@@ -179,6 +179,10 @@ function Effect.applyCardEffect(card, source, target)
             dprint(string.format("[card.action] error: %s", tostring(err)))
         end
     end
+end
+
+function Effect._applyEffectSet(source, actorEffects, source)
+
 end
 
 function Effect.dispatchEffect(target, kind, value, source)

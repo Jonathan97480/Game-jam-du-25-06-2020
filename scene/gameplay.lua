@@ -150,6 +150,8 @@ function gameplay.load()
     log("[gameplay.load]")
     local heroDeck = Card.createDeck('HeroDeck')
     local enemyDeck = Card.createDeck('EnemyDeck')
+    print("[debug] gameplay.load -> heroDeck=", tostring(heroDeck and heroDeck.name or nil), " enemyDeck=",
+        tostring(enemyDeck and enemyDeck.name or nil))
     -- Acteurs / Effets
     safecall("Hero.load", function() return Hero and Hero.load and Hero.load() end)
     safecall("Enemies.load", function() return Enemies and Enemies.load and Enemies.load() end)
@@ -159,8 +161,13 @@ function gameplay.load()
     if Card then
         log("[cards] load joueur")
         safecall("Card.loadCards(player)", function() return Card.loadCards(cardsPlayer, "Hero", "globalDeck") end)
+        -- diagnostic: after loadCards, print deck sizes
+        local gd = Card.getDeckByName and Card.getDeckByName('globalDeck')
+        print("[debug] after loadCards -> globalDeck size=", gd and #gd.cards or 0)
         log("[cards] load IA")
         safecall("Card.loadCards(ai)", function() return Card.loadCards(cardsPlayer, "Enemy", "EnemyDeck") end)
+        local ed = Card.getDeckByName and Card.getDeckByName('EnemyDeck')
+        print("[debug] after loadCards IA -> EnemyDeck size=", ed and #ed.cards or 0)
     end
 
     if Card and Card.shuffleDeck then
@@ -169,7 +176,23 @@ function gameplay.load()
     end
     if Card and Card.MoveCardNumberCardDeckToDeck then
         safecall("Card.ensureMaxPlayerDeck(10)",
-            function() return Card.MoveCardNumberCardDeckToDeck('globalDeck', 'HeroDeck', 10) end)
+            function()
+                print("[debug] before MoveCardNumberCardDeckToDeck -> globalDeck=",
+                    (Card.getDeckByName and Card.getDeckByName('globalDeck')) and
+                    #(Card.getDeckByName('globalDeck').cards) or 0,
+                    " HeroDeck=",
+                    (Card.getDeckByName and Card.getDeckByName('HeroDeck')) and #(Card.getDeckByName('HeroDeck').cards) or
+                    0)
+                local ok = Card.MoveCardNumberCardDeckToDeck('globalDeck', 'HeroDeck', 10)
+                print("[debug] after MoveCardNumberCardDeckToDeck -> globalDeck=",
+                    (Card.getDeckByName and Card.getDeckByName('globalDeck')) and
+                    #(Card.getDeckByName('globalDeck').cards) or 0,
+                    " HeroDeck=",
+                    (Card.getDeckByName and Card.getDeckByName('HeroDeck')) and #(Card.getDeckByName('HeroDeck').cards) or
+                    0,
+                    " ok=", tostring(ok))
+                return ok
+            end)
     end
 
     -- IA / Transition manager
@@ -180,6 +203,8 @@ function gameplay.load()
         logf("[card] tailles -> player:%d  ai:%d  hand:%d  grave:%d",
             #heroDeck.cards, #enemyDeck.cards, #Card.hand.cards, #Card.graveyard.cards)
     end
+
+    -- NOTE: debug auto-draw removed to ensure overlay_start shows the player's full deck
 end
 
 function gameplay:update(dt)

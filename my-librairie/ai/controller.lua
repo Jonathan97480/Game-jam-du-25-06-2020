@@ -545,7 +545,16 @@ function AI:update(dt)
     if not deck or #deck == 0 then
       if not self._endSent then
         log("[AI] deck IA vide → fin de tour")
-        self.state = "endturn"
+        -- Marque et envoie immédiatement la demande de fin de tour au Transition Manager
+        self._endSent = true
+        if Transition and Transition.requestEndTurn then
+          log("[AI->Transition] demande fin de tour (deck vide)")
+          pcall(function() Transition.requestEndTurn() end)
+        else
+          log("[AI->Transition] Transition non disponible pour requestEndTurn()")
+        end
+        -- On passe en attente : Transition doit basculer le tour
+        self.state = "waiting_end"
       else
         -- on a déjà demandé la fin de tour : attendre le Transition
         self.state = "waiting_end"

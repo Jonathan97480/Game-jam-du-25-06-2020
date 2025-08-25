@@ -1,9 +1,15 @@
 local res = require("res")
 local gameplay = require("scene.gameplay")
 local responsive = require("my-librairie/responsive")
-
 -- Layered HUD Manager
 local hud = {}
+
+-- Debug flags
+local HUD_DEBUG_ENERGY = false
+-- expose flag for runtime toggle (will be set into hud)
+hud.HUD_DEBUG_ENERGY = HUD_DEBUG_ENERGY
+-- previous energy snapshot (for change detection)
+local _prev_energy_value = nil
 
 
 -- Layers (draw order: background -> decor -> props -> card -> button)
@@ -455,7 +461,9 @@ function hud.load()
   end
   if not hud.get('energy_icon') then
     hud.addIcon('energy_icon', { img = 'img/hud/nombre de coup.png', x = 127, y = 745, layer = 'props' })
-    local val = (hero and hero.actor and hero.actor.state and hero.actor.state.power) or 0
+    -- use robust global lookup (Hero or hero) to avoid mismatched global naming
+    local H = rawget(_G, "Hero") or rawget(_G, "hero")
+    local val = (H and H.actor and H.actor.state and H.actor.state.power) or 0
     hud.addLabel('energy_text', { text = tostring(val), x = 158, y = 768, layer = 'props' })
   end
   if not hud.get('deck_icon') then
@@ -506,7 +514,8 @@ Retour : aucune valeur (nil).
 
 function hud.update(dt)
   --update label value
-  local val = (hero and hero.actor and hero.actor.state and hero.actor.state.power) or 0
+  local H = rawget(_G, "Hero") or rawget(_G, "hero")
+  local val = (H and H.actor and H.actor.state and H.actor.state.power) or 0
   hud.updateLabel('energy_text', tostring(val))
   hud.updateLabel('deck_count', tostring(#(Card and Card.deck or {})))
   hud.updateLabel('graveyard_count', tostring(#(Card and Card.graveyard or {})))

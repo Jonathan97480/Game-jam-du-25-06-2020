@@ -11,14 +11,14 @@ end
 -- test/card_librairie_player_ops_test.lua
 -- Test unitaire pour player_ops.lua
 
-local Player = require("my-librairie/card-librairie/player_ops")
+local Card = require("my-librairie/card-librairie/card")
 local Common = require("my-librairie/card-librairie/common")
 
 -- Ajoute une carte à la main et teste le positionnement
 local card = { name = "CarteMain", width = 100, height = 150, vector2 = { x = 0, y = 0 }, scale = { x = 1, y = 1 } }
 Common.hand:addCard(card)
-Player.positioneHand()
-assert(card.vector2.x, "La carte n'a pas de position x après positioneHand")
-assert(card.vector2.y, "La carte n'a pas de position y après positioneHand")
+Card.positionHand()
+assert(card.vector2.x and type(card.vector2.x) == "number", "La carte n'a pas de position x après positionHand")
+assert(card.vector2.y and type(card.vector2.y) == "number", "La carte n'a pas de position y après positionHand")
 
 print("[TEST] player_ops.lua : OK")

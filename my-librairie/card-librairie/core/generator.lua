@@ -1,17 +1,14 @@
--- my-librairie/card-librairie/generator.lua
--- Génère et charge les cartes (compat legacy), copies, ajout optionnel au Deck Global.
+-- my-librairie/card-librairie/core/generator.lua
+-- Copié de card-librairie/generator.lua, require vers core/common
 
-local Common = require("my-librairie/card-librairie/common")
+local Common = require("my-librairie/card-librairie/core/common")
 local dprint = Common.dprint
 
 local M = {}
 
--- copies: multiplicateur global ; addToGlobal: enregistre aussi une copie dans la collection
 function M.loadCards(cardsRessources, actortag, deckName)
-    local deck;
-
+    local deck
     if deckName == nil then deckName = "globalDeck" end
-
     if type(cardsRessources) ~= "table" then
         dprint("[card.loadCards] cardsRessources n'est pas une table :", type(cardsRessources))
         return
@@ -27,7 +24,6 @@ function M.loadCards(cardsRessources, actortag, deckName)
 
     if not Common.getisDeckExistsByDeck(deckName) then
         dprint("[card.loadCards] deck n'existe pas :", deckName .. " on va le créer")
-        --- creation du deck
         deck = Common.createDeck(deckName)
     else
         deck = Common.getDeckByName(deckName)
@@ -36,7 +32,6 @@ function M.loadCards(cardsRessources, actortag, deckName)
         dprint("[card.loadCards] deck est nil :", deckName)
         return
     end
-
     if not deck or type(deck) ~= "table" then
         dprint("[card.loadCards] deck n'est pas valide :", type(deck))
         return
@@ -65,9 +60,7 @@ function M.loadCards(cardsRessources, actortag, deckName)
             card._grabDY = 0
             card._isGrabbed = false
             card.locked = false
-
             deck:addCard(card)
-
             dprint(("[card.loadCards] carte ajoutée au deck '%s' : %s"):format(deckName, card.name))
         else
             dprint("[card.loadCards] carte n'est pas valide :", type(_card))
