@@ -711,7 +711,7 @@ function hud.text(text, x, y, opts)
   y = y + parentPosition.y
 
   love.graphics.setColor(color)
-  local _f = love.graphics.newFont(font_size)
+  local _f = res.font(font_size)
   love.graphics.setFont(_f)
   love.graphics.print(text, x, y)
   love.graphics.setColor(1, 1, 1, 1)

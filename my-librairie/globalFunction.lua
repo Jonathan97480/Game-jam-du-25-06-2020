@@ -345,7 +345,7 @@ function globalFunction.drawLogs(opts)
     love.graphics.setColor(1, 1, 1)
 
     -- cached font for logs (avoid re-creating every frame)
-    globalFunction._logFont = globalFunction._logFont or love.graphics.newFont(16)
+    globalFunction._logFont = globalFunction._logFont or res.font(16)
     local oldFont = love.graphics.getFont()
     love.graphics.setFont(globalFunction._logFont)
 
