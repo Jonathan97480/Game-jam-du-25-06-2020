@@ -1,4 +1,14 @@
 local hud_gameplay = require("scene.gameplay.HUD.hud_gameplay")
+
+-- Diagnostic: write a small marker when this module is required so we can
+-- distinguish "require failed" vs "module loaded but crashed later".
+pcall(function()
+    local f = io.open("gameLogs/gameplay_entry.log", "a")
+    if f then
+        f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - required scene.gameplay.gameplay\n")
+        f:close()
+    end
+end)
 -- scene/gameplay.lua
 
 local gameplay = {}
@@ -107,7 +117,9 @@ local function aiTurnIsOver()
     local checks = { "isFinish", "isFinished", "isTurnFinished", "done", "finished", "turnEnded", "canEndTurn" }
     for _, fn in ipairs(checks) do
         if type(AI[fn]) == "function" then
-            local ok, res = pcall(AI[fn], AI); if ok and res then return true, fn end
+            -- wrap the call in a closure to ensure pcall receives a function
+            local ok, res = pcall(function() return AI[fn](AI) end)
+            if ok and res then return true, fn end
         elseif type(AI[fn]) == "boolean" and AI[fn] then
             return true, fn
         end
