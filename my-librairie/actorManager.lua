@@ -20,15 +20,13 @@ function actor:clearEnemies()
 end
 
 function actor:spawnEnemy(enemyType, args)
+    -- Option A: require the Enemies module at call-time to minimize circular require risk
     args = args or {}
-    local factory = nil
-    -- lazy-resolve Enemies module to break circular require with Enemy scripts
-    if EnemiesMod == nil then
-        pcall(function() EnemiesMod = require("my-librairie/ActorScripts/Enemy/Enemies") end)
-    end
-    if EnemiesMod and EnemiesMod.registry then factory = EnemiesMod.registry[enemyType] end
+    local Enemies = require("my-librairie/ActorScripts/Enemy/Enemies")
+    local factory = Enemies and Enemies.registry and Enemies.registry[enemyType]
     assert(factory, ("Enemy type inconnu: %s"):format(tostring(enemyType)))
     local e = factory(args)
+    self.enemies = self.enemies or {}
     table.insert(self.enemies, e)
     return e
 end
