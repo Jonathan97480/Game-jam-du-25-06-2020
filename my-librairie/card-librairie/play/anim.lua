@@ -21,7 +21,6 @@ local function getCard() return rawget(_G, "Card") end
 local M = {}
 
 local dprint = (Common and Common.dprint) or function(...) print(...) end
---[[ Common.HAND_DRAW_OFFSET = { x = -50, y = -200 } ]]
 -- NOTE: la documentation de chaque fonction est placée juste au-dessus
 -- module-level helpers (déplacés hors de M.update pour réutilisation et test)
 local function moveToGrave(_card)
