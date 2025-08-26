@@ -189,7 +189,7 @@ end
 -- ========================
 --        LIFECYCLE
 -- ========================
-function gameplay.load()
+function gameplay.load(self, params)
     if hud_gameplay and hud_gameplay.load then hud_gameplay.load() end
     log("[gameplay.load]")
     -- attach scene config to module for runtime access
@@ -202,6 +202,34 @@ function gameplay.load()
     safecall("Hero.load", function() return Hero and Hero.load and Hero.load() end)
     safecall("Enemies.load", function() return Enemies and Enemies.load and Enemies.load() end)
     safecall("effect.load", function() return effect and effect.load and effect.load() end)
+
+    -- Auto-spawn enemies from scene config (params or gameplay.config)
+    local AM = actor or (_G.actorManager or require("my-librairie/actorManager"))
+    if AM and AM.clearEnemies and AM.spawnEnemy then
+        AM:clearEnemies()
+        local cfg = (params and params.config) or gameplay.config or SceneConfig or {}
+        local ec = cfg.enemies or {}
+
+        if ec.spawns and type(ec.spawns) == 'table' and #ec.spawns > 0 then
+            for _, s in ipairs(ec.spawns) do
+                if s and s.type then pcall(function() AM:spawnEnemy(s.type, { x = s.x, y = s.y }) end) end
+            end
+        else
+            local count = tonumber(ec.count) or 0
+            local pool  = ec.pool or {}
+            if count > 0 and #pool == 0 then
+                print("[warn] enemy config: count>0 but pool empty")
+            end
+            for i = 1, count do
+                if #pool > 0 then
+                    local t = pool[((i - 1) % #pool) + 1]
+                    local x = 520 + (i - 1) * 64
+                    local y = 360
+                    pcall(function() AM:spawnEnemy(t, { x = x, y = y }) end)
+                end
+            end
+        end
+    end
 
     -- Decks
     if Card then
