@@ -60,10 +60,14 @@ menu.button = {
             -- btn correspond au bouton cliqué (transmis depuis menu.hover)
             if btn and btn.cmd == 'play' then
                 _log("[menu] Play cliqué → switch vers gameplay")
-                -- Utiliser scene:switch pour demander au sceneManager de charger la scène
-                local okSwitch, tgt = pcall(function() return scene:switch("scene.gameplay.gameplay") end)
+                -- charger la config gameplay et la transmettre à la scène
+                local okCfg, cfg = pcall(require, "scene.gameplay.config")
+                if not okCfg then cfg = nil end
+                local okSwitch, tgt = pcall(function()
+                    return scene:switch("scene.gameplay.gameplay", nil, { config = cfg })
+                end)
                 if not okSwitch or not tgt then
-                    _log("[menu] scene:switch('scene.gameplay.gameplay') a échoué, tentative alternative")
+                    _log("[menu] scene:switch('scene.gameplay.gameplay') a échoué, tentative alternative sans config")
                     local okSwitch2, tgt2 = pcall(function() return scene:switch("scene.gameplay.gameplay") end)
                     if not okSwitch2 or not tgt2 then
                         _log("[menu] impossible de switcher vers gameplay : aucune require/switch n'a fonctionné")
