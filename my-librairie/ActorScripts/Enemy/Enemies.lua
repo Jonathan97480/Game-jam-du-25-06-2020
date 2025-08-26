@@ -1,37 +1,42 @@
 -- my-librairie/ActorScripts/Enemy/Enemies.lua
-local Enemies = {
+local Enemies        = {
     curentEnemy  = nil,
     listeEnemies = {}
 }
 
-local actor   = require("my-librairie/actorManager")
+-- Backwards-compatible Enemy factory registry (singleton)
+local Enemy = rawget(_G, "__ENEMY_SINGLETON__") or {}
+local IA = nil
+pcall(function() IA = require("my-librairie/ActorScripts/Enemy/ia") end)
 
--- Robust loader for the legacy utility module. Try global aliases first,
--- then several require paths (both dot and slash), finally fallback to an
--- empty table to avoid crashing the whole game if the module is missing.
-local function safeRequire(paths)
-    for _, name in ipairs(paths) do
-        local ok, mod = pcall(require, name)
-        if ok and mod and (type(mod) == "table" or type(mod) == "function") then return mod end
-    end
-    return nil
+function Enemy.create_orc(args)
+    args = args or {}
+    local e = { type = "orc", x = args.x or 0, y = args.y or 0 }
+    e.state = e.state or { life = 20, maxLife = 20 }
+    e.atk = 5
+    e.ai = IA and IA.new and IA.new(e) or nil
+    return e
 end
 
-local function getValidGlobal(name)
-    local v = rawget(_G, name)
-    if type(v) == "table" or type(v) == "function" then return v end
-    return nil
+function Enemy.create_slime(args)
+    args = args or {}
+    local e = { type = "slime", x = args.x or 0, y = args.y or 0 }
+    e.state = e.state or { life = 12, maxLife = 12 }
+    e.atk = 3
+    e.ai = IA and IA.new and IA.new(e) or nil
+    return e
 end
 
-local myFonction = getValidGlobal("myFonction")
-    or getValidGlobal("myFunction")
-    or safeRequire({
-        "my-librairie/myFunction",
-        "my-librairie.myFunction",
-        "my-librairie/globalFunction",
-        "my-librairie.globalFunction",
-    })
-    or {}
+Enemy.registry = Enemy.registry or {
+    orc = Enemy.create_orc,
+    slime = Enemy.create_slime,
+}
+
+rawset(_G, "__ENEMY_SINGLETON__", Enemy)
+
+local actor          = require("my-librairie/actorManager")
+
+local globalFunction = require('my-librairie.globalFunction')
 
 
 -- Sécurise l'état d'un ennemi (toujours un state table numérisé)
@@ -114,8 +119,13 @@ function Enemies.draw()
         end
     end
 
-    if type(myFonction) == "table" and type(myFonction.drawLifeBarStatus) == "function" then
-        pcall(function() myFonction.drawLifeBarStatus(e, 'red') end)
+    if type(globalFunction
+        ) == "table" and type(globalFunction
+            .drawLifeBarStatus) == "function" then
+        pcall(function()
+            globalFunction
+                .drawLifeBarStatus(e, 'red')
+        end)
     end
 end
 
