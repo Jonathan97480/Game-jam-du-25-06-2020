@@ -149,6 +149,18 @@ function love.keypressed(key, scancode, isrepeat)
     local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
     if type(gf) == 'table' and type(gf.log) == 'table' and type(gf.log.toggle) == 'function' then gf.log.toggle() end
   end
+  -- Debug: press 't' to test transition to gameplay using reusable focus script if available
+  if key == 't' then
+    pcall(function()
+      local okF, focus = pcall(require, 'my-librairie.transitions.focus')
+      if okF and focus then
+        scene:switchWithTransition('scene.gameplay.gameplay', nil, { script = focus })
+      else
+        scene:switchWithTransition('scene.gameplay.gameplay')
+      end
+    end)
+    return
+  end
   if Transition.maskInput() then return end
   scene:emit("keypressed", key, scancode, isrepeat)
 end
