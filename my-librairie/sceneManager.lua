@@ -106,6 +106,19 @@ local function _tryRequireAny(moduleName)
     return mod, table.concat(attempts, " | ")
 end
 
+-- Enhanced diagnostics: when a require fails, write attempts to a log file for runtime inspection
+local function _logRequireFailure(moduleName, attemptsStr)
+    pcall(function()
+        local f = io.open("gameLogs/require_attempts.log", "a")
+        if not f then return end
+        f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - require failed for: " .. tostring(moduleName) .. "\n")
+        f:write("Attempts: " .. tostring(attemptsStr) .. "\n")
+        f:write("package.path: " .. tostring(package.path) .. "\n")
+        f:write("----\n")
+        f:close()
+    end)
+end
+
 -- Appelle une fonction-constructeur avec une liste d'arguments (table), sans unpack
 local function _constructWithArgs(ctorFn, argList)
     if type(argList) ~= "table" then
