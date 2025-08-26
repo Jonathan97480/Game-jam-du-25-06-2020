@@ -64,11 +64,11 @@ menu.button = {
                 local okCfg, cfg = pcall(require, "scene.gameplay.config")
                 if not okCfg then cfg = nil end
                 local okSwitch, tgt = pcall(function()
-                    return scene:switch("scene.gameplay.gameplay", nil, { config = cfg })
+                    return scene:switchWithTransition("scene.gameplay.gameplay", { config = cfg })
                 end)
                 if not okSwitch or not tgt then
                     _log("[menu] scene:switch('scene.gameplay.gameplay') a échoué, tentative alternative sans config")
-                    local okSwitch2, tgt2 = pcall(function() return scene:switch("scene.gameplay.gameplay") end)
+                    local okSwitch2, tgt2 = pcall(function() return scene:switchWithTransition("scene.gameplay.gameplay") end)
                     if not okSwitch2 or not tgt2 then
                         _log("[menu] impossible de switcher vers gameplay : aucune require/switch n'a fonctionné")
                     end
