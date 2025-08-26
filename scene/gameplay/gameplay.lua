@@ -44,20 +44,37 @@ local function safecall(where, fn, ...)
 end
 
 -- Tour global piloté par le Transition Manager
-Tour                          = Tour or "transition"
-local lastTour                = ""
-local watchdogEnemyHold       = 0
-local WATCHDOG_LIMIT          = 2.0
+Tour                    = Tour or "transition"
+local lastTour          = ""
+local watchdogEnemyHold = 0
+local WATCHDOG_LIMIT    = 2.0
 
 -- Modules
-local Transition              = require("my-librairie/transition/manager")
-local cardsPlayer             = require("ressources/cards_data_player")
-Hero                          = require("my-librairie/ActorScripts/player/Hero")
-Enemies                       = require("my-librairie/ActorScripts/Enemy/Enemies")
-local AI                      = require("my-librairie/ai/controller")
-local CardsIA                 = require("ressources/cardsIA")
-local actor                   = _G.actorManager or require("my-librairie/actorManager")
-local res                     = require("my-librairie.resource_cache")
+local Transition        = require("my-librairie/transition/manager")
+local cardsPlayer       = require("ressources/cards_data_player")
+Hero                    = require("my-librairie/ActorScripts/player/Hero")
+Enemies                 = require("my-librairie/ActorScripts/Enemy/Enemies")
+local AI                = require("my-librairie/ai/controller")
+local CardsIA           = require("ressources/cardsIA")
+local actor             = _G.actorManager or require("my-librairie/actorManager")
+local res               = require("my-librairie.resource_cache")
+
+-- try to load scene-specific config (safe require)
+local SceneConfig       = nil
+do
+    local ok, cfg = pcall(require, 'scene.gameplay.config')
+    if ok and type(cfg) == 'table' then
+        SceneConfig = cfg
+        -- write a small diagnostic so we can confirm at runtime
+        pcall(function()
+            local f = io.open("gameLogs/gameplay_config.log", "a")
+            if f then
+                f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - loaded scene/gameplay/config.lua\n")
+                f:close()
+            end
+        end)
+    end
+end
 
 -- Règles de pioche
 local HAND_MAX                = 5
@@ -175,6 +192,8 @@ end
 function gameplay.load()
     if hud_gameplay and hud_gameplay.load then hud_gameplay.load() end
     log("[gameplay.load]")
+    -- attach scene config to module for runtime access
+    gameplay.config = SceneConfig
     local heroDeck = Card.createDeck('HeroDeck')
     local enemyDeck = Card.createDeck('EnemyDeck')
     log("[debug] gameplay.load -> heroDeck=", tostring(heroDeck and heroDeck.name or nil), " enemyDeck=",
@@ -323,7 +342,7 @@ function gameplay.load()
                     -- try letting sceneManager resolve the module by string
                     if scene and scene.add then
                         local inst2 = scene:add("scene.hud_overlay.hud_overlay") or
-                        scene:add("scene/hud_overlay/hud_overlay")
+                            scene:add("scene/hud_overlay/hud_overlay")
                         if inst2 then
                             if inst2 and type(inst2.load) == 'function' then pcall(inst2.load, inst2) end
                             f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud_overlay added via sceneManager fallback\n")
