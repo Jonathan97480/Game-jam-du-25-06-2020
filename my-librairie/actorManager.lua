@@ -7,6 +7,29 @@ local res = require("my-librairie.resource_cache")
 -- Alias global de compat au cas où certains scripts utilisent _G.actorManager directement
 rawset(_G, "actorManager", actor)
 
+-- Enemy registry helper (spawn API)
+local EnemiesMod = nil
+pcall(function() EnemiesMod = require("my-librairie/ActorScripts/Enemy/Enemies") end)
+
+-- init actor manager runtime fields
+function actor:init()
+    self.enemies = self.enemies or {}
+end
+
+function actor:clearEnemies()
+    self.enemies = {}
+end
+
+function actor:spawnEnemy(enemyType, args)
+    args = args or {}
+    local factory = nil
+    if EnemiesMod and EnemiesMod.registry then factory = EnemiesMod.registry[enemyType] end
+    assert(factory, ("Enemy type inconnu: %s"):format(tostring(enemyType)))
+    local e = factory(args)
+    table.insert(self.enemies, e)
+    return e
+end
+
 ----------------------------------------------------------------------
 -- Crée un acteur
 ----------------------------------------------------------------------
