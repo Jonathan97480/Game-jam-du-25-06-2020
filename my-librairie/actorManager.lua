@@ -7,9 +7,8 @@ local res = require("my-librairie.resource_cache")
 -- Alias global de compat au cas où certains scripts utilisent _G.actorManager directement
 rawset(_G, "actorManager", actor)
 
--- Enemy registry helper (spawn API)
+-- Enemy registry helper (spawn API) - resolved lazily to avoid circular requires
 local EnemiesMod = nil
-pcall(function() EnemiesMod = require("my-librairie/ActorScripts/Enemy/Enemies") end)
 
 -- init actor manager runtime fields
 function actor:init()
@@ -23,6 +22,10 @@ end
 function actor:spawnEnemy(enemyType, args)
     args = args or {}
     local factory = nil
+    -- lazy-resolve Enemies module to break circular require with Enemy scripts
+    if EnemiesMod == nil then
+        pcall(function() EnemiesMod = require("my-librairie/ActorScripts/Enemy/Enemies") end)
+    end
     if EnemiesMod and EnemiesMod.registry then factory = EnemiesMod.registry[enemyType] end
     assert(factory, ("Enemy type inconnu: %s"):format(tostring(enemyType)))
     local e = factory(args)
