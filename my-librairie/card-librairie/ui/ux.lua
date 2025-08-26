@@ -7,7 +7,8 @@ local function _safeRequire(name)
     if ok then return mod end
     return nil
 end
-local myFonction = rawget(_G, "myFonction") or _safeRequire("my-librairie/myFunction")
+-- Resolve legacy helper: prefer globalFunction then fallback to legacy names/paths
+local myFonction = rawget(_G, "globalFunction") or rawget(_G, "myFonction") or _safeRequire("my-librairie.myFunction") or _safeRequire("my-librairie/myFunction") or {}
 local input = _safeRequire("my-librairie/inputManager") or (rawget(_G, "inputManager") and rawget(_G, "inputManager"))
 
 local M = {}

@@ -100,7 +100,8 @@ function hero.draw()
   end
   -- BARE DE VIE
 
-  myFonction.drawLifeBarStatus(hero.actor, 'bleu');
+  local gf = rawget(_G, "globalFunction") or rawget(_G, "myFonction") or rawget(_G, "myFunction")
+  if gf and type(gf.drawLifeBarStatus) == "function" then pcall(function() gf.drawLifeBarStatus(hero.actor, 'bleu') end) end
 
   -- POWER DRAW TEXT
   hud.setText('energy_text', hero.actor.state.power);
