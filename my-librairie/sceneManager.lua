@@ -251,9 +251,16 @@ function scene:switchWithTransition(target, params, tOpts)
         -- fallback to direct switch if Transition not available
         return self:switch(target, nil, params)
     end
-    pcall(function()
-        Transition.play({ target = target, params = params, script = (tOpts and tOpts.script) })
+    local ok2, res = pcall(function()
+        return Transition.play({ target = target, params = params, script = (tOpts and tOpts.script) })
     end)
+    if ok2 then
+        -- If Transition.play returns a value, propagate it, otherwise return true to signal success
+        return (res ~= nil) and res or true
+    end
+
+    -- If Transition.play raised an error, fallback to direct switch
+    return self:switch(target, nil, params)
 end
 
 -- Empile une nouvelle scène au-dessus et appelle son load() puis enter().
