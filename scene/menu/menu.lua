@@ -16,6 +16,29 @@ end
 local menu        = {}
 menu.illustration = {}
 
+-- Custom transition script for the menu scene (slide + fade)
+menu.transition = {
+    durationOut = 0.4, durationIn = 0.45, maskInput = true,
+    easingOut = function(x) return x^3 end,
+    easingIn  = function(x) return 1 - (1 - x)^3 end,
+    drawOut = function(p, ctx)
+        local w,h = ctx.w, ctx.h
+        love.graphics.push("all")
+        love.graphics.translate(-p * w * 0.4, 0)
+        love.graphics.pop()
+        love.graphics.setColor(0,0,0,p*0.6)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+    end,
+    drawIn = function(p, ctx)
+        local w,h = ctx.w, ctx.h
+        love.graphics.push("all")
+        love.graphics.translate((1 - p) * w * 0.3, 0)
+        love.graphics.pop()
+        love.graphics.setColor(0,0,0,(1 - p) * 0.4)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+    end,
+}
+
 local res         = require("my-librairie.resource_cache")
 
 --[[ Arrière-plan & titre ]]
