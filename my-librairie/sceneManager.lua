@@ -214,7 +214,7 @@ end
 
 -- Remplace toutes les scènes par une nouvelle scène puis appelle load().
 -- ctorArgsList : tableau d'arguments pour un éventuel constructeur (si target est une fonction).
-function scene:switch(target, ctorArgsList)
+function scene:switch(target, ctorArgsList, loadParams)
     self.list = self.list or {}
 
     local tgt, err = _resolveTarget(target, ctorArgsList)
@@ -225,7 +225,8 @@ function scene:switch(target, ctorArgsList)
 
     self:clear()
     self:add(tgt)
-    self:load()
+    -- call load on the new target and propagate optional params to load(params)
+    callAny(tgt, "load", { loadParams })
     if scene.debug then print("[sceneManager] switch -> " .. tostring(tgt.name)) end
     return tgt
 end
