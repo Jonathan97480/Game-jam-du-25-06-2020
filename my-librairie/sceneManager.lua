@@ -231,6 +231,18 @@ function scene:switch(target, ctorArgsList, loadParams)
     return tgt
 end
 
+-- Convenience helper: switch with a visual transition script
+function scene:switchWithTransition(target, params, tOpts)
+    local ok, Transition = pcall(require, "my-librairie/transitionManager")
+    if not ok or not Transition then
+        -- fallback to direct switch if Transition not available
+        return self:switch(target, nil, params)
+    end
+    pcall(function()
+        Transition.play({ target = target, params = params, script = (tOpts and tOpts.script) })
+    end)
+end
+
 -- Empile une nouvelle scène au-dessus et appelle son load() puis enter().
 -- ctorArgsList : tableau d'arguments pour un éventuel constructeur (si target est une fonction).
 function scene:push(target, ctorArgsList)
