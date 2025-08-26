@@ -116,12 +116,22 @@ local function mm_call(name, ...)
     end)
 end
 
-local CARD_W, CARD_H         = 337, 462
-local SCALE_BASE             = 0.50
-local DEAL                   = { ENABLED = true, FROM = 'left', DURATION = 0.35, STAGGER = 0.08, HOP = 12 }
+local okCfg, Config          = pcall(require, "my-librairie.card-librairie.config")
+local CARD_W, CARD_H         = (okCfg and Config.CARD_W) or 337, (okCfg and Config.CARD_H) or 462
+local SCALE_BASE             = (okCfg and Config.SCALE_BASE) or 0.50
+local DEAL                   = (okCfg and Config.DEAL) or
+    { ENABLED = true, FROM = 'left', DURATION = 0.35, STAGGER = 0.08, HOP = 12 }
 Common.CARD_W, Common.CARD_H = CARD_W, CARD_H
 Common.SCALE_BASE            = SCALE_BASE
 Common.DEAL                  = DEAL
+
+-- Defaults pour le rendu/animations des cartes (modifiable depuis le jeu)
+-- Load defaults from config if present, else fallback
+Common.HAND_DRAW_OFFSET      = ((okCfg and Config.HAND_DRAW_OFFSET) or { x = 0, y = 0 })
+-- Hover : hauteur et scale appliqués lors du survol
+Common.HOVER                 = ((okCfg and Config.HOVER) or { SCALE = 1.05, HEIGHT = 80 })
+-- Animation : vitesses de lissage / interpolation
+Common.ANIM                  = ((okCfg and Config.ANIM) or { SMOOTH_SPEED = 10, LERP = 12 })
 
 Common.DEFAULT_COPIES        = Common.DEFAULT_COPIES or 1
 
