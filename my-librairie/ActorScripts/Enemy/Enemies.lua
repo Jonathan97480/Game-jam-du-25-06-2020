@@ -1,12 +1,12 @@
 -- my-librairie/ActorScripts/Enemy/Enemies.lua
-local Enemies        = {
+local Enemies = {
     curentEnemy  = nil,
     listeEnemies = {}
 }
 
 -- Backwards-compatible Enemy factory registry (singleton)
-local Enemy = rawget(_G, "__ENEMY_SINGLETON__") or {}
-local IA = nil
+local Enemy   = rawget(_G, "__ENEMY_SINGLETON__") or {}
+local IA      = nil
 pcall(function() IA = require("my-librairie/ActorScripts/Enemy/ia") end)
 
 function Enemy.create_orc(args)
@@ -34,7 +34,8 @@ Enemy.registry = Enemy.registry or {
 
 rawset(_G, "__ENEMY_SINGLETON__", Enemy)
 
-local actor          = require("my-librairie/actorManager")
+-- actorManager is resolved lazily inside load() to avoid circular require
+local actor = nil
 
 local globalFunction = require('my-librairie.globalFunction')
 
@@ -71,10 +72,22 @@ function Enemies.load()
     Enemies.listeEnemies = {}
     Enemies.curentEnemy  = nil
 
+    -- lazy-resolve actorManager to break circular require at module load time
+    if not actor then
+        actor = rawget(_G, 'actorManager')
+        if not actor then pcall(function() actor = require('my-librairie/actorManager') end) end
+    end
+
     for i = 1, 4 do
-        local E = actor.create('Enemy-' .. i, {
-            idle = { 'img/Actor/Enemy/Enemy-' .. i .. '.png' }
-        }, { x = 1261, y = 400 })
+        local E
+        if actor and actor.create then
+            E = actor.create('Enemy-' .. i, {
+                idle = { 'img/Actor/Enemy/Enemy-' .. i .. '.png' }
+            }, { x = 1261, y = 400 })
+        else
+            -- fallback: create a minimal enemy table if actor manager unavailable
+            E = { name = 'Enemy-' .. i, vector2 = { x = 1261, y = 400 }, animation = {} }
+        end
 
         ensureEnemyState(E)
         table.insert(Enemies.listeEnemies, E)
