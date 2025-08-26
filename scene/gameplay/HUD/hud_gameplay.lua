@@ -15,6 +15,28 @@ local Hero = _safeRequire("my-librairie/ActorScripts/player/Hero")
 local Card = _safeRequire("my-librairie/card-librairie/card")
 local responsive = _safeRequire("my-librairie/responsive")
 
+local AM = _safeRequire("my-librairie/actorManager") or rawget(_G, 'actorManager')
+
+local function countByType()
+    local bag = {}
+    for _, e in ipairs(AM and AM.enemies or {}) do
+        if e and e.type then bag[e.type] = (bag[e.type] or 0) + 1 end
+    end
+    return bag
+end
+
+function hud_gameplay.draw()
+    local y = 20
+    love.graphics.setColor(1,1,1)
+    love.graphics.print(("Ennemis: %d"):format(#(AM and AM.enemies or {})), 20, y)
+    y = y + 16
+    for t, n in pairs(countByType()) do
+        love.graphics.print(("- " .. tostring(t) .. ": " .. tostring(n)), 20, y)
+        y = y + 16
+    end
+    love.graphics.setColor(1,1,1)
+end
+
 local function safeEndTurn()
     print("fin de tour demander")
     -- Prefer the Transition manager first (central end-turn flow)
