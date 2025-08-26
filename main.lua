@@ -32,6 +32,7 @@ myFonction = rawget(_G, "myFonction")
       "my-librairie.globalFunction" })
     or {}
 local menu = require("scene.menu.menu")
+local Transition = require("my-librairie.transitionManager")
 
 -- Returns the distance between two points.
 --[[
@@ -93,7 +94,8 @@ function love.update(dt)
   _G.deltaTime = dt
   screen.UpdateRatio(dt)
   if inputManager and inputManager.update then inputManager.update(dt) end
-  scene:update(dt) -- ← deux-points
+  if not Transition.maskInput() then scene:update(dt) else --[[scene:update(dt)]] end
+  Transition.update(dt)
   effect.update(dt)
   --[[  if love.keyboard.isDown('p') then
     Card.positioneHand(dt)
@@ -111,7 +113,8 @@ Retour : aucune valeur (nil).
 function love.draw()
   love.graphics.push()
   love.graphics.scale(screen.ratioScreen.width, screen.ratioScreen.height)
-  scene:draw() -- ← deux-points
+  scene:draw()
+  Transition.draw()
   -- draw global logs panel if enabled (globalFunction may be set by module)
   local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
   if type(gf) == 'table' and type(gf.drawLogs) == 'function' then
@@ -146,6 +149,7 @@ function love.keypressed(key, scancode, isrepeat)
     local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
     if type(gf) == 'table' and type(gf.log) == 'table' and type(gf.log.toggle) == 'function' then gf.log.toggle() end
   end
+  if Transition.maskInput() then return end
   scene:emit("keypressed", key, scancode, isrepeat)
 end
 
