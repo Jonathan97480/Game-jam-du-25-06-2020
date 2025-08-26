@@ -119,7 +119,9 @@ function overlay.draw()
         love.graphics.rectangle("line", x + 8, y + 8, cellW - 16, cellH - 16, 12, 12)
 
         if c and c.canvas then
-            local cw, ch = c.TextFormatting.card.width or 337, c.TextFormatting.card.height or 462
+            local tf = c.TextFormatting or {}
+            local tfcard = tf.card or {}
+            local cw, ch = tfcard.width or 337, tfcard.height or 462
             local maxW, maxH = cellW - 32, cellH - 70
             local s = math.min(maxW / cw, maxH / ch)
             love.graphics.setColor(1, 1, 1, 1)

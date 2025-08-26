@@ -254,7 +254,7 @@ function Transition.update(dt)
                 hero and (#hero.cards) or 0, global and (#global.cards) or 0))
         end
         -- on affiche l'overlay de début de tour
-        SceneManager:push("scene/overlay_start"); dprint("[overlay] push overlay_start")
+    SceneManager:push("scene.overlay_start.overlay_start"); dprint("[overlay] push overlay_start")
 
         -- on change d'état
         _enter("deal_start_hand")
@@ -292,7 +292,7 @@ function Transition.update(dt)
             end
             dprint("[initiative] gagnant = " .. Transition._initiative)
             -- on affiche l'overlay d'annonce de l'initiative
-            SceneManager:push("scene/overlay_initiative"); dprint("[overlay] push overlay_initiative")
+        SceneManager:push("scene.overlay_initiative.overlay_initiative"); dprint("[overlay] push overlay_initiative")
             -- on change d'état
             _enter("announce_initiative")
         end
@@ -466,7 +466,7 @@ function Transition.update(dt)
             end
         end
         -- on affiche l'overlay de récompense
-        SceneManager:push("scene/overlay_reward")
+    SceneManager:push("scene.overlay_reward.overlay_reward")
         -- on change d'état
         _enter("reward_choice")
     elseif S == "reward_choice" then
@@ -578,7 +578,7 @@ function Transition.onHeroDied()
 
     dprint("hero died -> game_over"); Transition._gameoverShown = true
     -- on affiche l'overlay de gameOver
-    SceneManager:push("scene/overlay_gameover")
+    SceneManager:push("scene.overlay_gameover.overlay_gameover")
     -- on change d'état
     _enter("game_over")
 end
@@ -640,7 +640,7 @@ end
     ]]
 function Transition.cmdRestart()
     if SceneManager and SceneManager.pop then SceneManager:pop() end;
-    if SceneManager and SceneManager.switch then SceneManager:switch("scene/gameplay") end
+    if SceneManager and SceneManager.switch then SceneManager:switch("scene.gameplay.gameplay") end
 end
 
 --[[

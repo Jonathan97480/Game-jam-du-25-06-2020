@@ -4,6 +4,30 @@ local globalFunction = {}
 local lockClick = false
 
 local res = require("my-librairie.resource_cache")
+local okcfg, config = pcall(require, "my-librairie.config")
+config = okcfg and config or { logs = { maxFiles = 10, maxEntries = 200, dir = "gameLogs" } }
+
+-- Ensure logs table exists
+config.logs = config.logs or { maxFiles = 10, maxEntries = 200, dir = "gameLogs" }
+
+-- Prepare session log path for immediate append (so file is updated while app runs)
+local _log_dir = config.logs.dir or "gameLogs"
+local _session_name = "session_" .. os.date("%Y%m%d_%H%M%S") .. ".log"
+local _session_path = _log_dir .. "/" .. _session_name
+-- try to create directory (love.filesystem if available, else os.execute mkdir)
+pcall(function()
+    if type(love) == 'table' and love.filesystem and type(love.filesystem.createDirectory) == 'function' then
+        pcall(function() love.filesystem.createDirectory(_log_dir) end)
+    else
+        -- Windows friendly mkdir, safe to ignore failures
+        pcall(function() os.execute('mkdir "' .. _log_dir .. '"') end)
+    end
+end)
+
+-- expose session path for other tools and enable immediate write by default (configurable)
+globalFunction.log = globalFunction.log or {}
+globalFunction.log._sessionPath = _session_path
+globalFunction.log.immediateWrite = (config.logs.immediateWrite == nil) and true or config.logs.immediateWrite
 
 --[[ Icon Bare status load (use resource cache) ]]
 local shield = res.image('img/Actor/Enemy/Hub-Shield2.png')
@@ -278,7 +302,7 @@ rawset(_G, "myFonction", globalFunction)
 globalFunction.log = {}
 
 -- config
-globalFunction.log.maxEntries = 200
+globalFunction.log.maxEntries = config.logs.maxEntries or 200
 globalFunction.log.show = false -- toggle on/off
 globalFunction.log.entries = {} -- circular buffer
 
@@ -307,6 +331,20 @@ local function _pushLog(level, text)
         print(prefix .. "ERROR: " .. tostring(text))
     else
         print(prefix .. tostring(text))
+    end
+    -- Immediate append to session file if configured (so logs are readable while app runs)
+    if globalFunction.log and globalFunction.log.immediateWrite and globalFunction.log._sessionPath then
+        local okf, fh = pcall(function()
+            return io.open(globalFunction.log._sessionPath, "a")
+        end)
+        if okf and fh then
+            pcall(function()
+                local timestr = os.date('%Y-%m-%d %H:%M:%S', entry.t)
+                local line = string.format("%s [%s] [%s:%s] %s\n", timestr, LEVEL_NAME[level], src, func, tostring(text))
+                fh:write(line)
+                fh:close()
+            end)
+        end
     end
 end
 
@@ -371,7 +409,7 @@ end
 -- Export logs to a file (returns true on success)
 function globalFunction.log.exportToFile(path)
     -- ensure target directory exists
-    local dir = "gameLogs"
+    local dir = config.logs.dir or "gameLogs"
     pcall(function()
         if type(love) == 'table' and love.filesystem and type(love.filesystem.createDirectory) == 'function' then
             love.filesystem.createDirectory(dir)
@@ -402,7 +440,7 @@ function globalFunction.log.exportToFile(path)
 
         -- sort by name (timestamp suffix assumed) to get oldest first
         table.sort(files)
-        local maxFiles = 10
+        local maxFiles = config.logs.maxFiles or 10
         if #files > maxFiles then
             local toRemove = math.floor(#files / 2)
             for i = 1, toRemove do

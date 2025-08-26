@@ -12,13 +12,19 @@ local actor   = require("my-librairie/actorManager")
 local function safeRequire(paths)
     for _, name in ipairs(paths) do
         local ok, mod = pcall(require, name)
-        if ok and mod then return mod end
+        if ok and mod and (type(mod) == "table" or type(mod) == "function") then return mod end
     end
     return nil
 end
 
-local myFonction = rawget(_G, "myFonction")
-    or rawget(_G, "myFunction")
+local function getValidGlobal(name)
+    local v = rawget(_G, name)
+    if type(v) == "table" or type(v) == "function" then return v end
+    return nil
+end
+
+local myFonction = getValidGlobal("myFonction")
+    or getValidGlobal("myFunction")
     or safeRequire({
         "my-librairie/myFunction",
         "my-librairie.myFunction",
@@ -108,8 +114,8 @@ function Enemies.draw()
         end
     end
 
-    if myFonction and myFonction.drawLifeBarStatus then
-        myFonction.drawLifeBarStatus(e, 'red')
+    if type(myFonction) == "table" and type(myFonction.drawLifeBarStatus) == "function" then
+        pcall(function() myFonction.drawLifeBarStatus(e, 'red') end)
     end
 end
 

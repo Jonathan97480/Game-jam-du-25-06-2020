@@ -5,6 +5,9 @@
     "Lua.diagnostics.disable": [
         "undefined-global"
     ],
+    "Lua.workspace.library": [
+        "${workspaceFolder}/my-librairie/love_stubs.lua"
+    ],
     "CodeGPT.apiKey": "Ollama",
     "spellright.language": [
         "fr"
@@ -15,5 +18,5 @@
         "html",
         "scss",
         "xml"
-    ],
+    ]
 }

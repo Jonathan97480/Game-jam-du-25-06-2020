@@ -1,3 +1,4 @@
+local hud_gameplay = require("scene.gameplay.HUD.hud_gameplay")
 -- scene/gameplay.lua
 
 local gameplay = {}
@@ -172,6 +173,7 @@ end
 --        LIFECYCLE
 -- ========================
 function gameplay.load()
+    if hud_gameplay and hud_gameplay.load then hud_gameplay.load() end
     log("[gameplay.load]")
     local heroDeck = Card.createDeck('HeroDeck')
     local enemyDeck = Card.createDeck('EnemyDeck')
@@ -235,17 +237,122 @@ function gameplay.load()
     end
 
     -- push HUD overlay only when entering gameplay
-    local ok, hud_overlay = pcall(require, "scene/hud_overlay")
-    if ok and hud_overlay and scene and scene.add then
-        local inst = scene:add(hud_overlay)
-        -- scene:add does not call load(); ensure HUD is initialized now
-        if inst and type(inst.load) == 'function' then pcall(inst.load, inst) end
+    do
+        local hud_module = nil
+        local try_names = { "scene.hud_overlay.hud_overlay", "scene/hud_overlay/hud_overlay", "scene.hud_overlay",
+            "scene/hud_overlay" }
+        local require_errors = {}
+        for _, name in ipairs(try_names) do
+            local ok, mod_or_err = pcall(require, name)
+            if ok and mod_or_err then
+                hud_module = mod_or_err
+                break
+            else
+                table.insert(require_errors, string.format("require('%s') -> %s", tostring(name), tostring(mod_or_err)))
+            end
+        end
+        if hud_module and scene and scene.add then
+            local inst = scene:add(hud_module)
+            -- scene:add does not call load(); ensure HUD is initialized now
+            if inst and type(inst.load) == 'function' then pcall(inst.load, inst) end
+        else
+            -- fallback: let sceneManager resolve the module string (it tries many variants)
+            if scene and scene.add then
+                local inst = scene:add("scene.hud_overlay.hud_overlay") or scene:add("scene/hud_overlay/hud_overlay")
+                if inst and type(inst.load) == 'function' then pcall(inst.load, inst) end
+                -- if still missing, persist require_errors for diagnosis
+                if not inst then
+                    pcall(function()
+                        local f = io.open("gameLogs/hud_presence.log", "a")
+                        if f then
+                            f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - initial require attempts:\n")
+                            for _, e in ipairs(require_errors) do f:write(e .. "\n") end
+                            f:close()
+                        end
+                    end)
+                end
+            end
+        end
     end
+
+    -- dump current scene stack for debug
+    pcall(function()
+        local f = io.open("gameLogs/scene_list.log", "w")
+        if f then
+            if scene and scene.get then
+                local lst = scene:get()
+                f:write("scene stack dump:\n")
+                for i = 1, #lst do f:write(tostring(i) .. ": " .. tostring(lst[i].name or lst[i].id or "unnamed") .. "\n") end
+            else
+                f:write("scene manager not available\n")
+            end
+            f:close()
+        end
+    end)
+
+    -- Ensure HUD overlay is present: if missing, try to add it and log the action
+    pcall(function()
+        local present = false
+        if scene and scene.get then
+            for i, sc in ipairs(scene:get()) do
+                if sc and (sc.name == 'hud_overlay' or sc.id == 'hud_overlay') then
+                    present = true; break
+                end
+            end
+        end
+        local f = io.open("gameLogs/hud_presence.log", "a")
+        if f then
+            if present then
+                f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud_overlay already present\n")
+            else
+                f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud_overlay missing -> attempting to add\n")
+                local hud_module = nil
+                local try_names = { "scene.hud_overlay.hud_overlay", "scene/hud_overlay/hud_overlay", "scene.hud_overlay",
+                    "scene/hud_overlay" }
+                for _, name in ipairs(try_names) do
+                    local ok2, mod2 = pcall(require, name)
+                    if ok2 and mod2 then
+                        hud_module = mod2; break
+                    end
+                end
+                if hud_module and scene and scene.add then
+                    local inst2 = scene:add(hud_module)
+                    if inst2 and type(inst2.load) == 'function' then pcall(inst2.load, inst2) end
+                    f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud_overlay added fallback\n")
+                else
+                    -- try letting sceneManager resolve the module by string
+                    if scene and scene.add then
+                        local inst2 = scene:add("scene.hud_overlay.hud_overlay") or
+                        scene:add("scene/hud_overlay/hud_overlay")
+                        if inst2 then
+                            if inst2 and type(inst2.load) == 'function' then pcall(inst2.load, inst2) end
+                            f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud_overlay added via sceneManager fallback\n")
+                        else
+                            -- Write detailed require diagnostics to the log for investigation
+                            f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud_overlay require/add failed\n")
+                            f:write("Tried names:\n")
+                            local try_names = { "scene.hud_overlay.hud_overlay", "scene/hud_overlay/hud_overlay",
+                                "scene.hud_overlay", "scene/hud_overlay" }
+                            for _, name in ipairs(try_names) do
+                                local ok2, mod2 = pcall(require, name)
+                                f:write(string.format("require('%s') -> ok=%s result=%s\n", tostring(name), tostring(ok2),
+                                    tostring(mod2)))
+                            end
+                        end
+                    else
+                        f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud_overlay require/add failed\n")
+                    end
+                end
+            end
+            f:close()
+        end
+    end)
 
     -- NOTE: debug auto-draw removed to ensure overlay_start shows the player's full deck
 end
 
 function gameplay:update(dt)
+    if hud_gameplay and hud_gameplay.update then hud_gameplay.update(dt) end
     hud.update(dt)
     -- Transition manager (dot-call, dt numérique)
     safecall("Transition.update", function() return Transition.update and Transition.update(dt) end)
@@ -317,13 +424,25 @@ function gameplay.draw()
     safecall("Card.drawHand", function() return Card and Card.drawHand and Card.drawHand() end)
 
     safecall("AI.draw", function() return AI and AI.draw and AI.draw() end)
+    -- Ensure per-scene HUD is drawn (background + elements). Use protected calls so missing HUD
+    -- modules won't crash the game; we'll try per-scene hud_gameplay first, then the generic hud.
+    safecall("hud_gameplay.draw", function()
+        return hud_gameplay and hud_gameplay.draw and hud_gameplay.draw()
+    end)
 
-    -- draw footer bar (only on gameplay)
-    if gameplay._footer then
-        local f = gameplay._footer
-        local fh = (type(f.getHeight) == 'function' and f:getHeight()) or 0
-        pcall(function() love.graphics.draw(f, 0, screen.gameReso.height - fh) end)
-    end
+    safecall("HUD.drawBackground", function()
+        local ok, hudm = pcall(require, "my-librairie.hud.hud")
+        if ok and hudm and hudm.drawBackground then return hudm.drawBackground() end
+        return nil
+    end)
+
+    safecall("HUD.draw", function()
+        local ok, hudm = pcall(require, "my-librairie.hud.hud")
+        if ok and hudm and hudm.draw then return hudm.draw() end
+        return nil
+    end)
+
+    -- footer drawing is now handled by HUD (bottom_bar_bg)
 end
 
 function gameplay.endTurn()

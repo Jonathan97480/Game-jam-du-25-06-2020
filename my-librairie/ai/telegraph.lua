@@ -2,7 +2,7 @@
 -- Couche VISUELLE : affiche l'intention/carte IA et attend avant d'appeler ai:resume()
 
 local responsive = require("my-librairie/responsive")
-local Hud = require("my-librairie/hud/hudManager")
+local Hud = require("my-librairie/hud/hud")
 
 local M = {
     enabled           = true, -- activer/désactiver complètement le visuel

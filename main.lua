@@ -6,7 +6,7 @@ love.window.setTitle("Tactique Cards")
 
 -- REQUIRE System
 json = require("my-librairie/json");
-hud = require("my-librairie/hud/hudManager");
+hud = require("my-librairie/hud/hud");
 Card = require("my-librairie/card-librairie/card");
 screen = require("my-librairie/responsive");
 scene = require("my-librairie/sceneManager");
@@ -31,7 +31,7 @@ myFonction = rawget(_G, "myFonction")
     safeRequireAny({ "my-librairie/myFunction", "my-librairie.myFunction", "my-librairie/globalFunction",
       "my-librairie.globalFunction" })
     or {}
-local menu = require("scene/menu")
+local menu = require("scene.menu.menu")
 
 -- Returns the distance between two points.
 --[[
@@ -63,6 +63,20 @@ Paramètres :
 Retour : aucune valeur (nil).
 ]]
 function love.load()
+  -- ensure a folder for runtime logs exists so our debug writes won't fail silently
+  pcall(function()
+    local lfs = pcall(require, 'lfs') -- prefer lfs if available
+    -- try basic Lua I/O fallback to create directory on Windows
+    local ok, _ = pcall(function()
+      -- On Windows, mkdir via os.execute may be available; try a portable approach
+      if package.config:sub(1, 1) == '\\' then
+        os.execute('if not exist "gameLogs" mkdir "gameLogs"')
+      else
+        os.execute('mkdir -p gameLogs')
+      end
+    end)
+  end)
+
   scene:add(menu) -- ← deux-points
   scene:load()    -- pas besoin de dt ici
 end
@@ -100,7 +114,7 @@ function love.draw()
   scene:draw() -- ← deux-points
   -- draw global logs panel if enabled (globalFunction may be set by module)
   local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
-  if gf and gf.drawLogs then
+  if type(gf) == 'table' and type(gf.drawLogs) == 'function' then
     gf.drawLogs()
   end
   effect.draw()
@@ -110,6 +124,15 @@ end
 
 -- (facultatif) Propager les événements si ton HUD a du clic/boutons
 function love.mousepressed(x, y, button)
+  pcall(function()
+    local f = io.open("gameLogs/hud_clicks.log", "a")
+    if f then
+      f:write(os.date("%Y-%m-%d %H:%M:%S") ..
+        " - love.mousepressed -> window_coords=" ..
+        tostring(x) .. "," .. tostring(y) .. " button=" .. tostring(button) .. "\n")
+      f:close()
+    end
+  end)
   scene:emit("mousepressed", x, y, button)
 end
 
@@ -121,14 +144,14 @@ function love.keypressed(key, scancode, isrepeat)
   -- toggle global logs with F12 if available
   if key == "f12" then
     local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
-    if gf and gf.log and gf.log.toggle then gf.log.toggle() end
+    if type(gf) == 'table' and type(gf.log) == 'table' and type(gf.log.toggle) == 'function' then gf.log.toggle() end
   end
   scene:emit("keypressed", key, scancode, isrepeat)
 end
 
 function love.quit()
   local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
-  if gf and gf.log and gf.log.exportToFile then
+  if type(gf) == 'table' and type(gf.log) == 'table' and type(gf.log.exportToFile) == 'function' then
     pcall(function() gf.log.exportToFile() end)
   end
 end

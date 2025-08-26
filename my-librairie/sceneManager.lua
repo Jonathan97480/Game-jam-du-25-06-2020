@@ -88,6 +88,21 @@ local function _tryRequireAny(moduleName)
         if alt ~= moduleName then mod = attempt(alt) end
     end
 
+    -- If still not found, try common pattern where module sits in a folder with same name,
+    -- e.g. "scene.overlay_start" -> "scene.overlay_start.overlay_start" or
+    -- "scene/overlay_start" -> "scene/overlay_start/overlay_start"
+    if not mod and type(moduleName) == 'string' then
+        local basename = moduleName:match("[^./]+$")
+        if basename and basename ~= moduleName then
+            local try1 = moduleName .. "." .. basename
+            mod = attempt(try1) or mod
+            if not mod then
+                local try2 = moduleName .. "/" .. basename
+                mod = attempt(try2) or mod
+            end
+        end
+    end
+
     return mod, table.concat(attempts, " | ")
 end
 
@@ -347,6 +362,20 @@ function scene:emit(eventName, p1, p2, p3, p4, p5, p6, p7, p8)
         if not targetScene then return false end
         local fn = targetScene[eventName]
         if type(fn) ~= "function" then return false end
+
+        -- temp diagnostic: log mousepressed dispatches to gameLogs/hud_clicks.log
+        if eventName == "mousepressed" then
+            pcall(function()
+                local f = io.open("gameLogs/hud_clicks.log", "a")
+                if f then
+                    f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - emit->" .. tostring(targetScene.name or "unnamed") ..
+                        string.format(" coords=(%.1f,%.1f) button=%s\n", tonumber(p1) or 0, tonumber(p2) or 0,
+                            tostring(p3))
+                    )
+                    f:close()
+                end
+            end)
+        end
 
         local ok, consumed = pcall(fn, targetScene, p1, p2, p3, p4, p5, p6, p7, p8)
         if not ok then

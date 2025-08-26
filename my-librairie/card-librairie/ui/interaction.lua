@@ -98,8 +98,16 @@ function M.hover(dt)
         end
     end
     local action = UX.UX_click(isDown, mouseWasDown) and "click" or nil
-    if DEBUG then _logf("[Card.Interaction] isDown=%s mouseWasDown=%s action=%s", tostring(isDown),
-            tostring(mouseWasDown), tostring(action)) end
+    pcall(function()
+        local f = io.open("gameLogs/hover_trace.log", "a")
+        if f then
+            f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hover start action=" .. tostring(action) .. "\n"); f:close()
+        end
+    end)
+    if DEBUG then
+        _logf("[Card.Interaction] isDown=%s mouseWasDown=%s action=%s", tostring(isDown),
+            tostring(mouseWasDown), tostring(action))
+    end
 
     if tour ~= 'player' then
         if draggedCard or Common.__dragLock then
@@ -124,7 +132,20 @@ function M.hover(dt)
     local overHUD = UX.isMouseOverHUD()
     local hudHover = false
     if hud and hud.hover and overHUD and not draggedCard then
-        hudHover = hud.hover(action) or false
+        pcall(function()
+            local f = io.open("gameLogs/hover_trace.log", "a")
+            if f then
+                f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - calling hud.hover\n"); f:close()
+            end
+        end)
+        local ok, res = pcall(hud.hover, action)
+        if ok then hudHover = res or false else hudHover = false end
+        pcall(function()
+            local f = io.open("gameLogs/hover_trace.log", "a")
+            if f then
+                f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud.hover returned=" .. tostring(hudHover) .. "\n"); f:close()
+            end
+        end)
     end
     if hudHover then
         mouseWasDown = isDown; return
@@ -136,8 +157,10 @@ function M.hover(dt)
             local _card = Common.hand.cards[i]
             if not _card._playing and not _card.locked then
                 if UX.UX_hover(_card.vector2.x, _card.vector2.y, _card.width, _card.height, _card.scale) then
-                    topOverI = i; if DEBUG then _logf("[Card.Interaction] topOverI %s %s", tostring(topOverI),
-                            tostring(_card.name)) end; break
+                    topOverI = i; if DEBUG then
+                        _logf("[Card.Interaction] topOverI %s %s", tostring(topOverI),
+                            tostring(_card.name))
+                    end; break
                 end
             end
         end
@@ -175,8 +198,10 @@ function M.hover(dt)
                 local dropY = my
                 local playLine = rawget(_G, "CARD_PLAY_LINE_Y") or 400
                 local inZone = (dropY <= playLine)
-                if DEBUG then _logf("[Card.Interaction] dropY=%s playLine=%s inZone=%s", tostring(dropY),
-                        tostring(playLine), tostring(inZone)) end
+                if DEBUG then
+                    _logf("[Card.Interaction] dropY=%s playLine=%s inZone=%s", tostring(dropY),
+                        tostring(playLine), tostring(inZone))
+                end
                 if inZone then
                     local Card = rawget(_G, "Card")
                     local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)

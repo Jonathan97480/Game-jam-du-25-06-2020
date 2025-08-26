@@ -40,8 +40,13 @@ end
 
 local x, y = _getRawMouse()
 screenManager.mouse = {};
-screenManager.mouse.X = x / screenManager.ratioScreen.width;
-screenManager.mouse.Y = y / screenManager.ratioScreen.height;
+-- guard against zero ratios
+local __rw = screenManager.ratioScreen.width or 1
+local __rh = screenManager.ratioScreen.height or 1
+if __rw == 0 then __rw = 1 end
+if __rh == 0 then __rh = 1 end
+screenManager.mouse.X = x / __rw;
+screenManager.mouse.Y = y / __rh;
 --[[
 Fonction : screenManager.UpdateRatio
 Rôle : Fonction « Update ratio » liée à la logique du jeu.
@@ -53,11 +58,16 @@ function screenManager.UpdateRatio(dt)
     curentDimensions.width, curentDimensions.height = love.graphics.getDimensions();
     screenManager.ratioScreen.height = curentDimensions.height / screenManager.gameReso.height;
     screenManager.ratioScreen.width = curentDimensions.width / screenManager.gameReso.width;
+    -- guard against zero ratios (defensive)
+    if screenManager.ratioScreen.width == 0 then screenManager.ratioScreen.width = 1 end
+    if screenManager.ratioScreen.height == 0 then screenManager.ratioScreen.height = 1 end
     screenManager.getWindow = curentDimensions;
 
     x, y = _getRawMouse();
-    screenManager.mouse.X = x / screenManager.ratioScreen.width;
-    screenManager.mouse.Y = y / screenManager.ratioScreen.height;
+    local __rw2 = screenManager.ratioScreen.width or 1
+    local __rh2 = screenManager.ratioScreen.height or 1
+    screenManager.mouse.X = x / __rw2;
+    screenManager.mouse.Y = y / __rh2;
 end
 
 return screenManager;

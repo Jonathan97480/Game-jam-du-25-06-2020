@@ -83,8 +83,34 @@ function M.loadCards(cardsRessources, actortag, deckName)
             card._anim = { kind }
             card._safetyTimer = 0
             card.target = { x = 0, y = 0 }
-            card.width = card.TextFormatting.card.width or 337
-            card.height = card.TextFormatting.card.height or 512
+            -- TextFormatting is mandatory. If missing, stop generation and raise an error so the caller
+            -- gets a clear failure (no silent defaults).
+            local tf = card.TextFormatting
+            if not tf then
+                local msg = ("[card.loadCards] ERREUR: TextFormatting manquant pour la carte '%s' dans le deck '%s'")
+                :format(
+                    tostring(card.name or "<unknown>"), tostring(deckName))
+                if Common and Common.dprint then
+                    Common.dprint(msg)
+                else
+                    print(msg)
+                end
+                error(msg)
+            end
+            local tfcard = tf.card
+            if not tfcard then
+                local msg = ("[card.loadCards] ERREUR: TextFormatting.card manquant pour la carte '%s' dans le deck '%s'")
+                :format(
+                    tostring(card.name or "<unknown>"), tostring(deckName))
+                if Common and Common.dprint then
+                    Common.dprint(msg)
+                else
+                    print(msg)
+                end
+                error(msg)
+            end
+            card.width = tfcard.width
+            card.height = tfcard.height
             card._grabDX = 0
             card._grabDY = 0
             card._isGrabbed = false
