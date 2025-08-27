@@ -48,10 +48,24 @@ function hero.load()
     }
   }, {
     x = 383,
-    y = 400
+    y = 500
   });
   hero.actor.state.life = 80;
   hero.actor.state.maxLife = hero.actor.state.life;
+  hero.actor.lifeBarConfig = {
+    x = (hero.actor.vector2 and hero.actor.vector2.x) or 0,
+    y = (hero.actor.vector2 and hero.actor.vector2.y) - 50 or 0,
+    w = 150,
+    h = 25,
+    position = {
+      x = ((hero.actor.vector2 and hero.actor.vector2.x + 35) + (hero.actor.width / 2)) - (150 / 2) or 0,
+      y = (hero.actor.vector2 and hero.actor.vector2.y) - 50 or 0
+    },
+    size = {
+      w = 150,
+      h = 25
+    }
+  }
 end
 
 --[[

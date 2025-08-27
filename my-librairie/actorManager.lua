@@ -12,11 +12,19 @@ local EnemiesMod = nil
 
 -- init actor manager runtime fields
 function actor:init()
-    self.enemies = self.enemies or {}
+    local Enemy = require("my-librairie/ActorScripts/Enemy/Enemy")
+    if Enemy then
+        Enemy.listeEnemies = {}
+        Enemy.curentEnemy = nil
+    end
 end
 
 function actor:clearEnemies()
-    self.enemies = {}
+    local Enemies = require("my-librairie/ActorScripts/Enemy/Enemies")
+    if Enemies then
+        Enemies.listeEnemies = {}
+        Enemies.curentEnemy = nil
+    end
 end
 
 function actor:spawnEnemy(enemyType, args)
@@ -26,8 +34,11 @@ function actor:spawnEnemy(enemyType, args)
     local factory = Enemies and Enemies.registry and Enemies.registry[enemyType]
     assert(factory, ("Enemy type inconnu: %s"):format(tostring(enemyType)))
     local e = factory(args)
-    self.enemies = self.enemies or {}
-    table.insert(self.enemies, e)
+    Enemies.listeEnemies = Enemies.listeEnemies or {}
+    table.insert(Enemies.listeEnemies, e)
+
+    --[[ self.enemies = self.enemies or {}
+    table.insert(self.enemies, e) ]]
     return e
 end
 

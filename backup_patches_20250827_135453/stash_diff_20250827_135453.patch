@@ -1,0 +1,1642 @@
+diff --git a/img/Actor/Enemy/Enemy-1.png b/img/Actor/Enemy/Enemy-1.png
+index 648f140..50e79c6 100644
+Binary files a/img/Actor/Enemy/Enemy-1.png and b/img/Actor/Enemy/Enemy-1.png differ
+diff --git a/img/Actor/Enemy/Enemy-2.png b/img/Actor/Enemy/Enemy-2.png
+index 05479cd..5ea618b 100644
+Binary files a/img/Actor/Enemy/Enemy-2.png and b/img/Actor/Enemy/Enemy-2.png differ
+diff --git a/img/Actor/Enemy/Enemy-3.png b/img/Actor/Enemy/Enemy-3.png
+index 547be09..717c140 100644
+Binary files a/img/Actor/Enemy/Enemy-3.png and b/img/Actor/Enemy/Enemy-3.png differ
+diff --git a/img/Actor/Enemy/Enemy-4.png b/img/Actor/Enemy/Enemy-4.png
+index e2cb761..6c7068a 100644
+Binary files a/img/Actor/Enemy/Enemy-4.png and b/img/Actor/Enemy/Enemy-4.png differ
+diff --git a/img/Actor/hero/Hero.png b/img/Actor/hero/Hero.png
+index 91343fc..d8f6f63 100644
+Binary files a/img/Actor/hero/Hero.png and b/img/Actor/hero/Hero.png differ
+diff --git a/main.lua b/main.lua
+index 9b43d8a..f009648 100644
+--- a/main.lua
++++ b/main.lua
+@@ -32,7 +32,7 @@ myFonction = rawget(_G, "myFonction")
+       "my-librairie.globalFunction" })
+     or {}
+ local menu = require("scene.menu.menu")
+-local Transition = require("my-librairie.transitionManager")
++local Transition = require("my-librairie.transition.transitionManager")
+ 
+ -- Returns the distance between two points.
+ --[[
+diff --git a/my-librairie/ActorScripts/Enemy/Enemies.lua b/my-librairie/ActorScripts/Enemy/Enemies.lua
+index 0429b23..fcba77f 100644
+--- a/my-librairie/ActorScripts/Enemy/Enemies.lua
++++ b/my-librairie/ActorScripts/Enemy/Enemies.lua
+@@ -3,41 +3,135 @@ local Enemies = {
+     curentEnemy  = nil,
+     listeEnemies = {}
+ }
++local actor   = actor or require("my-librairie.actorManager")
+ 
+ -- Backwards-compatible Enemy factory registry (singleton)
+ local Enemy   = rawget(_G, "__ENEMY_SINGLETON__") or {}
+ local IA      = nil
+-pcall(function() IA = require("my-librairie/ActorScripts/Enemy/ia") end)
++local function getIA()
++    if IA then return IA end
++    pcall(function() IA = require("my-librairie/ActorScripts/Enemy/ia") end)
++    return IA
++end
++
++function Enemies.create_orc(args)
++    args = args or {}
++    local e = actor.create(args.name or "Enemy-orc", { idle = { 'img/Actor/Enemy/Enemy-1.png' } },
++        { x = args.x or 0, y = args.y or 400 })
++    e.type = "orc"
++    e.lifeBarConfig = {
++        x = (e.vector2 and e.vector2.x) or 0,
++        y = (e.vector2 and e.vector2.y) - 50 or 0,
++        w = 336,
++        h = 10,
++        position = {
++            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
++            y = (e.vector2 and e.vector2.y) - 50 or 0
++        },
++        size = {
++            w = 150,
++            h = 25
++        }
++    }
++    local ia = getIA()
++    e.ai = ia and ia.new and ia.new(e) or nil
++    return e
++end
+ 
+-function Enemy.create_orc(args)
++function Enemies.create_slime(args)
+     args = args or {}
+-    local e = { type = "orc", x = args.x or 0, y = args.y or 0 }
+-    e.state = e.state or { life = 20, maxLife = 20 }
+-    e.atk = 5
+-    e.ai = IA and IA.new and IA.new(e) or nil
++    local e = actor.create(args.name or "Enemy-slime", { idle = { 'img/Actor/Enemy/Enemy-2.png' } },
++        { x = args.x or 0, y = args.y or 0 })
++    e.type = "slime"
++    e.lifeBarConfig = {
++        x = (e.vector2 and e.vector2.x) or 0,
++        y = (e.vector2 and e.vector2.y) - 50 or 0,
++        w = 150,
++        h = 25,
++        position = {
++            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
++            y = (e.vector2 and e.vector2.y) - 50 or 0
++        },
++        size = {
++            w = 150,
++            h = 25
++        }
++    }
++    local ia = getIA()
++    e.ai = ia and ia.new and ia.new(e) or nil
++    return e
++end
++
++function Enemies.create_knightDeath(args)
++    args = args or {}
++    local e = actor.create(args.name or "Enemy-knightDeath", { idle = { 'img/Actor/Enemy/Enemy-3.png' } },
++        { x = args.x or 0, y = args.y or 0 })
++    e.type = "knightDeath"
++    e.lifeBarConfig = {
++        x = (e.vector2 and e.vector2.x) or 0,
++        y = (e.vector2 and e.vector2.y) - 50 or 0,
++        w = 150,
++        h = 25,
++        position = {
++            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
++            y = (e.vector2 and e.vector2.y) - 50 or 0
++        },
++        size = {
++            w = 150,
++            h = 25
++        }
++    }
++    e.state = e.state or { life = 12, maxLife = 12 }
++    e.atk = 3
++    local ia = getIA()
++    e.ai = ia and ia.new and ia.new(e) or nil
+     return e
+ end
+ 
+-function Enemy.create_slime(args)
++function Enemies.create_spider(args)
+     args = args or {}
+-    local e = { type = "slime", x = args.x or 0, y = args.y or 0 }
++    local e = actor.create(args.name or "Enemy-spider", { idle = { 'img/Actor/Enemy/Enemy-4.png' } },
++        { x = args.x or 0, y = args.y or 0 })
++    e.type = "spider"
++    e.lifeBarConfig = {
++        x = (e.vector2 and e.vector2.x) or 0,
++        y = (e.vector2 and e.vector2.y) - 50 or 0,
++        w = 150,
++        h = 25,
++        position = {
++            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
++            y = (e.vector2 and e.vector2.y) - 50 or 0
++        },
++        size = {
++            w = 150,
++            h = 25
++        }
++    }
+     e.state = e.state or { life = 12, maxLife = 12 }
+     e.atk = 3
+-    e.ai = IA and IA.new and IA.new(e) or nil
++    local ia = getIA()
++    e.ai = ia and ia.new and ia.new(e) or nil
+     return e
+ end
+ 
+-Enemy.registry = Enemy.registry or {
+-    orc = Enemy.create_orc,
+-    slime = Enemy.create_slime,
++Enemies.registry = Enemies.registry or {
++    orc = Enemies.create_orc,
++    slime = Enemies.create_slime,
++    knightDeath = Enemies.create_knightDeath,
++    spider = Enemies.create_spider
+ }
+ 
+-rawset(_G, "__ENEMY_SINGLETON__", Enemy)
++rawset(_G, "__ENEMY_SINGLETON__", Enemies)
+ 
+ -- actorManager is resolved lazily inside load() to avoid circular require
+ local actor = nil
+ 
+-local globalFunction = require('my-librairie.globalFunction')
++local globalFunction = nil
++local function getGlobalFunction()
++    if globalFunction then return globalFunction end
++    pcall(function() globalFunction = require('my-librairie.globalFunction') end)
++    return globalFunction
++end
+ 
+ 
+ -- Sécurise l'état d'un ennemi (toujours un state table numérisé)
+@@ -67,36 +161,9 @@ local function ensureEnemyState(e)
+     return e
+ end
+ 
+--- LOAD : crée 4 ennemis, prend 1 au hasard comme courant
++-- LOAD
+ function Enemies.load()
+-    Enemies.listeEnemies = {}
+-    Enemies.curentEnemy  = nil
+-
+-    -- lazy-resolve actorManager to break circular require at module load time
+-    if not actor then
+-        actor = rawget(_G, 'actorManager')
+-        if not actor then pcall(function() actor = require('my-librairie/actorManager') end) end
+-    end
+-
+-    for i = 1, 4 do
+-        local E
+-        if actor and actor.create then
+-            E = actor.create('Enemy-' .. i, {
+-                idle = { 'img/Actor/Enemy/Enemy-' .. i .. '.png' }
+-            }, { x = 1261, y = 400 })
+-        else
+-            -- fallback: create a minimal enemy table if actor manager unavailable
+-            E = { name = 'Enemy-' .. i, vector2 = { x = 1261, y = 400 }, animation = {} }
+-        end
+-
+-        ensureEnemyState(E)
+-        table.insert(Enemies.listeEnemies, E)
+-    end
+ 
+-    local idx = math.random(1, #Enemies.listeEnemies)
+-    Enemies.curentEnemy = Enemies.listeEnemies[idx]
+-    table.remove(Enemies.listeEnemies, idx)
+-    ensureEnemyState(Enemies.curentEnemy)
+ end
+ 
+ -- NEXT : passe à l’ennemi suivant (le Transition Manager gère le flow global)
+@@ -120,25 +187,25 @@ end
+ 
+ -- DRAW : dessine l’ennemi courant + sa barre de vie
+ function Enemies.draw()
+-    local e = ensureEnemyState(Enemies.curentEnemy)
+-    if not e then return end
+-
+-    -- animation (idle par défaut)
+-    local animName = e.curentAnimation or "idle"
+-    if e.animation and e.animation[animName] then
+-        local animation = e.animation[animName]
+-        for i = 1, #animation do
+-            love.graphics.draw(animation[i], e.vector2.x, e.vector2.y)
++    for i = #Enemies.listeEnemies, 1, -1 do
++        local e = Enemies.listeEnemies[i]
++        if not e then return end
++
++        -- animation (idle par défaut)
++        local animName = e.curentAnimation or "idle"
++        if e.animation and e.animation[animName] then
++            local animation = e.animation[animName]
++            for i = 1, #animation do
++                love.graphics.draw(animation[i], e.vector2.x, e.vector2.y)
++            end
+         end
+-    end
+ 
+-    if type(globalFunction
+-        ) == "table" and type(globalFunction
+-            .drawLifeBarStatus) == "function" then
+-        pcall(function()
+-            globalFunction
+-                .drawLifeBarStatus(e, 'red')
+-        end)
++        local gf = getGlobalFunction()
++        if type(gf) == "table" and type(gf.drawLifeBarStatus) == "function" then
++            pcall(function()
++                gf.drawLifeBarStatus(e, 'red')
++            end)
++        end
+     end
+ end
+ 
+diff --git a/my-librairie/ActorScripts/Enemy/ia.lua b/my-librairie/ActorScripts/Enemy/ia.lua
+index 72acf01..acb43d9 100644
+--- a/my-librairie/ActorScripts/Enemy/ia.lua
++++ b/my-librairie/ActorScripts/Enemy/ia.lua
+@@ -7,10 +7,7 @@ local function rndi(a, b)
+     if love and love.math and love.math.random then return love.math.random(a, b) end
+     return math.random(a, b)
+ end
+-local function rnd01()
+-    if love and love.math and love.math.random then return love.math.random() end
+-    return math.random()
+-end
++
+ 
+ -- Overlay / états qui bloquent l'IA
+ local function overlayBloque()
+diff --git a/my-librairie/ActorScripts/player/hero.lua b/my-librairie/ActorScripts/player/hero.lua
+index e7a8a7d..4207b1e 100644
+--- a/my-librairie/ActorScripts/player/hero.lua
++++ b/my-librairie/ActorScripts/player/hero.lua
+@@ -48,10 +48,24 @@ function hero.load()
+     }
+   }, {
+     x = 383,
+-    y = 400
++    y = 500
+   });
+   hero.actor.state.life = 80;
+   hero.actor.state.maxLife = hero.actor.state.life;
++  hero.actor.lifeBarConfig = {
++    x = (hero.actor.vector2 and hero.actor.vector2.x) or 0,
++    y = (hero.actor.vector2 and hero.actor.vector2.y) - 50 or 0,
++    w = 150,
++    h = 25,
++    position = {
++      x = ((hero.actor.vector2 and hero.actor.vector2.x + 35) + (hero.actor.width / 2)) - (150 / 2) or 0,
++      y = (hero.actor.vector2 and hero.actor.vector2.y) - 50 or 0
++    },
++    size = {
++      w = 150,
++      h = 25
++    }
++  }
+ end
+ 
+ --[[
+diff --git a/my-librairie/actorManager.lua b/my-librairie/actorManager.lua
+index 515290d..48754cf 100644
+--- a/my-librairie/actorManager.lua
++++ b/my-librairie/actorManager.lua
+@@ -12,11 +12,19 @@ local EnemiesMod = nil
+ 
+ -- init actor manager runtime fields
+ function actor:init()
+-    self.enemies = self.enemies or {}
++    local Enemy = require("my-librairie/ActorScripts/Enemy/Enemy")
++    if Enemy then
++        Enemy.listeEnemies = {}
++        Enemy.curentEnemy = nil
++    end
+ end
+ 
+ function actor:clearEnemies()
+-    self.enemies = {}
++    local Enemies = require("my-librairie/ActorScripts/Enemy/Enemies")
++    if Enemies then
++        Enemies.listeEnemies = {}
++        Enemies.curentEnemy = nil
++    end
+ end
+ 
+ function actor:spawnEnemy(enemyType, args)
+@@ -26,8 +34,11 @@ function actor:spawnEnemy(enemyType, args)
+     local factory = Enemies and Enemies.registry and Enemies.registry[enemyType]
+     assert(factory, ("Enemy type inconnu: %s"):format(tostring(enemyType)))
+     local e = factory(args)
+-    self.enemies = self.enemies or {}
+-    table.insert(self.enemies, e)
++    Enemies.listeEnemies = Enemies.listeEnemies or {}
++    table.insert(Enemies.listeEnemies, e)
++
++    --[[ self.enemies = self.enemies or {}
++    table.insert(self.enemies, e) ]]
+     return e
+ end
+ 
+diff --git a/my-librairie/card-librairie/ui/ux.lua b/my-librairie/card-librairie/ui/ux.lua
+index f1f115c..d9517b1 100644
+--- a/my-librairie/card-librairie/ui/ux.lua
++++ b/my-librairie/card-librairie/ui/ux.lua
+@@ -8,7 +8,8 @@ local function _safeRequire(name)
+     return nil
+ end
+ -- Resolve legacy helper: prefer globalFunction then fallback to legacy names/paths
+-local myFonction = rawget(_G, "globalFunction") or rawget(_G, "myFonction") or _safeRequire("my-librairie.myFunction") or _safeRequire("my-librairie/myFunction") or {}
++local myFonction = rawget(_G, "globalFunction") or rawget(_G, "myFonction") or _safeRequire("my-librairie.myFunction") or
++_safeRequire("my-librairie/myFunction") or {}
+ local input = _safeRequire("my-librairie/inputManager") or (rawget(_G, "inputManager") and rawget(_G, "inputManager"))
+ 
+ local M = {}
+diff --git a/my-librairie/globalFunction.lua b/my-librairie/globalFunction.lua
+index e018167..93ec855 100644
+--- a/my-librairie/globalFunction.lua
++++ b/my-librairie/globalFunction.lua
+@@ -38,7 +38,8 @@ local lifeBar = {
+     red = res.image('img/Actor/Enemy/HudLifeEnemy.png'),
+     bleu = res.image('img/Actor/hero/HudLifeHero.png'),
+     color_red = { 1, 0, 0 },
+-    color_bleu = { 0, 0, 1 }
++    color_bleu = { 0, 0, 1 },
++
+ }
+ 
+ ----------------------------------------------------------------
+@@ -199,27 +200,52 @@ function globalFunction.drawLifeBarStatus(p_actor, p_Colorbar)
+         color = lifeBar.color_bleu
+     end
+ 
+-    local vx = (p_actor.vector2 and p_actor.vector2.x) or 0
+-    local vy = (p_actor.vector2 and p_actor.vector2.y) or 0
+-    local w = p_actor.width or 0
+-    local h = p_actor.height or 0
++    local lifeBarConfig = p_actor.lifeBarConfig
++    if not lifeBarConfig then
++        local baseX = (p_actor.vector2 and p_actor.vector2.x) or 0
++        local baseY = (p_actor.vector2 and p_actor.vector2.y) or 0
++        lifeBarConfig = {
++            x = baseX,
++            y = baseY,
++            w = p_actor.width or 0,
++            h = p_actor.height or 0,
++            position = {
++                x = baseX + 25,
++                y = baseY - 50
++            },
++            size = {
++                w = 336,
++                h = 10
++            }
++        }
++    end
++
++    local vx = lifeBarConfig.x or 0
++    local vy = lifeBarConfig.y or 0
++    local w = lifeBarConfig.w or 0
++    local h = lifeBarConfig.h or 0
++    local position = lifeBarConfig.position or { x = vx, y = vy }
+ 
+-    local position = {
+-        x = vx + ((w / 2) - (maxLife / 0.5)),
+-        y = vy + h - 88
+-    }
++    -- compute target draw width (safe parentheses)
++    local targetW = (lifeBarConfig.size and lifeBarConfig.size.w) or 336
++    local targetH = (lifeBarConfig.size and lifeBarConfig.size.h) or 10
++    local drawW = math.max(0, targetW * (life / maxLife))
+ 
+     love.graphics.setColor(color)
+-    love.graphics.rectangle('fill', position.x, position.y + 4, 336 * (life / maxLife), 10)
++    love.graphics.rectangle('fill', position.x, position.y + 4, drawW, targetH)
+     love.graphics.setColor(1, 1, 1)
+ 
+-    love.graphics.draw(lifeBar[colorBar], position.x, position.y, 0, 1.5, 2)
++    -- draw the life bar image scaled to target size (safe-get dimensions)
++    local img = lifeBar[colorBar]
++    local imgW, imgH = 1, 1
++    if img and type(img.getDimensions) == 'function' then
++        local ok, iw, ih = pcall(img.getDimensions, img)
++        if ok and iw and ih then imgW, imgH = iw, ih end
++    end
++    local newScale = { w = targetW / math.max(1, imgW), h = targetH / math.max(1, imgH) }
++    if img then pcall(function() love.graphics.draw(img, position.x, position.y, 0, newScale.w, newScale.h) end) end
+ 
+-    love.graphics.print(
+-        life .. '/' .. maxLife,
+-        vx + (w / 1.8),
+-        vy + (h - 8)
+-    )
++    love.graphics.print(life .. '/' .. maxLife, vx + (w / 1.8), vy - 48)
+ 
+     drawBonus(p_actor, color, position)
+ end
+diff --git a/my-librairie/sceneManager.lua b/my-librairie/sceneManager.lua
+index d9fba28..62974c4 100644
+--- a/my-librairie/sceneManager.lua
++++ b/my-librairie/sceneManager.lua
+@@ -68,6 +68,19 @@ local function forEachScene(sceneList, methodName, argsList)
+     return calls
+ end
+ 
++-- Enhanced diagnostics: when a require fails, write attempts to a log file for runtime inspection
++local function _logRequireFailure(moduleName, attemptsStr)
++    pcall(function()
++        local f = io.open("gameLogs/require_attempts.log", "a")
++        if not f then return end
++        f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - require failed for: " .. tostring(moduleName) .. "\n")
++        f:write("Attempts: " .. tostring(attemptsStr) .. "\n")
++        f:write("package.path: " .. tostring(package.path) .. "\n")
++        f:write("----\n")
++        f:close()
++    end)
++end
++
+ -- require avec fallback "." <-> "/"
+ local function _tryRequireAny(moduleName)
+     local attempts = {}
+@@ -103,20 +116,9 @@ local function _tryRequireAny(moduleName)
+         end
+     end
+ 
+-    return mod, table.concat(attempts, " | ")
+-end
+-
+--- Enhanced diagnostics: when a require fails, write attempts to a log file for runtime inspection
+-local function _logRequireFailure(moduleName, attemptsStr)
+-    pcall(function()
+-        local f = io.open("gameLogs/require_attempts.log", "a")
+-        if not f then return end
+-        f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - require failed for: " .. tostring(moduleName) .. "\n")
+-        f:write("Attempts: " .. tostring(attemptsStr) .. "\n")
+-        f:write("package.path: " .. tostring(package.path) .. "\n")
+-        f:write("----\n")
+-        f:close()
+-    end)
++    local attemptsStr = table.concat(attempts, " | ")
++    if not mod then _logRequireFailure(moduleName, attemptsStr) end
++    return mod, attemptsStr
+ end
+ 
+ -- Appelle une fonction-constructeur avec une liste d'arguments (table), sans unpack
+@@ -375,11 +377,31 @@ function scene:draw()
+ 
+     for i = 1, #self.list do
+         local sc = self.list[i]
++        -- draw non-HUD scenes first; collect hud_overlay scenes to draw last so
++        -- HUD appears above overlays (e.g. overlay_start)
+         if sc and type(sc.draw) == "function" and sc.hidden ~= true then
+-            local ok, err = pcall(sc.draw, sc)
++            local isHud = (sc.name == 'hud_overlay' or sc.id == 'hud_overlay')
++            if isHud then
++                -- push to hud list for later
++                hudScenes = hudScenes or {}
++                table.insert(hudScenes, { sc = sc, idx = i })
++            else
++                local ok, err = pcall(sc.draw, sc)
++                if not ok then
++                    print(("[scene] draw error in scene '%s' (index %d): %s")
++                        :format(tostring(sc.name or "?"), i, tostring(err)))
++                end
++            end
++        end
++    end
++
++    -- draw hud scenes last (above overlays)
++    if hudScenes then
++        for _, rec in ipairs(hudScenes) do
++            local ok, err = pcall(rec.sc.draw, rec.sc)
+             if not ok then
+-                print(("[scene] draw error in scene '%s' (index %d): %s")
+-                    :format(tostring(sc.name or "?"), i, tostring(err)))
++                print(("[scene] draw error in HUD scene '%s': %s")
++                    :format(tostring(rec.sc.name or "hud_overlay"), tostring(err)))
+             end
+         end
+     end
+diff --git a/my-librairie/transition/manager.lua b/my-librairie/transition/manager.lua
+deleted file mode 100644
+index 3cdc850..0000000
+--- a/my-librairie/transition/manager.lua
++++ /dev/null
+@@ -1,688 +0,0 @@
+--- my-librairie/transition/manager.lua
+--- Flow combat + overlays + rewards + game over
+-
+-local Transition              = {}
+-
+--- ==== Dépendances ====
+-local SceneManager            = rawget(_G, "scene") or require("my-librairie/sceneManager")
+-local Card                    = require("my-librairie/card-librairie/card")
+-local Enemies                 = rawget(_G, "Enemies") or require("my-librairie/ActorScripts/Enemy/Enemies")
+-local Hero                    = rawget(_G, "Hero") or require("my-librairie/ActorScripts/player/Hero")
+-local AI                      = rawget(_G, "AI") or require("my-librairie/ai/controller")
+-
+--- ==== Constantes ====
+-local MIN_ENEMY_TURN_TIME     = 1.2
+-local ENEMY_TURN_TIMEOUT      = 5
+-local END_TURN_TRANSITION_T   = 1.20
+-local ANNOUNCE_MIN_TIME       = 10.0
+-local PREFER_VICTORY_ON_TIE   = true -- victoire si mort simultanée
+-
+--- ==== État ====
+-Transition.state              = "boot"
+-Transition.timer              = 0
+-Transition._nextTurn          = nil
+-Transition._flags             = { startOverlayDone = false, announceDone = false, rewardChoiceDone = false }
+-Transition._reward            = { options = nil, chosenIndex = nil }
+-Transition._rngSeeded         = false
+-Transition._initiative        = nil
+-Transition._gameoverShown     = false
+-Transition._victoryTriggered  = false -- <<< NEW: évite de rappeler onEnemyDied en boucle
+-
+--- Suivi IA
+-Transition._aiStartedThisTurn = false
+-Transition._enemyStartPow     = nil
+-Transition._enemyPrevPow      = nil
+-Transition._lastEnemyActionT  = 0
+-Transition._enemyPlays        = 0
+-Transition._enemyMaxPlays     = 0
+-Transition._heroPrevLife      = nil
+-
+--- ==== Utils ====
+-local function dprint(...)
+-    local gf = rawget(_G, 'globalFunction')
+-    local txt = table.concat({"[transition]", ...}, ' ')
+-    if gf and gf.log and gf.log.info then gf.log.info(txt) else print(txt) end
+-end
+---[[
+-    Fonction utilitaire pour initialiser le générateur de nombres aléatoires
+-]]
+-local function _seedRng()
+-    if Transition._rngSeeded then return end
+-    local t = (love.timer and love.timer.getTime and love.timer.getTime()) or os.time()
+-    if love.math and love.math.setRandomSeed then love.math.setRandomSeed(t) end
+-    math.randomseed(t); Transition._rngSeeded = true
+-end
+---[[
+-    Met à jour le tour actuel dans la variable globale _G.Tour
+-    @param tag Le nouveau tag de tour
+-    @return Le tag si changé, nil sinon
+-]]
+-local function _setTour(tag)
+-    if _G.Tour ~= tag then
+-        dprint("[transition]    Tour -> " .. tostring(tag))
+-        _G.Tour = tag
+-        return tag
+-    end
+-    return nil
+-end
+---[[
+-    Gère l'entrée dans un nouvel état de transition
+-    @param state Le nouvel état de transition
+-    @return Les informations sur la transition { state = state, Timer = Transition.timer }
+-]]
+-local function _enter(state)
+-    Transition.state = state;
+-    Transition.timer = 0;
+-    dprint("->\t" .. state)
+-    return {
+-        state = state,
+-        Timer = Transition.timer
+-    }
+-end
+---[[
+-    Gère le remplissage de la puissance d'un acteur
+-    @param acteur L'acteur à remplir
+-
+-]]
+-local function _refillPowerForActor(acteur)
+-    if not (acteur and acteur.state) then return end
+-
+-    local maxp = acteur.state.powerMax or acteur.state.power or 3
+-
+-    acteur.state.power = maxp
+-
+-    -- Mise à jour de l'affichage de l'énergie sur l'interface HUD pour le joueur
+-    if acteur == (Hero and Hero.actor) then
+-        if hud and type(hud.updateLabel) == "function" then
+-            hud.updateLabel('energy_text', tostring(acteur.state.power))
+-        elseif hud and hud.object and hud.object.energie and hud.object.energie.value then
+-            hud.object.energie.value.text = tostring(acteur.state.power)
+-        end
+-    end
+-end
+-
+---[[
+-    Gère le remplissage de la puissance du joueur
+-]]
+-local function _refillPowerBoth()
+-    if Hero and Hero.actor then _refillPowerForActor(Hero.actor) end
+-end
+-
+---[[
+-    assure que le deck du joueur ne dépasse pas une certaine taille et renvoi le surplue dans le deck global
+-    @param maxN La taille maximale du deck du joueur
+-]]
+-local function _ensurePlayerDeckMax(maxN)
+-    if not (Card and Card.deck) then return end
+-
+-    local limite = tonumber(maxN or 10) or 10
+-
+-    --récupération des decks du joueur et global
+-    local deckPlayer = Card.getDeckByName("HeroDeck") or {}
+-    local deckGlobal = Card.getDeckByName("GlobalDeck") or {}
+-
+-    -- Vérification de la limite de la taille du deck du joueur
+-    if #deckPlayer <= limite then return end
+-    -- Mélange des cartes du joueur
+-    Card.shuffleDeck("HeroDeck");
+-
+-    -- Déplacement des cartes excédentaires vers le deck global
+-    while #deckPlayer > limite do
+-        table.insert(deckGlobal, table.remove(deckPlayer))
+-    end
+-
+-    dprint(string.format("[player.deck] limité à %d%s", limite, deckGlobal and (", global:" .. #deckGlobal) or ""))
+-end
+-
+--- ==== API ====
+-function Transition.load()
+-    _seedRng()
+-
+-    -- Initialisation des flags de transition
+-    Transition._flags.startOverlayDone = false
+-    Transition._flags.announceDone = false
+-    Transition._flags.rewardChoiceDone = false
+-
+-    -- Réinitialisation des récompenses
+-    Transition._reward.options = nil
+-    Transition._reward.chosenIndex = nil
+-
+-    -- Réinitialisation des états de transition
+-    Transition._nextTurn = nil
+-    Transition._initiative = nil
+-    Transition._gameoverShown = false
+-    Transition._victoryTriggered = false -- <<< reset
+-    Transition._aiStartedThisTurn = false
+-
+-    -- Changement d'état de transition
+-    _enter("setup_run")
+-end
+-
+---[[
+-    Force le passage à l'état de transition à "player_turn"
+-]]
+-function Transition.canDeal()
+-    return Transition.state == "player_turn"
+-end
+-
+-function Transition.update(dt)
+-    -- Validation du paramètre dt
+-    if type(dt) ~= "number" or dt <= 0 then
+-        dprint("[update] dt invalide:", dt);
+-        return
+-    end
+-    if (Card == nil) then
+-        dprint("[update] Card est nil");
+-        return
+-    end
+-    -- Validation de l'état de Hero
+-    if type(Hero) ~= "table" or type(Hero.actor) ~= "table" or type(Hero.actor.state) ~= "table" then
+-        dprint("[update] le type de Hero ou Hero.actor ou Hero.actor.state est invalide");
+-        return
+-    end
+-
+-    -- validation de l'état de Enemy
+-    if type(Enemies) ~= "table" or type(Enemies.curentEnemy) ~= "table" or type(Enemies.curentEnemy.state) ~= "table" then
+-        dprint("[update] le type de Enemies ou Enemies.curentEnemy ou Enemies.curentEnemy.state est invalide");
+-        return
+-    end
+-
+-    -- Mise à jour du timer
+-    Transition.timer = (Transition.timer or 0) + dt
+-
+-    -- ==== Mort / fin de combat (corrigé) ====
+-
+-    -- vérification de la mort des acteurs
+-    local heroDead   = Hero.actor.state.dead or (Hero.actor.state.life or 0) <= 0
+-    local enemyDead  = Enemies.curentEnemy.state.dead or (Enemies.curentEnemy.state.life or 0) <= 0
+-
+-
+-
+-
+-    -- Victoire : ne déclenche qu'une seule fois
+-    if enemyDead and not Transition._victoryTriggered
+-        and (PREFER_VICTORY_ON_TIE or not heroDead)
+-        and Transition.state ~= "victory_check"
+-        and Transition.state ~= "reward_choice"
+-        and Transition.state ~= "advance_enemy"
+-        and Transition.state ~= "game_over"
+-    then
+-        Transition._victoryTriggered = true
+-        _setTour("transition")
+-        Transition.onEnemyDied()
+-        return
+-    end
+-
+-    -- Défaite
+-    if heroDead and not Transition._gameoverShown then
+-        _setTour("transition")
+-        Transition.onHeroDied()
+-        return
+-    end
+-    -- ==== Fin correctif ====
+-
+-    -- Aligne Tour
+-    local STATE = Transition.state or "boot"
+-
+-    --[[
+-        Fonction qui détermine le tour voulu en fonction de l'état actuel
+-        @return string Le tour voulu
+-    ]]
+-    local function _tourWanted()
+-        if STATE == "player_turn" then return "player" end
+-        if STATE == "enemy_turn" then return "Enemy" end
+-        if STATE == "end_turn_transition" then return "transition" end
+-        return "transition"
+-    end
+-    -- Définition du tour actuel
+-    _setTour(_tourWanted())
+-
+-    -- (FSM) = MACHINE A ETATS
+-    if STATE == "setup_run" then
+-        -- Préparation du deck du joueur
+-        Card.shuffleDeck("HeroDeck")
+-        -- on verifie que le deck du joueur ne dépasse pas la taille maximale autorisée en début de partie
+-        _ensurePlayerDeckMax(10);
+-        -- Remplissage de la puissance du joueur
+-        _refillPowerForActor(Hero.actor)
+-
+-        -- diagnostic: log tailles des decks avant d'afficher l'overlay de début
+-        do
+-            local hero = (Card and Card.getDeckByName and Card.getDeckByName("HeroDeck")) or nil
+-            local global = (Card and Card.getDeckByName and (Card.getDeckByName("globalDeck") or Card.getDeckByName("GlobalDeck"))) or nil
+-            dprint(string.format("[overlay.debug] avant push -> HeroDeck=%d globalDeck=%d",
+-                hero and (#hero.cards) or 0, global and (#global.cards) or 0))
+-        end
+-        -- on affiche l'overlay de début de tour
+-    SceneManager:push("scene.overlay_start.overlay_start"); dprint("[overlay] push overlay_start")
+-
+-        -- on change d'état
+-        _enter("deal_start_hand")
+-    elseif STATE == "deal_start_hand" then
+-        -- on verifie que l'overlay de début de tour est terminé
+-        if Transition._flags.startOverlayDone then
+-            -- reset du flag
+-            Transition._flags.startOverlayDone = false
+-            -- on demande à SceneManager de retirer de la pile de rendu overlay start vue quil est en premier
+-            -- dans la pile le pop retire le premier élément de la pile
+-            if SceneManager and SceneManager.pop then SceneManager:pop() end
+-            -- on change d'état
+-            _enter("initiative_flip")
+-        end
+-    elseif STATE == "initiative_flip" then
+-        -- on verifie que _initiative existe dans la table Transition
+-        if not Transition._initiative then
+-            -- Allow forced initiative for testing via global FORCE_INITIATIVE ("player" or "Enemy")
+-            -- or via Transition._forcedInitiative set at runtime.
+-            local forced = rawget(_G, "FORCE_INITIATIVE") or Transition._forcedInitiative
+-            if type(forced) == "string" then
+-                local f = forced:lower()
+-                if f == "player" then
+-                    Transition._initiative = "player"
+-                elseif f == "enemy" then
+-                    Transition._initiative = "Enemy"
+-                end
+-                if Transition._initiative then
+-                    dprint("[initiative] forced gagnant = " .. Transition._initiative)
+-                end
+-            end
+-            -- Fallback to original random behaviour
+-            if not Transition._initiative then
+-                Transition._initiative = (math.random() < 0.5) and "player" or "Enemy"
+-            end
+-            dprint("[initiative] gagnant = " .. Transition._initiative)
+-            -- on affiche l'overlay d'annonce de l'initiative
+-        SceneManager:push("scene.overlay_initiative.overlay_initiative"); dprint("[overlay] push overlay_initiative")
+-            -- on change d'état
+-            _enter("announce_initiative")
+-        end
+-    elseif STATE == "announce_initiative" then
+-        --on verifie si le jouer a demandé de fermer overlay dinitiative ou que le temps maximum daffichage est écoulé
+-        if Transition._flags.announceDone or Transition.timer >= ANNOUNCE_MIN_TIME then
+-            -- reset du flag
+-            Transition._flags.announceDone = false
+-            -- on retire l'overlay d'annonce de l'initiative
+-            SceneManager:pop()
+-            --on verifie si ces le jouer qui commence
+-            if Transition._initiative == "player" then
+-                -- on set tour pour dire que ces le tour du jouer
+-                _setTour("player");
+-                -- on charge les point d'énergie du joueur
+-                _refillPowerForActor(Hero.actor)
+-                -- on entre dans le tour du joueur
+-                _enter("player_turn")
+-            else
+-                --si ces l'ennemi qui commence
+-                -- on set tour pour dire que ces le tour de l'ennemi
+-                _setTour("Enemy");
+-                -- on definie les variables pour le tour de l'ennemi
+-                Transition._aiStartedThisTurn = false
+-                Transition._enemyPlays, Transition._lastEnemyActionT = 0, 0
+-
+-                -- on sauvegarde la vie du héros avant le tour de l'ennemi
+-                Transition._heroPrevLife = (Hero and Hero.actor and Hero.actor.state and Hero.actor.state.life) or nil
+-                -- on change d'état
+-                _enter("enemy_turn")
+-            end
+-        end
+-    elseif STATE == "player_turn" then
+-        -- si le prochain tour est celui de l'ennemi
+-        if Transition._nextTurn == "Enemy" then
+-            -- on definie comme quoi le tour va passer en transition ce qui anonce un changement de tour
+-            _setTour("transition");
+-            --on change d'état
+-            _enter("end_turn_transition")
+-        end
+-    elseif STATE == "enemy_turn" then
+-        -- si l'ennemi a pas commencé son tour
+-        if not Transition._aiStartedThisTurn then
+-            -- on dit qu'il a commencé son tour
+-            Transition._aiStartedThisTurn = true
+-            -- on defini le nombre de dernier coup de l'ennemi a 0
+-            Transition._lastEnemyActionT  = 0
+-            -- on defini le nombre maximum de coup de l'ennemi
+-            -- pmax/pow pouvaient être non définis (ancienne variable). On calcule depuis l'ennemi ou valeur par défaut
+-            local pmax_val                = (Enemies and Enemies.curentEnemy and Enemies.curentEnemy.state and Enemies.curentEnemy.state.powerMax) or
+-                6
+-            local pow_val                 = (Enemies and Enemies.curentEnemy and Enemies.curentEnemy.state and Enemies.curentEnemy.state.power) or
+-                pmax_val
+-            Transition._enemyMaxPlays     = math.max(2, math.ceil((tonumber(pmax_val) or 6) / 2))
+-
+-            dprint(string.format("[enemy] startTurn (power=%d, maxPlays=%d)", tonumber(pow_val) or 0,
+-                Transition._enemyMaxPlays))
+-
+-            -- on lance le tour de l'énemy dans la machie a état de l'ia
+-            if AI.startTurn then pcall(function() AI:startTurn(Enemies.curentEnemy) end) end
+-        end
+-
+-
+-        local busy = false -- on definit que l'ia est pas  occupée
+-
+-        if AI then
+-            -- on verifie si l'ia est occupée si oui on definie busy a true
+-            if AI.busy == true or AI.running == true then busy = true end
+-            if AI.queue and type(AI.queue) == "table" and #AI.queue > 0 then busy = true end
+-        end
+-
+-        local wantsDone = false -- on definit que l'ia veut pas finir son tour
+-        --on verifi si l'ia a terminer sont tour
+-        if AI and AI.isTurnDone then
+-            local ok, r = pcall(function() return AI:isTurnDone() end);
+-            --si oui on definit que l'ia veut finir son tour
+-            wantsDone = ok and r or false
+-        end
+-
+-        -- heuristique de fin de tour
+-        local idleFor = Transition.timer - (Transition._lastEnemyActionT or 0)
+-        -- on verifie si l'ennemi a joue
+-        if Transition._enemyPlays >= Transition._enemyMaxPlays and idleFor >= 0.35 then
+-            --si oui on definit que l'ia veut finir son tour
+-            wantsDone = true;
+-            dprint("[enemy] fin (plafond de coups atteint)")
+-        end
+-
+-
+-        local done = false -- on definit que le tour est pas fini
+-        -- on verifie si le tour doit se terminer
+-        if (Transition.timer >= MIN_ENEMY_TURN_TIME) and wantsDone and not busy then
+-            -- si oui on definit que le tour est fini
+-            done = true;
+-            dprint("[enemy] fin (isTurnDone/heuristique && !busy)")
+-            -- si le timer est écoulé
+-        elseif Transition.timer >= ENEMY_TURN_TIMEOUT then
+-            -- si le timer est écoulé on definit que le tour est fini pour l'ennemi
+-            done = true;
+-            dprint("[enemy] timeout -> fin forcée")
+-        end
+-        -- si le tour est fini
+-        if done then
+-            -- on di que le prochain tour est celui du joueur
+-            Transition._nextTurn = "player"
+-            -- on met à jour le tour pour anoncer un changement de tour
+-            _setTour("transition");
+-            -- on change l'état
+-            _enter("end_turn_transition")
+-            -- on di que l'ia a pas commencé son tour (rezet var)
+-            Transition._aiStartedThisTurn = false
+-        end
+-    elseif STATE == "end_turn_transition" then
+-        -- on verifie si le timer de transition est écoulé pour changer de tour
+-        if Transition.timer >= END_TURN_TRANSITION_T then
+-            -- si le prochain tour est celui de l'énemie
+-            if Transition._nextTurn == "Enemy" then
+-                -- on met à jour le tour pour dire que ces le tour de l'énemie
+-                _setTour("Enemy");
+-                --on dit que l'ia commence son tour
+-                Transition._aiStartedThisTurn = true
+-                --on dit que l'ennemi n'a pas encore joué
+-                Transition._enemyPlays        = 0
+-                Transition._lastEnemyActionT  = 0
+-                -- on recupère la vie courante du héros
+-                Transition._heroPrevLife      = (Hero and Hero.actor and Hero.actor.state and Hero.actor.state.life) or
+-                    nil
+-                -- on définie le nombre d'action maximum de l'ennemi
+-                local pmax                    = (Enemies and Enemies.curentEnemy and Enemies.curentEnemy.state and Enemies.curentEnemy.state.powerMax) or
+-                6
+-                pmax                          = tonumber(pmax) or 6
+-                Transition._enemyMaxPlays     = math.max(2, math.ceil(pmax / 2))
+-
+-                dprint(string.format("[enemy] startTurn (maxPlays=%d)", Transition._enemyMaxPlays))
+-
+-                if AI and AI.startTurn and Enemies and Enemies.curentEnemy then
+-                    -- on lance le tour de l'énemy dans la machie a état de l'ia
+-                    pcall(function() AI:startTurn(Enemies.curentEnemy) end)
+-                end
+-                -- on change l'état
+-                _enter("enemy_turn")
+-            else
+-                -- si cest au jouer de jouer
+-                -- on met à jour le tour pour dire que ces le tour du jouer
+-                _setTour("player");
+-                -- on remplit l'énergie du joueur
+-                _refillPowerForActor(Hero and Hero.actor)
+-                -- on change l'état
+-                _enter("player_turn")
+-            end
+-            -- on remet la variable de changement de tour a nil
+-            Transition._nextTurn = nil
+-        end
+-    elseif STATE == "victory_check" then
+-        -- Prépare 3 récompenses et affiche l’overlay
+-        -- on vide les options de récompense
+-        Transition._reward.options = {}
+-        -- on charge le deck global et le deck du joueur
+-        local deckGlobal = (Card and Card.getDeckByName("deckGlobal")) or {}
+-        local playerDeck = (Card and Card.getDeckByName("HeroDeck")) or {}
+-
+-        -- on crée le pool de cartes
+-        local pool = (Card and deckGlobal) or (Card and playerDeck) or {}
+-
+-        -- on récupère le nombre de cartes dans la pool
+-        local n = math.max(1, #pool.cards)
+-        -- on choisit 3 cartes aléatoires dans la pool
+-        for i = 1, 3 do
+-            local pick = pool.cards[math.random(n)]; if pick then
+-                Transition._reward.options[i] = table.clone(pick)
+-            end
+-        end
+-        -- on affiche l'overlay de récompense
+-    SceneManager:push("scene.overlay_reward.overlay_reward")
+-        -- on change d'état
+-        _enter("reward_choice")
+-    elseif S == "reward_choice" then
+-        -- on verifie si le jouer a fait son choix de récompense
+-        if Transition._flags.rewardChoiceDone and Transition._reward.chosenIndex then
+-            -- reset du flag
+-            Transition._flags.rewardChoiceDone = false
+-            -- on récupère l'index du choix
+-            local index = Transition._reward.chosenIndex
+-            -- on récupère la carte choisie
+-            local chosen = Transition._reward.options and Transition._reward.options[index]
+-
+-            if chosen and Card and Card.deck then
+-                -- on récupère le deck du joueur
+-                local playerDeck = Card.getDeckByName("HeroDeck")
+-                -- on ajoute la carte choisie au deck du joueur
+-                table.insert(playerDeck.cards, table.clone(chosen))
+-                -- on mélange le deck du joueur
+-                if Card.shuffleDeck then Card.shuffleDeck("Hero") end
+-
+-                dprint("reward -> +1 carte: " .. (chosen.name or "Carte"))
+-            end
+-            -- on vide les options de récompense
+-            Transition._reward.options = nil
+-            Transition._reward.chosenIndex = nil
+-
+-            -- on quitte l'overlay de récompense
+-            SceneManager:pop()
+-            -- on change d'état
+-            _enter("advance_enemy")
+-        end
+-    elseif STATE == "advance_enemy" then
+-        -- on change d'énemy
+-        if Enemies and (Enemies.next or Enemies.load) then if Enemies.next then Enemies.next() else Enemies.load() end end
+-        -- on re charge les point de puissance du joueur
+-        _refillPowerBoth()
+-        -- on verifie si il ya des carte dans la main du joueur
+-        if Card and Card.hand.cards and #Card.hand.cards > 0 then
+-            -- on récupère le deck du joueur
+-            local playerDeck = Card.getDeckByName("HeroDeck")
+-
+-            -- on remet les cartes de la main du joueur dans le deck du joueur
+-            for i = #Card.hand.cards, 1, -1 do
+-                table.insert(playerDeck.cards,
+-                    table.remove(Card.hand, i))
+-            end
+-
+-            -- on récupere la carte du cimetier pour les remttre dans le deck du joueur
+-            if Card and Card.graveyard and #Card.graveyard.cards > 0 then
+-                for i = #Card.graveyard.cards, 1, -1 do
+-                    table.insert(playerDeck.cards, table.remove(Card.graveyard.cards, i))
+-                end
+-            end
+-        end
+-
+-        -- on tire 5 cartes du deck du joueur pour le metre dans sa main
+-        if Card and Card.tirage then Card.tirage(5, true, 'HeroDeck') end
+-
+-        -- on rezet les flags de transition
+-        Transition._initiative = nil
+-        Transition._victoryTriggered = false -- <<< prêt pour le prochain combat
+-
+-        -- on change d'état
+-        _enter("initiative_flip")
+-    elseif STATE == "game_over" then
+-        -- attente overlay
+-    end
+-end
+-
+-function Transition.draw() end
+-
+--- ==== Commandes ====
+---[[
+-    Commandes de transition fait une requette de fin de tour
+-]]
+-function Transition.requestEndTurn()
+-    dprint("[transition] [endTurn] demande (state=" ..
+-        tostring(Transition.state) .. ", Tour=" .. tostring(_G.Tour) .. ")")
+-    -- si ces au tour du joueur
+-    if Transition.state == "player_turn" or _G.Tour == "player" then
+-        --on definie le prochain tour que ce sera l'énemy
+-        Transition._nextTurn = "Enemy"
+-        --on passe en mode transition
+-        _setTour("transition");
+-        -- on entre dans l'état de transition
+-        _enter("end_turn_transition")
+-
+-        dprint("[transition] [endTurn] OK")
+-        return true
+-    end
+-    dprint("[transition] [endTurn] ignor e9e"); return false
+-end
+-
+---[[
+-    Gestion de la mort de l'ennemi
+-]]
+-function Transition.onEnemyDied()
+-    dprint("enemy died -> victory_check")
+-    -- on entre dans l'état de victoire
+-    _enter("victory_check")
+-end
+-
+---[[
+-    Gestion de la mort du héros
+-]]
+-function Transition.onHeroDied()
+-    -- si on est deja en transition de gameOver on return
+-    if Transition._gameoverShown then return end
+-
+-    dprint("hero died -> game_over"); Transition._gameoverShown = true
+-    -- on affiche l'overlay de gameOver
+-    SceneManager:push("scene.overlay_gameover.overlay_gameover")
+-    -- on change d'état
+-    _enter("game_over")
+-end
+-
+--- Overlays
+---[[
+-    ci appelait demande l'overlay de début de ce fermet
+-]]
+-function Transition.continueFromStartOverlay()
+-    dprint("[overlay_start] continue");
+-    Transition._flags.startOverlayDone = true
+-end
+-
+---[[
+-    ci appelait demande l'overlay d'initiative ce fermet
+-]]
+-function Transition.ackInitiativeOverlay()
+-    dprint("[overlay_initiative] acknowledged");
+-    Transition._flags.announceDone = true
+-end
+-
+--- Récompenses
+---[[
+-    Renvoi les options de récompense (3 cartes aléatoires du deck global)
+-    @return table Liste des options de récompense
+-]]
+-function Transition.getRewardOptions()
+-    if (Transition._reward.options == nil or #Transition._reward.options == 0) then
+-        Transition._reward.options = {}
+-        Card = Card or require("my-librairie/card-librairie/card")
+-        if not Card or not Card.deckGlobal then
+-            dprint("[transition] [reward] pas de deck global, pas de récompenses")
+-            return Transition._reward.options
+-        end
+-        local pool = Card.deckGlobal
+-        local n = math.max(1, #pool)
+-        for i = 1, 3 do
+-            local pick = pool[math.random(n)];
+-            if pick then
+-                Transition._reward.options[i] = table.clone(pick)
+-            end
+-        end
+-    end
+-    return Transition._reward.options or {}
+-end
+-
+---[[
+-    Sélectionne une récompense
+-    @param index L'index de la récompense à sélectionner
+-]]
+-function Transition.rewardSelect(index)
+-    Transition._reward.chosenIndex = tonumber(index);
+-    Transition._flags.rewardChoiceDone = true
+-end
+-
+--- Game Over actions
+---[[
+-    Redémarre le jeu
+-    ]]
+-function Transition.cmdRestart()
+-    if SceneManager and SceneManager.pop then SceneManager:pop() end;
+-    if SceneManager and SceneManager.switch then SceneManager:switch("scene.gameplay.gameplay") end
+-end
+-
+---[[
+-    Retourne au menu principal
+-]]
+-function Transition.cmdBackToMenu()
+-    if SceneManager and SceneManager.pop then SceneManager:pop() end;
+-    if SceneManager and SceneManager.switch then SceneManager:switch("scene/menu") end
+-end
+-
+---[[ Debug / test helpers
+-    Usage:
+-      rawset(_G, "FORCE_INITIATIVE", "player")  -- or "Enemy"
+-      Transition.setForcedInitiative("player")
+-      Transition.clearForcedInitiative()
+-
+-    These helpers are non-intrusive: if no forced value is set the normal
+-    random behaviour remains.
+-]]
+-function Transition.setForcedInitiative(val)
+-    if type(val) ~= "string" then return false end
+-    local f = val:lower()
+-    if f == "player" then
+-        Transition._forcedInitiative = "player"
+-        return true
+-    elseif f == "enemy" then
+-        Transition._forcedInitiative = "Enemy"
+-        return true
+-    end
+-    return false
+-end
+-
+-function Transition.clearForcedInitiative()
+-    Transition._forcedInitiative = nil
+-end
+-
+--- Alias anti multi-require
+-do
+-    local M = Transition
+-    package.loaded["my-librairie.transition.manager"] = M
+-    package.loaded["my-librairie/transition/manager"] = M
+-    rawset(_G, "Transition", M)
+-end
+-
+-return Transition
+diff --git a/my-librairie/transitionManager.lua b/my-librairie/transitionManager.lua
+deleted file mode 100644
+index 77b03d3..0000000
+--- a/my-librairie/transitionManager.lua
++++ /dev/null
+@@ -1,89 +0,0 @@
+-local Transition = {}
+-local state = "IDLE"
+-local t = { time = 0, dur = 0, dir = "out" }
+-local ctx, opts, currentScript
+-local sceneManager = require("my-librairie/sceneManager")
+-local function ease(x) return x * x * (3 - 2 * x) end
+-local DefaultScript = {
+-    durationOut = 0.35,
+-    durationIn = 0.35,
+-    maskInput = true,
+-    easingOut = ease,
+-    easingIn = ease,
+-    drawOut = function(p, c)
+-        love.graphics.push("all"); love.graphics.setColor(0, 0, 0, p)
+-        love.graphics.rectangle("fill", 0, 0, c.w, c.h); love.graphics.pop()
+-    end,
+-    drawIn = function(p, c)
+-        love.graphics.push("all"); love.graphics.setColor(0, 0, 0, 1 - p)
+-        love.graphics.rectangle("fill", 0, 0, c.w, c.h); love.graphics.pop()
+-    end
+-}
+-local function getSceneScript(sceneObj)
+-    if sceneObj and type(sceneObj.transition) == "table" then return sceneObj.transition end
+-end
+-function Transition.isActive() return state ~= "IDLE" and state ~= "DONE" end
+-
+-local function startPhase(dir)
+-    t.dir = dir; t.time = 0; t.dur = (dir == "out" and (currentScript.durationOut or 0.3)) or
+-        (currentScript.durationIn or 0.3)
+-    local cb = (dir == "out" and currentScript.onStartOut) or currentScript.onStartIn; if cb then pcall(cb, ctx) end
+-end
+-local function endPhase(dir)
+-    local cb = (dir == "out" and currentScript.onEndOut) or currentScript.onEndIn; if cb then pcall(cb, ctx) end
+-end
+-function Transition.play(options)
+-    opts = options or {};
+-    -- resolve current scene via sceneManager:top() (sceneManager.current may be nil)
+-    local from = nil
+-    if sceneManager and type(sceneManager.top) == 'function' then
+-        local ok, top = pcall(function() return sceneManager:top() end)
+-        if ok and top then from = top end
+-    elseif sceneManager and sceneManager.current then
+-        from = sceneManager.current
+-    end
+-    ctx = {
+-        fromScene = from,
+-        toScene = opts.target,
+-        params = opts.params,
+-        w = love.graphics.getWidth(),
+-        h = love
+-            .graphics.getHeight()
+-    }
+-    currentScript = opts.script or (from and getSceneScript(from)) or DefaultScript
+-    state = "OUT"; startPhase("out")
+-end
+-
+-function Transition.update(dt)
+-    if state == "IDLE" or state == "DONE" then return end
+-    if dt > 0.05 then dt = 0.05 end
+-    t.time = t.time + dt; local donePhase = t.time >= t.dur
+-    if state == "OUT" then
+-        if donePhase then
+-            endPhase("out"); sceneManager:switch(ctx.toScene, ctx.params)
+-            ctx.fromScene = nil; ctx.toScene = sceneManager.current
+-            currentScript = opts.script or getSceneScript(ctx.toScene) or currentScript or DefaultScript
+-            state = "IN"; startPhase("in")
+-        end
+-    elseif state == "IN" then
+-        if donePhase then
+-            endPhase("in"); state = "DONE"
+-        end
+-    end
+-end
+-
+-function Transition.draw()
+-    if state == "IDLE" or state == "DONE" then return end
+-    local progress = math.min(1, t.time / math.max(0.0001, t.dur))
+-    if t.dir == "out" then
+-        local e = currentScript.easingOut or ease; local p = e(progress)
+-        if currentScript.drawOut then currentScript.drawOut(p, ctx) end
+-    else
+-        local e = currentScript.easingIn or ease; local p = e(progress)
+-        if currentScript.drawIn then currentScript.drawIn(p, ctx) end
+-    end
+-end
+-
+-function Transition.maskInput() return (currentScript and currentScript.maskInput) and Transition.isActive() end
+-
+-return Transition
+diff --git a/my-librairie/transitions/focus.lua b/my-librairie/transitions/focus.lua
+deleted file mode 100644
+index cc21898..0000000
+--- a/my-librairie/transitions/focus.lua
++++ /dev/null
+@@ -1,6 +0,0 @@
+-local M = { durationOut = 0.5, durationIn = 0.6, maskInput = true }
+-local function easeInOutQuad(x) return x < 0.5 and 2 * x * x or 1 - ((-2 * x + 2) ^ 2) / 2 end
+-M.easingOut = easeInOutQuad; M.easingIn = easeInOutQuad
+-function M.drawOut(p, ctx) love.graphics.setColor(0, 0, 0, p * 0.85); love.graphics.rectangle("fill", 0, 0, ctx.w, ctx.h) end
+-function M.drawIn(p, ctx) love.graphics.setColor(0, 0, 0, (1 - p) * 0.85); love.graphics.rectangle("fill", 0, 0, ctx.w, ctx.h) end
+-return M
+diff --git a/scene/gameplay/HUD/hud_gameplay.lua b/scene/gameplay/HUD/hud_gameplay.lua
+index 4c9c3a1..bfe5804 100644
+--- a/scene/gameplay/HUD/hud_gameplay.lua
++++ b/scene/gameplay/HUD/hud_gameplay.lua
+@@ -27,14 +27,14 @@ end
+ 
+ function hud_gameplay.draw()
+     local y = 20
+-    love.graphics.setColor(1,1,1)
++    love.graphics.setColor(1, 1, 1)
+     love.graphics.print(("Ennemis: %d"):format(#(AM and AM.enemies or {})), 20, y)
+     y = y + 16
+     for t, n in pairs(countByType()) do
+         love.graphics.print(("- " .. tostring(t) .. ": " .. tostring(n)), 20, y)
+         y = y + 16
+     end
+-    love.graphics.setColor(1,1,1)
++    love.graphics.setColor(1, 1, 1)
+ end
+ 
+ local function safeEndTurn()
+diff --git a/scene/gameplay/config.lua b/scene/gameplay/config.lua
+index 77b0e80..734238b 100644
+--- a/scene/gameplay/config.lua
++++ b/scene/gameplay/config.lua
+@@ -5,7 +5,7 @@
+ return {
+     enemies = {
+         -- Nombre d'ennemis à placer par vague (fallback si spawns non fournis)
+-        count = 3,
++        count = 2,
+ 
+         -- Pool d'identifiants/types d'ennemis (doit correspondre aux ressources / identifiants utilisés)
+         -- Ex : noms d'assets ou clés de génération
+@@ -15,15 +15,15 @@ return {
+         -- Format : { {x = 100, y = 120}, {x = 300, y = 120}, ... }
+         -- Si nil, la scène peut calculer automatiquement des positions en fonction de l'écran.
+         spawns = {
+-            { x = 220, y = 120 },
+-            { x = 420, y = 120 },
+-            { x = 620, y = 120 },
++            { x = 1500, y = 600, type = "orc" },
++            { x = 1420, y = 450, type = "slime" },
++            { x = 1200, y = 550, type = "knightDeath" },
+         },
+ 
+         -- Options additionnelles pour la génération (facultatif)
+         options = {
+             allowDuplicates = true, -- autoriser plusieurs ennemis du même type
+-            shufflePool = true, -- mélanger la pool avant sélection
++            shufflePool = true,     -- mélanger la pool avant sélection
+         },
+     },
+ 
+diff --git a/scene/gameplay/gameplay.lua b/scene/gameplay/gameplay.lua
+index 405fff6..1317b98 100644
+--- a/scene/gameplay/gameplay.lua
++++ b/scene/gameplay/gameplay.lua
+@@ -1,5 +1,6 @@
+ local hud_gameplay = require("scene.gameplay.HUD.hud_gameplay")
+ 
++
+ -- Diagnostic: write a small marker when this module is required so we can
+ -- distinguish "require failed" vs "module loaded but crashed later".
+ pcall(function()
+@@ -12,6 +13,7 @@ end)
+ -- scene/gameplay.lua
+ 
+ local gameplay = {}
++gameplay.config = require("scene.gameplay.config")
+ 
+ local DEBUG_GAMEPLAY = true
+ local function _to_text(...)
+@@ -53,6 +55,35 @@ local function safecall(where, fn, ...)
+     return a, b, c, d
+ end
+ 
++local function AutoSPawnEnemy()
++    local AM = actor or (_G.actorManager or require("my-librairie/actorManager"))
++    if AM and AM.clearEnemies and AM.spawnEnemy then
++        AM:clearEnemies()
++        local cfg = (params and params.config) or gameplay.config or SceneConfig or {}
++        local ec = cfg.enemies or {}
++
++        if ec.spawns and type(ec.spawns) == 'table' and #ec.spawns > 0 then
++            for _, s in ipairs(ec.spawns) do
++                if s and s.type then
++                    pcall(function() AM:spawnEnemy(s.type, { x = s.x, y = s.y }) end)
++                end
++            end
++        else
++            -- mode aléatoire / round robin
++            local count = tonumber(ec.count) or 0
++            local pool  = ec.pool or {}
++            for i = 1, count do
++                if #pool > 0 then
++                    local t = pool[((i - 1) % #pool) + 1]
++                    local x = 520 + (i - 1) * 64
++                    local y = 360
++                    pcall(function() AM:spawnEnemy(t, { x = x, y = y }) end)
++                end
++            end
++        end
++    end
++end
++
+ -- Tour global piloté par le Transition Manager
+ Tour                    = Tour or "transition"
+ local lastTour          = ""
+@@ -60,17 +91,26 @@ local watchdogEnemyHold = 0
+ local WATCHDOG_LIMIT    = 2.0
+ 
+ -- Modules
+-local Transition        = require("my-librairie/transition/manager")
+-local cardsPlayer       = require("ressources/cards_data_player")
+-Hero                    = require("my-librairie/ActorScripts/player/Hero")
+-Enemies                 = require("my-librairie/ActorScripts/Enemy/Enemies")
+-local AI                = require("my-librairie/ai/controller")
+-local CardsIA           = require("ressources/cardsIA")
+-local actor             = _G.actorManager or require("my-librairie/actorManager")
+-local res               = require("my-librairie.resource_cache")
++local Transition        = nil
++local function getTransition()
++    if Transition then return Transition end
++    local ok, err = pcall(function() Transition = require("my-librairie/transition/templateCombatTransition") end)
++    if not ok then
++        logf("[Transition] ERREUR -> %s", tostring(err))
++        Transition = nil
++    end
++    return Transition
++end
++local cardsPlayer = require("ressources/cards_data_player")
++Hero              = require("my-librairie/ActorScripts/player/Hero")
++Enemies           = require("my-librairie/ActorScripts/Enemy/Enemies")
++local AI          = require("my-librairie/ai/controller")
++local CardsIA     = require("ressources/cardsIA")
++local actor       = _G.actorManager or require("my-librairie/actorManager")
++local res         = require("my-librairie.resource_cache")
+ 
+ -- try to load scene-specific config (safe require)
+-local SceneConfig       = nil
++local SceneConfig = nil
+ do
+     local ok, cfg = pcall(require, 'scene.gameplay.config')
+     if ok and type(cfg) == 'table' then
+@@ -202,6 +242,11 @@ end
+ --        LIFECYCLE
+ -- ========================
+ function gameplay.load(self, params)
++    --Spawn enemies
++
++    AutoSPawnEnemy()
++
++
+     if hud_gameplay and hud_gameplay.load then hud_gameplay.load() end
+     log("[gameplay.load]")
+     -- attach scene config to module for runtime access
+@@ -283,7 +328,21 @@ function gameplay.load(self, params)
+ 
+     -- IA / Transition manager
+     safecall("AI.load", function() return AI and AI.load and AI.load() end)
+-    safecall("Transition.load", function() return Transition and Transition.load and Transition.load() end)
++    safecall("Transition.load", function()
++        if Transition == nil then Transition = getTransition() end
++        -- diagnostic: log whether Transition was instantiated and GameFlags value
++        pcall(function()
++            local f = io.open("gameLogs/transition_debug.log", "a")
++            if f then
++                f:write(os.date("%Y-%m-%d %H:%M:%S") ..
++                " - gameplay.load -> Transition present=" ..
++                tostring(Transition ~= nil) ..
++                " GameFlags.first_draft_done=" .. tostring((rawget(_G, 'GameFlags') or {}).first_draft_done) .. "\n")
++                f:close()
++            end
++        end)
++        return Transition and Transition.load and Transition:load()
++    end)
+ 
+     -- footer image for gameplay HUD (draw only on gameplay)
+     if res and res.image then
+@@ -414,7 +473,8 @@ function gameplay:update(dt)
+     if hud_gameplay and hud_gameplay.update then hud_gameplay.update(dt) end
+     hud.update(dt)
+     -- Transition manager (dot-call, dt numérique)
+-    safecall("Transition.update", function() return Transition.update and Transition.update(dt) end)
++    if Transition == nil then getTransition() end
++    safecall("Transition.update", function() return Transition.update(dt) and Transition:update(dt) end)
+ 
+     -- Re-tirer une seule fois quand l’overlay se ferme (pendant le tour joueur)
+     if Tour == "player" and gameplay._pendingDrawThisTurn and Transition and Transition.canDeal and Transition.canDeal() then
+@@ -534,7 +594,7 @@ function gameplay.rezetGame()
+     safecall("Hero.rezet", function() return Hero and Hero.rezet and Hero.rezet() end)
+ 
+     Tour, lastTour, watchdogEnemyHold = "transition", "", 0
+-    safecall("Transition.load", function() return Transition and Transition.load and Transition.load() end)
++    safecall("Transition.load", function() return Transition and Transition.load and Transition:load() end)
+ end
+ 
+ return gameplay
+diff --git a/scene/menu/menu.lua b/scene/menu/menu.lua
+index 679b1c8..aff0254 100644
+--- a/scene/menu/menu.lua
++++ b/scene/menu/menu.lua
+@@ -17,24 +17,26 @@ local menu        = {}
+ menu.illustration = {}
+ 
+ -- Custom transition script for the menu scene (slide + fade)
+-menu.transition = {
+-    durationOut = 0.4, durationIn = 0.45, maskInput = true,
+-    easingOut = function(x) return x^3 end,
+-    easingIn  = function(x) return 1 - (1 - x)^3 end,
+-    drawOut = function(p, ctx)
+-        local w,h = ctx.w, ctx.h
++menu.transition   = {
++    durationOut = 0.4,
++    durationIn  = 0.45,
++    maskInput   = true,
++    easingOut   = function(x) return x ^ 3 end,
++    easingIn    = function(x) return 1 - (1 - x) ^ 3 end,
++    drawOut     = function(p, ctx)
++        local w, h = ctx.w, ctx.h
+         love.graphics.push("all")
+         love.graphics.translate(-p * w * 0.4, 0)
+         love.graphics.pop()
+-        love.graphics.setColor(0,0,0,p*0.6)
++        love.graphics.setColor(0, 0, 0, p * 0.6)
+         love.graphics.rectangle("fill", 0, 0, w, h)
+     end,
+-    drawIn = function(p, ctx)
+-        local w,h = ctx.w, ctx.h
++    drawIn      = function(p, ctx)
++        local w, h = ctx.w, ctx.h
+         love.graphics.push("all")
+         love.graphics.translate((1 - p) * w * 0.3, 0)
+         love.graphics.pop()
+-        love.graphics.setColor(0,0,0,(1 - p) * 0.4)
++        love.graphics.setColor(0, 0, 0, (1 - p) * 0.4)
+         love.graphics.rectangle("fill", 0, 0, w, h)
+     end,
+ }
+@@ -80,23 +82,44 @@ menu.button = {
+     Retour : aucune valeur (nil).
+     ]]
+         action = function(btn)
+-            -- btn correspond au bouton cliqué (transmis depuis menu.hover)
+-            if btn and btn.cmd == 'play' then
+-                _log("[menu] Play cliqué → switch vers gameplay")
+-                -- charger la config gameplay et la transmettre à la scène
+-                local okCfg, cfg = pcall(require, "scene.gameplay.config")
+-                if not okCfg then cfg = nil end
+-                local okSwitch, tgt = pcall(function()
+-                    return scene:switchWithTransition("scene.gameplay.gameplay", { config = cfg })
+-                end)
+-                if not okSwitch or not tgt then
+-                    _log("[menu] scene:switch('scene.gameplay.gameplay') a échoué, tentative alternative sans config")
+-                    local okSwitch2, tgt2 = pcall(function() return scene:switchWithTransition("scene.gameplay.gameplay") end)
+-                    if not okSwitch2 or not tgt2 then
+-                        _log("[menu] impossible de switcher vers gameplay : aucune require/switch n'a fonctionné")
+-                    end
++            if not (btn and btn.cmd == 'play') then return end
++            _log("[menu] Play cliqué → tentative de switch vers gameplay")
++
++            -- 1) Essayer de charger explicitement le module gameplay, avec fallback dot/slash
++            local gameplayMod, lastErr
++            for _, name in ipairs({ "scene.gameplay.gameplay", "scene/gameplay/gameplay" }) do
++                local ok, mod_or_err = pcall(require, name)
++                if ok and mod_or_err then
++                    gameplayMod = mod_or_err
++                    _log("[menu] require OK:", name)
++                    break
++                else
++                    lastErr = tostring(mod_or_err)
++                    _log("[menu] require FAIL:", name, "->", lastErr)
+                 end
+             end
++
++            if not gameplayMod then
++                -- 2) Surface l'erreur pour comprendre ce qui bloque
++                print("[menu] ERREUR: impossible de charger la scène gameplay :", lastErr or "inconnue")
++                return
++            end
++
++            -- (option) Passer la config si tu utilises le spawn auto
++            local params = nil
++            local okCfg, cfg = pcall(require, "scene/gameplay/config")
++            if okCfg and cfg then params = { config = cfg } end
++
++            -- 3) Faire le switch avec le module déjà chargé (évite une 2e résolution)
++            local okSwitch, tgt = pcall(function() return scene:switch(gameplayMod, params) end)
++            if not okSwitch or not tgt then
++                print("[menu] ERREUR: scene:switch(gameplayMod) a échoué →", tostring(tgt))
++                return
++            end
++
++            -- 4) Vérifier qui est au sommet après switch (debug visible console)
++            local top = (scene.top and scene:top()) or nil
++            print("[menu] Switch OK. Top scene =", top and (top.name or "??") or "nil")
+         end
+ 
+     },
+diff --git a/scene/overlay_start/overlay_start.lua b/scene/overlay_start/overlay_start.lua
+index 54cce86..22d7151 100644
+--- a/scene/overlay_start/overlay_start.lua
++++ b/scene/overlay_start/overlay_start.lua
+@@ -2,7 +2,7 @@
+ local overlay            = { name = "overlay_start" }
+ 
+ local screen             = rawget(_G, "screen") or require("my-librairie/responsive")
+-local Transition         = require("my-librairie/transition/manager")
++local Transition         = require("my-librairie/transition/templateCombatTransition")
+ local Card               = rawget(_G, "Card") or rawget(_G, "card")
+ 
+ local wasDown            = false

@@ -1,5 +1,6 @@
 local hud_gameplay = require("scene.gameplay.HUD.hud_gameplay")
 
+
 -- Diagnostic: write a small marker when this module is required so we can
 -- distinguish "require failed" vs "module loaded but crashed later".
 pcall(function()
@@ -12,6 +13,7 @@ end)
 -- scene/gameplay.lua
 
 local gameplay = {}
+gameplay.config = require("scene.gameplay.config")
 
 local DEBUG_GAMEPLAY = true
 local function _to_text(...)
@@ -53,6 +55,35 @@ local function safecall(where, fn, ...)
     return a, b, c, d
 end
 
+local function AutoSPawnEnemy()
+    local AM = actor or (_G.actorManager or require("my-librairie/actorManager"))
+    if AM and AM.clearEnemies and AM.spawnEnemy then
+        AM:clearEnemies()
+        local cfg = (params and params.config) or gameplay.config or SceneConfig or {}
+        local ec = cfg.enemies or {}
+
+        if ec.spawns and type(ec.spawns) == 'table' and #ec.spawns > 0 then
+            for _, s in ipairs(ec.spawns) do
+                if s and s.type then
+                    pcall(function() AM:spawnEnemy(s.type, { x = s.x, y = s.y }) end)
+                end
+            end
+        else
+            -- mode aléatoire / round robin
+            local count = tonumber(ec.count) or 0
+            local pool  = ec.pool or {}
+            for i = 1, count do
+                if #pool > 0 then
+                    local t = pool[((i - 1) % #pool) + 1]
+                    local x = 520 + (i - 1) * 64
+                    local y = 360
+                    pcall(function() AM:spawnEnemy(t, { x = x, y = y }) end)
+                end
+            end
+        end
+    end
+end
+
 -- Tour global piloté par le Transition Manager
 Tour                    = Tour or "transition"
 local lastTour          = ""
@@ -60,17 +91,26 @@ local watchdogEnemyHold = 0
 local WATCHDOG_LIMIT    = 2.0
 
 -- Modules
-local Transition        = require("my-librairie/transition/manager")
-local cardsPlayer       = require("ressources/cards_data_player")
-Hero                    = require("my-librairie/ActorScripts/player/Hero")
-Enemies                 = require("my-librairie/ActorScripts/Enemy/Enemies")
-local AI                = require("my-librairie/ai/controller")
-local CardsIA           = require("ressources/cardsIA")
-local actor             = _G.actorManager or require("my-librairie/actorManager")
-local res               = require("my-librairie.resource_cache")
+local Transition        = nil
+local function getTransition()
+    if Transition then return Transition end
+    local ok, err = pcall(function() Transition = require("my-librairie/transition/templateCombatTransition") end)
+    if not ok then
+        logf("[Transition] ERREUR -> %s", tostring(err))
+        Transition = nil
+    end
+    return Transition
+end
+local cardsPlayer = require("ressources/cards_data_player")
+Hero              = require("my-librairie/ActorScripts/player/Hero")
+Enemies           = require("my-librairie/ActorScripts/Enemy/Enemies")
+local AI          = require("my-librairie/ai/controller")
+local CardsIA     = require("ressources/cardsIA")
+local actor       = _G.actorManager or require("my-librairie/actorManager")
+local res         = require("my-librairie.resource_cache")
 
 -- try to load scene-specific config (safe require)
-local SceneConfig       = nil
+local SceneConfig = nil
 do
     local ok, cfg = pcall(require, 'scene.gameplay.config')
     if ok and type(cfg) == 'table' then
@@ -202,6 +242,11 @@ end
 --        LIFECYCLE
 -- ========================
 function gameplay.load(self, params)
+    --Spawn enemies
+
+    AutoSPawnEnemy()
+
+
     if hud_gameplay and hud_gameplay.load then hud_gameplay.load() end
     log("[gameplay.load]")
     -- attach scene config to module for runtime access
@@ -283,7 +328,21 @@ function gameplay.load(self, params)
 
     -- IA / Transition manager
     safecall("AI.load", function() return AI and AI.load and AI.load() end)
-    safecall("Transition.load", function() return Transition and Transition.load and Transition.load() end)
+    safecall("Transition.load", function()
+        if Transition == nil then Transition = getTransition() end
+        -- diagnostic: log whether Transition was instantiated and GameFlags value
+        pcall(function()
+            local f = io.open("gameLogs/transition_debug.log", "a")
+            if f then
+                f:write(os.date("%Y-%m-%d %H:%M:%S") ..
+                    " - gameplay.load -> Transition present=" ..
+                    tostring(Transition ~= nil) ..
+                    " GameFlags.first_draft_done=" .. tostring((rawget(_G, 'GameFlags') or {}).first_draft_done) .. "\n")
+                f:close()
+            end
+        end)
+        return Transition and Transition.load and Transition:load()
+    end)
 
     -- footer image for gameplay HUD (draw only on gameplay)
     if res and res.image then
@@ -414,7 +473,8 @@ function gameplay:update(dt)
     if hud_gameplay and hud_gameplay.update then hud_gameplay.update(dt) end
     hud.update(dt)
     -- Transition manager (dot-call, dt numérique)
-    safecall("Transition.update", function() return Transition.update and Transition.update(dt) end)
+    if Transition == nil then getTransition() end
+    safecall("Transition.update", function() return Transition.update(dt) and Transition:update(dt) end)
 
     -- Re-tirer une seule fois quand l’overlay se ferme (pendant le tour joueur)
     if Tour == "player" and gameplay._pendingDrawThisTurn and Transition and Transition.canDeal and Transition.canDeal() then
@@ -534,7 +594,7 @@ function gameplay.rezetGame()
     safecall("Hero.rezet", function() return Hero and Hero.rezet and Hero.rezet() end)
 
     Tour, lastTour, watchdogEnemyHold = "transition", "", 0
-    safecall("Transition.load", function() return Transition and Transition.load and Transition.load() end)
+    safecall("Transition.load", function() return Transition and Transition.load and Transition:load() end)
 end
 
 return gameplay

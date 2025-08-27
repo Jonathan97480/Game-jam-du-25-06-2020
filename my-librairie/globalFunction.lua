@@ -38,7 +38,8 @@ local lifeBar = {
     red = res.image('img/Actor/Enemy/HudLifeEnemy.png'),
     bleu = res.image('img/Actor/hero/HudLifeHero.png'),
     color_red = { 1, 0, 0 },
-    color_bleu = { 0, 0, 1 }
+    color_bleu = { 0, 0, 1 },
+
 }
 
 ----------------------------------------------------------------
@@ -199,27 +200,52 @@ function globalFunction.drawLifeBarStatus(p_actor, p_Colorbar)
         color = lifeBar.color_bleu
     end
 
-    local vx = (p_actor.vector2 and p_actor.vector2.x) or 0
-    local vy = (p_actor.vector2 and p_actor.vector2.y) or 0
-    local w = p_actor.width or 0
-    local h = p_actor.height or 0
+    local lifeBarConfig = p_actor.lifeBarConfig
+    if not lifeBarConfig then
+        local baseX = (p_actor.vector2 and p_actor.vector2.x) or 0
+        local baseY = (p_actor.vector2 and p_actor.vector2.y) or 0
+        lifeBarConfig = {
+            x = baseX,
+            y = baseY,
+            w = p_actor.width or 0,
+            h = p_actor.height or 0,
+            position = {
+                x = baseX + 25,
+                y = baseY - 50
+            },
+            size = {
+                w = 336,
+                h = 10
+            }
+        }
+    end
 
-    local position = {
-        x = vx + ((w / 2) - (maxLife / 0.5)),
-        y = vy + h - 88
-    }
+    local vx = lifeBarConfig.x or 0
+    local vy = lifeBarConfig.y or 0
+    local w = lifeBarConfig.w or 0
+    local h = lifeBarConfig.h or 0
+    local position = lifeBarConfig.position or { x = vx, y = vy }
+
+    -- compute target draw width (safe parentheses)
+    local targetW = (lifeBarConfig.size and lifeBarConfig.size.w) or 336
+    local targetH = (lifeBarConfig.size and lifeBarConfig.size.h) or 10
+    local drawW = math.max(0, targetW * (life / maxLife))
 
     love.graphics.setColor(color)
-    love.graphics.rectangle('fill', position.x, position.y + 4, 336 * (life / maxLife), 10)
+    love.graphics.rectangle('fill', position.x, position.y + 4, drawW, targetH)
     love.graphics.setColor(1, 1, 1)
 
-    love.graphics.draw(lifeBar[colorBar], position.x, position.y, 0, 1.5, 2)
+    -- draw the life bar image scaled to target size (safe-get dimensions)
+    local img = lifeBar[colorBar]
+    local imgW, imgH = 1, 1
+    if img and type(img.getDimensions) == 'function' then
+        local ok, iw, ih = pcall(img.getDimensions, img)
+        if ok and iw and ih then imgW, imgH = iw, ih end
+    end
+    local newScale = { w = targetW / math.max(1, imgW), h = targetH / math.max(1, imgH) }
+    if img then pcall(function() love.graphics.draw(img, position.x, position.y, 0, newScale.w, newScale.h) end) end
 
-    love.graphics.print(
-        life .. '/' .. maxLife,
-        vx + (w / 1.8),
-        vy + (h - 8)
-    )
+    love.graphics.print(life .. '/' .. maxLife, vx + (w / 1.8), vy - 48)
 
     drawBonus(p_actor, color, position)
 end

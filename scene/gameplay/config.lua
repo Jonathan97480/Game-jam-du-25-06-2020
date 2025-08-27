@@ -5,7 +5,7 @@
 return {
     enemies = {
         -- Nombre d'ennemis à placer par vague (fallback si spawns non fournis)
-        count = 3,
+        count = 2,
 
         -- Pool d'identifiants/types d'ennemis (doit correspondre aux ressources / identifiants utilisés)
         -- Ex : noms d'assets ou clés de génération
@@ -15,15 +15,15 @@ return {
         -- Format : { {x = 100, y = 120}, {x = 300, y = 120}, ... }
         -- Si nil, la scène peut calculer automatiquement des positions en fonction de l'écran.
         spawns = {
-            { x = 220, y = 120 },
-            { x = 420, y = 120 },
-            { x = 620, y = 120 },
+            { x = 1500, y = 600, type = "orc" },
+            { x = 1420, y = 450, type = "slime" },
+            { x = 1200, y = 550, type = "knightDeath" },
         },
 
         -- Options additionnelles pour la génération (facultatif)
         options = {
             allowDuplicates = true, -- autoriser plusieurs ennemis du même type
-            shufflePool = true, -- mélanger la pool avant sélection
+            shufflePool = true,     -- mélanger la pool avant sélection
         },
     },
 

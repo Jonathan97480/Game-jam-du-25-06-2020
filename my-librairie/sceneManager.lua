@@ -10,7 +10,7 @@ Options / Debug
 scene.debug     = true
 scene.stackMode = false
 scene.color     = { 1, 1, 1, 1 } -- couleur overlay debug éventuel
-
+scene.current   = nil
 --[[ =====================================================================
 Helpers internes
 ===================================================================== ]]
@@ -246,7 +246,7 @@ end
 
 -- Convenience helper: switch with a visual transition script
 function scene:switchWithTransition(target, params, tOpts)
-    local ok, Transition = pcall(require, "my-librairie/transitionManager")
+    local ok, Transition = pcall(require, 'my-librairie/transition/transitionManager')
     if not ok or not Transition then
         -- fallback to direct switch if Transition not available
         return self:switch(target, nil, params)
@@ -256,6 +256,7 @@ function scene:switchWithTransition(target, params, tOpts)
     end)
     if ok2 then
         -- If Transition.play returns a value, propagate it, otherwise return true to signal success
+        self:switch(res.toScene, nil, res.params)
         return (res ~= nil) and res or true
     end
 
@@ -281,6 +282,8 @@ function scene:push(target, ctorArgsList)
     callAny(tgt, "load")
     callAny(tgt, "enter")
     if scene.debug then print("[sceneManager] push -> " .. tostring(tgt.name)) end
+
+    scene.current = tgt
     return tgt
 end
 

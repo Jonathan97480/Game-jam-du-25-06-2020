@@ -3,41 +3,122 @@ local Enemies = {
     curentEnemy  = nil,
     listeEnemies = {}
 }
+local actor   = actor or require("my-librairie.actorManager")
 
 -- Backwards-compatible Enemy factory registry (singleton)
 local Enemy   = rawget(_G, "__ENEMY_SINGLETON__") or {}
 local IA      = nil
-pcall(function() IA = require("my-librairie/ActorScripts/Enemy/ia") end)
+local function getIA()
+    if IA then return IA end
+    pcall(function() IA = require("my-librairie/ActorScripts/Enemy/ia") end)
+    return IA
+end
 
-function Enemy.create_orc(args)
+function Enemies.create_orc(args)
     args = args or {}
-    local e = { type = "orc", x = args.x or 0, y = args.y or 0 }
-    e.state = e.state or { life = 20, maxLife = 20 }
-    e.atk = 5
-    e.ai = IA and IA.new and IA.new(e) or nil
+    local e = actor.create(args.name or "Enemy-orc", { idle = { 'img/Actor/Enemy/Enemy-1.png' } },
+        { x = args.x or 0, y = args.y or 400 })
+    e.type = "orc"
+    e.lifeBarConfig = {
+        x = (e.vector2 and e.vector2.x) or 0,
+        y = (e.vector2 and e.vector2.y) - 50 or 0,
+        w = 336,
+        h = 10,
+        position = {
+            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
+            y = (e.vector2 and e.vector2.y) - 50 or 0
+        },
+        size = {
+            w = 150,
+            h = 25
+        }
+    }
+    local ia = getIA()
+    e.ai = ia and ia.new and ia.new(e) or nil
     return e
 end
 
-function Enemy.create_slime(args)
+function Enemies.create_slime(args)
     args = args or {}
-    local e = { type = "slime", x = args.x or 0, y = args.y or 0 }
+    local e = actor.create(args.name or "Enemy-slime", { idle = { 'img/Actor/Enemy/Enemy-2.png' } },
+        { x = args.x or 0, y = args.y or 0 })
+    e.type = "slime"
+    e.lifeBarConfig = {
+        x = (e.vector2 and e.vector2.x) or 0,
+        y = (e.vector2 and e.vector2.y) - 50 or 0,
+        w = 150,
+        h = 25,
+        position = {
+            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
+            y = (e.vector2 and e.vector2.y) - 50 or 0
+        },
+        size = {
+            w = 150,
+            h = 25
+        }
+    }
+    local ia = getIA()
+    e.ai = ia and ia.new and ia.new(e) or nil
+    return e
+end
+
+function Enemies.create_knightDeath(args)
+    args = args or {}
+    local e = actor.create(args.name or "Enemy-knightDeath", { idle = { 'img/Actor/Enemy/Enemy-3.png' } },
+        { x = args.x or 0, y = args.y or 0 })
+    e.type = "knightDeath"
+    e.lifeBarConfig = {
+        x = (e.vector2 and e.vector2.x) or 0,
+        y = (e.vector2 and e.vector2.y) - 50 or 0,
+        w = 150,
+        h = 25,
+        position = {
+            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
+            y = (e.vector2 and e.vector2.y) - 50 or 0
+        },
+        size = {
+            w = 150,
+            h = 25
+        }
+    }
     e.state = e.state or { life = 12, maxLife = 12 }
     e.atk = 3
-    e.ai = IA and IA.new and IA.new(e) or nil
+    local ia = getIA()
+    e.ai = ia and ia.new and ia.new(e) or nil
     return e
 end
 
-Enemy.registry = Enemy.registry or {
-    orc = Enemy.create_orc,
-    slime = Enemy.create_slime,
+function Enemies.create_spider(args)
+    args = args or {}
+    local e = actor.create(args.name or "Enemy-spider", { idle = { 'img/Actor/Enemy/Enemy-4.png' } },
+        { x = args.x or 0, y = args.y or 0 })
+    e.type = "spider"
+
+    e.state = e.state or { life = 12, maxLife = 12 }
+    e.atk = 3
+    local ia = getIA()
+    e.ai = ia and ia.new and ia.new(e) or nil
+    return e
+end
+
+Enemies.registry = Enemies.registry or {
+    orc = Enemies.create_orc,
+    slime = Enemies.create_slime,
+    knightDeath = Enemies.create_knightDeath,
+    spider = Enemies.create_spider
 }
 
-rawset(_G, "__ENEMY_SINGLETON__", Enemy)
+rawset(_G, "__ENEMY_SINGLETON__", Enemies)
 
 -- actorManager is resolved lazily inside load() to avoid circular require
 local actor = nil
 
-local globalFunction = require('my-librairie.globalFunction')
+local globalFunction = nil
+local function getGlobalFunction()
+    if globalFunction then return globalFunction end
+    pcall(function() globalFunction = require('my-librairie.globalFunction') end)
+    return globalFunction
+end
 
 
 -- Sécurise l'état d'un ennemi (toujours un state table numérisé)
@@ -67,36 +148,9 @@ local function ensureEnemyState(e)
     return e
 end
 
--- LOAD : crée 4 ennemis, prend 1 au hasard comme courant
+-- LOAD
 function Enemies.load()
-    Enemies.listeEnemies = {}
-    Enemies.curentEnemy  = nil
 
-    -- lazy-resolve actorManager to break circular require at module load time
-    if not actor then
-        actor = rawget(_G, 'actorManager')
-        if not actor then pcall(function() actor = require('my-librairie/actorManager') end) end
-    end
-
-    for i = 1, 4 do
-        local E
-        if actor and actor.create then
-            E = actor.create('Enemy-' .. i, {
-                idle = { 'img/Actor/Enemy/Enemy-' .. i .. '.png' }
-            }, { x = 1261, y = 400 })
-        else
-            -- fallback: create a minimal enemy table if actor manager unavailable
-            E = { name = 'Enemy-' .. i, vector2 = { x = 1261, y = 400 }, animation = {} }
-        end
-
-        ensureEnemyState(E)
-        table.insert(Enemies.listeEnemies, E)
-    end
-
-    local idx = math.random(1, #Enemies.listeEnemies)
-    Enemies.curentEnemy = Enemies.listeEnemies[idx]
-    table.remove(Enemies.listeEnemies, idx)
-    ensureEnemyState(Enemies.curentEnemy)
 end
 
 -- NEXT : passe à l’ennemi suivant (le Transition Manager gère le flow global)
@@ -120,25 +174,25 @@ end
 
 -- DRAW : dessine l’ennemi courant + sa barre de vie
 function Enemies.draw()
-    local e = ensureEnemyState(Enemies.curentEnemy)
-    if not e then return end
+    for i = #Enemies.listeEnemies, 1, -1 do
+        local e = Enemies.listeEnemies[i]
+        if not e then return end
 
-    -- animation (idle par défaut)
-    local animName = e.curentAnimation or "idle"
-    if e.animation and e.animation[animName] then
-        local animation = e.animation[animName]
-        for i = 1, #animation do
-            love.graphics.draw(animation[i], e.vector2.x, e.vector2.y)
+        -- animation (idle par défaut)
+        local animName = e.curentAnimation or "idle"
+        if e.animation and e.animation[animName] then
+            local animation = e.animation[animName]
+            for i = 1, #animation do
+                love.graphics.draw(animation[i], e.vector2.x, e.vector2.y)
+            end
         end
-    end
 
-    if type(globalFunction
-        ) == "table" and type(globalFunction
-            .drawLifeBarStatus) == "function" then
-        pcall(function()
-            globalFunction
-                .drawLifeBarStatus(e, 'red')
-        end)
+        local gf = getGlobalFunction()
+        if type(gf) == "table" and type(gf.drawLifeBarStatus) == "function" then
+            pcall(function()
+                gf.drawLifeBarStatus(e, 'red')
+            end)
+        end
     end
 end
 
