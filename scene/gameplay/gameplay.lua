@@ -474,7 +474,7 @@ function gameplay:update(dt)
     hud.update(dt)
     -- Transition manager (dot-call, dt numérique)
     if Transition == nil then getTransition() end
-    safecall("Transition.update", function() return Transition.update(dt) and Transition:update(dt) end)
+    Transition:update(dt)
 
     -- Re-tirer une seule fois quand l’overlay se ferme (pendant le tour joueur)
     if Tour == "player" and gameplay._pendingDrawThisTurn and Transition and Transition.canDeal and Transition.canDeal() then

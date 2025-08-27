@@ -2,7 +2,7 @@
 local overlay            = { name = "overlay_start" }
 
 local screen             = rawget(_G, "screen") or require("my-librairie/responsive")
-local Transition         = require("my-librairie/transition/manager")
+local Transition         = require("my-librairie/transition/templateCombatTransition")
 local Card               = rawget(_G, "Card") or rawget(_G, "card")
 
 local wasDown            = false
@@ -88,7 +88,7 @@ function overlay.update(dt)
     local mx, my, down = mouse()
     -- on n'utilise PAS clavier ici pour éviter l'auto-close
     if not down and wasDown and isOver(btn.x, btn.y, btn.w, btn.h, mx, my) then
-        Transition.continueFromStartOverlay()
+        Transition:continueFromStartOverlay()
     end
     wasDown = down
 end
