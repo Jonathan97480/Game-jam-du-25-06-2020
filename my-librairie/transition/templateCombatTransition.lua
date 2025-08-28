@@ -2,43 +2,18 @@
 -- CombatTransition Template — multi-ennemis, transitions de scène,
 -- premier draft géré avec overlay_start (plus de overlay_deckdraft)
 
--- ============== Require paresseux (anti-cycles) ==============
---[[ local function SM() return rawget(_G, "scene") or require("my-librairie/sceneM-- Overlays : boutons "continuer/OK"
-function CombatFlow:confirmStartOverlay()
-    GameFlags.first_draft_done = true
-    self.flagStartOverlayDone = true
-    SceneManager:pop()
-    logT("overlay_start confirmé - affichage overlay_initiative")
-    -- Afficher overlay_initiative maintenant
-    SceneManager:push(self.cfg.overlays.initiative or "scene.overlay_initiative.overlay_initiative")
+-- Fonction de require sécurisé pour éviter les dépendances circulaires
+local function _safeRequire(name)
+    local ok, mod = pcall(require, name)
+    return ok and mod or nil
 end
 
-function CombatFlow:confirmInitiativeOverlay()
-    self.flagInitiativeShown = true
-    SceneManager:pop()
-    logT("overlay_initiative confirmé - démarrage round")
-    -- Maintenant démarrer le round
-    setTour("setup_round")
-    self.state = "setup_round"; self.timer = 0
-end
-
--- Appelé par overlay_initiative quand l'utilisateur clique ou attend
-function CombatFlow:announceContinue()
-    return self:confirmInitiativeOverlay()
-endnd
-local function AM() return rawget(_G, "actorManager") or require("my-librairie/actorManager") end
-local function EN() return rawget(_G, "Enemies") or require("my-librairie/ActorScripts/Enemy/Enemies") end
-local function HERO() return rawget(_G, "Hero") or require("my-librairie/ActorScripts/player/Hero") end
-local function AI() return rawget(_G, "AI") or require("my-librairie/ai/controller") end
-local function CARD() return require("my-librairie/card-librairie/card") end ]]
-
-
-local SceneManager = rawget(_G, "scene") or require("my-librairie/sceneManager")
-local Card         = require("my-librairie/card-librairie/card")
-local Hero         = rawget(_G, "Hero") or require("my-librairie/ActorScripts/player/Hero")
-local AI           = rawget(_G, "AI") or require("my-librairie/ai/controller")
-local AM           = require("my-librairie/actorManager")               -- liste des ennemis vivants
-local EnemiesMod   = require("my-librairie/ActorScripts/Enemy/Enemies") -- pour compat: Enemies.curentEnemy
+local SceneManager = rawget(_G, "scene") or _safeRequire("my-librairie/sceneManager")
+local Card         = rawget(_G, "Card") or _safeRequire("my-librairie/card-librairie/card")
+local Hero         = rawget(_G, "Hero") or _safeRequire("my-librairie/ActorScripts/player/Hero")
+local AI           = rawget(_G, "AI") or _safeRequire("my-librairie/ai/controller")
+local AM           = _safeRequire("my-librairie/actorManager")               -- liste des ennemis vivants
+local EnemiesMod   = _safeRequire("my-librairie/ActorScripts/Enemy/Enemies") -- pour compat: Enemies.curentEnemy
 
 
 -- Persistance simple pour flags globaux (draft du premier combat)
@@ -145,17 +120,18 @@ function CombatFlow:startEncounter()
     self.rewardOptions, self.rewardChosenIndex = nil, nil
     self.flagStartOverlayDone, self.flagInitiativeShown, self.flagRewardDone = false, false, false
 
-    -- Draft unique au tout premier combat (seulement si configuré ET pas encore fait)
-    if self.cfg.overlays.reward and not GameFlags.first_draft_done then
-        self.state = "first_draft"; self.timer = 0
-        SceneManager:push(self.cfg.overlays.reward); logT("Overlay reward (draft)")
-        return
-    end
 
-    -- Dans tous les cas: overlay_start s'affiche pour commencer chaque combat
-    logT("Démarrage encounter - affichage overlay_start")
-    SceneManager:push("scene.overlay_start.overlay_start")
-    self.state = "setup_round"; self.timer = 0
+    if GameFlags.first_draft_done then
+        if SceneManager and SceneManager.push then
+            SceneManager:push("scene.overlay_start.overlay_start")
+        end
+        self.state = "overlay_start"; self.timer = 0
+    else
+        if SceneManager and SceneManager.push then
+            SceneManager:push("scene.overlay_initiative.overlay_initiative")
+        end
+        self.state = "overlay_initiative"; self.timer = 0
+    end
 end
 
 -- Appelé par l’overlay de draft : selectedCards = {10 cartes}
@@ -187,32 +163,48 @@ function CombatFlow:updateEncounter(dt)
     -- Aides
     local function livingEnemies()
         local list = {}
-        for _, e in ipairs(EnemiesMod.listeEnemies or {}) do
-            local alive = (e and e.state and not e.state.dead and (e.state.life or 1) > 0)
-            if alive then table.insert(list, e) end
+        if EnemiesMod and EnemiesMod.listeEnemies then
+            for _, e in ipairs(EnemiesMod.listeEnemies) do
+                local alive = (e and e.state and not e.state.dead and (e.state.life or 1) > 0)
+                if alive then table.insert(list, e) end
+            end
         end
         return list
     end
 
     local function setCurrentEnemy(e)
         -- Pour compatibilité avec code existant qui lit Enemies.curentEnemy
-        EnemiesMod.curentEnemy = e
+        if EnemiesMod then
+            EnemiesMod.curentEnemy = e
+        end
     end
 
-    local heroDead = Hero and Hero.actor and (Hero.actor.state.dead or (Hero.actor.state.life or 0) <= 0)
+    local heroDead = Hero and Hero.actor and Hero.actor.state and (Hero.actor.state.dead or (Hero.actor.state.life or 0) <= 0)
 
     -- ===== FSM =====
-    if self.state == "first_draft" then
-        -- On attend finalizeFirstDraftSelection depuis l’overlay
+    if self.state == "overlay_start" then
+        if self.flagStartOverlayDone then
+            if SceneManager and SceneManager.pop then SceneManager:pop() end
+            if SceneManager and SceneManager.push then SceneManager:push("scene.overlay_initiative.overlay_initiative") end
+            self.state = "overlay_initiative"; self.timer = 0
+        end
+        return
+    elseif self.state == "overlay_initiative" then
+        if self.flagInitiativeShown then
+            if SceneManager and SceneManager.pop then SceneManager:pop() end
+            self.state = "setup_round"; self.timer = 0
+        end
         return
     elseif self.state == "setup_round" then
         self.round = (self.round or 0) + 1
         setTour("transition")
 
         -- Mélange & énergies
-        if Card.shuffleDeck then Card.shuffleDeck("HeroDeck") end
+        if Card and Card.shuffleDeck then Card.shuffleDeck("HeroDeck") end
         ensurePlayerDeckMax10()
-        refillPower(Hero.actor, "player")
+        if Hero and Hero.actor then
+            refillPower(Hero.actor, "player")
+        end
 
         -- Init ordre des ennemis vivants pour ce round
         self.enemyOrder = livingEnemies()
@@ -237,7 +229,10 @@ function CombatFlow:updateEncounter(dt)
             self.enemyStarted = false
             if self.enemyIndex > #self.enemyOrder then
                 -- Fin du tour de tous les ennemis → joueur
-                self.state = "player_turn"; self.timer = 0; setTour("player"); refillPower(Hero.actor, "player")
+                self.state = "player_turn"; self.timer = 0; setTour("player")
+                if Hero and Hero.actor then
+                    refillPower(Hero.actor, "player")
+                end
                 return
             else
                 -- Continuer sur le prochain ennemi
@@ -287,7 +282,10 @@ function CombatFlow:updateEncounter(dt)
             self.enemyIndex = self.enemyIndex + 1
             self.enemyStarted = false
             if self.enemyIndex > #self.enemyOrder then
-                self.state = "player_turn"; self.timer = 0; setTour("player"); refillPower(Hero.actor, "player")
+                self.state = "player_turn"; self.timer = 0; setTour("player")
+                if Hero and Hero.actor then
+                    refillPower(Hero.actor, "player")
+                end
             else
                 self.state = "enemy_turn"; self.timer = 0
             end

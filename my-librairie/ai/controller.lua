@@ -3,8 +3,8 @@
 
 -- Chargement sécurisé pour éviter les boucles circulaires
 local function _safeRequire(name)
-    local ok, mod = pcall(require, name)
-    return ok and mod or nil
+  local ok, mod = pcall(require, name)
+  return ok and mod or nil
 end
 
 local actorMgr                = _G.actorManager or _safeRequire("my-librairie/actorManager")

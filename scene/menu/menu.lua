@@ -20,11 +20,11 @@ menu.illustration = {}
 -- Custom transition script for the menu scene (slide + fade)
 menu.transition   = {
     durationOut = 0.4,
-    durationIn = 0.45,
-    maskInput = true,
-    easingOut = function(x) return x ^ 3 end,
-    easingIn  = function(x) return 1 - (1 - x) ^ 3 end,
-    drawOut   = function(p, ctx)
+    durationIn  = 0.45,
+    maskInput   = true,
+    easingOut   = function(x) return x ^ 3 end,
+    easingIn    = function(x) return 1 - (1 - x) ^ 3 end,
+    drawOut     = function(p, ctx)
         local w, h = ctx.w, ctx.h
         love.graphics.push("all")
         love.graphics.translate(-p * w * 0.4, 0)
@@ -32,7 +32,7 @@ menu.transition   = {
         love.graphics.setColor(0, 0, 0, p * 0.6)
         love.graphics.rectangle("fill", 0, 0, w, h)
     end,
-    drawIn    = function(p, ctx)
+    drawIn      = function(p, ctx)
         local w, h = ctx.w, ctx.h
         love.graphics.push("all")
         love.graphics.translate((1 - p) * w * 0.3, 0)
@@ -86,26 +86,26 @@ menu.button = {
             -- btn correspond au bouton cliqué (transmis depuis menu.hover)
             if btn and btn.cmd == 'play' then
                 _log("[menu] Play cliqué → switch vers gameplay")
-                
+
                 -- Vérification des globales
                 if not scene then
                     _log("[menu] ERREUR: scene global n'est pas disponible")
                     return
                 end
-                
+
                 if not scene.switchWithTransition then
                     _log("[menu] ERREUR: scene.switchWithTransition n'existe pas")
                     return
                 end
-                
+
                 -- Tentative de chargement des différents chemins possibles pour gameplay
                 local gameplayPaths = {
                     "scene.gameplay.gameplay",
-                    "scene/gameplay/gameplay", 
+                    "scene/gameplay/gameplay",
                     "scene.gameplay",
                     "scene/gameplay"
                 }
-                
+
                 local gameplayLoaded = false
                 for _, path in ipairs(gameplayPaths) do
                     local ok, gameplayScene = pcall(require, path)
@@ -125,7 +125,7 @@ menu.button = {
                         _log("[menu] Impossible de charger: " .. path .. " (" .. tostring(gameplayScene) .. ")")
                     end
                 end
-                
+
                 if not gameplayLoaded then
                     _log("[menu] ERREUR: Impossible de charger la scène de gameplay")
                     _log("[menu] Vérifiez que scene/gameplay/gameplay.lua existe et fonctionne")
@@ -230,13 +230,13 @@ function menu.hover()
     -- Utiliser les globales pour l'input si disponible
     local gf = _G.globalFunction
     local mx, my = 0, 0
-    
+
     -- Récupération de la position de la souris
     local okc, cursor = pcall(require, "my-librairie/cursor")
-    if okc and cursor and cursor.get then 
-        mx, my = cursor.get() 
+    if okc and cursor and cursor.get then
+        mx, my = cursor.get()
     end
-    
+
     -- Détection du clic avec globalFunction en priorité
     local isClickNow = false
     if gf and gf.mouse and gf.mouse.click then
@@ -249,12 +249,12 @@ function menu.hover()
         else
             -- Dernier fallback
             local okI, iface = pcall(require, "my-librairie/inputInterface")
-            if okI and iface and iface.justPressedAction then 
-                isClickNow = iface.justPressedAction() 
+            if okI and iface and iface.justPressedAction then
+                isClickNow = iface.justPressedAction()
             end
         end
     end
-    
+
     for _, value in pairs(menu.button) do
         local inside = (mx >= value.vector2.x) and (mx <= value.vector2.x + value.width) and (my >= value.vector2.y) and
             (my <= value.vector2.y + value.height)

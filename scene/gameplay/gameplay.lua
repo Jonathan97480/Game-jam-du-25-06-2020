@@ -325,7 +325,13 @@ function gameplay.load(self, params)
                 return ok
             end)
     end
-
+    
+    -- Protection contre la dépendance circulaire
+    if Transition == nil then Transition = getTransition() end
+    if Transition and Transition.requestEndTurn then
+        safecall("Transition.requestEndTurn", function() return Transition.requestEndTurn() end)
+    end
+    
     -- IA / Transition manager
     safecall("AI.load", function() return AI and AI.load and AI.load() end)
     safecall("Transition.load", function()
