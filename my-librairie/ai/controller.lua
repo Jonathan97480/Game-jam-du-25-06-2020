@@ -1,16 +1,13 @@
 -- my-librairie/ai/controller.lua
 -- IA : logique de jeu des cartes (pipeline Card.* + fallback) + auto-câblage du télégraphe (visuel optionnel)
 
-local heal                    = require("my-librairie/card-librairie/cardEffect/heal")
-local shield                  = require("my-librairie/card-librairie/cardEffect/giveSheld")
-local attack                  = require("my-librairie/card-librairie/cardEffect/attack")
-local epine                   = require("my-librairie/card-librairie/cardEffect/giveEpine")
+
 local actorMgr                = _G.actorManager or require("my-librairie/actorManager")
 
 local Card                    = rawget(_G, "Card") or rawget(_G, "card")
 local Hero                    = rawget(_G, "Hero")
 local Enemies                 = rawget(_G, "Enemies")
-local Transition              = rawget(_G, "Transition")
+local Transition              = require("my-librairie/transition/templateCombatTransition")
 
 local timerMaxTurnChanged     = 1
 local timerDrawTurned         = 0
@@ -42,14 +39,25 @@ local function _to_text(...)
   local t = {}
   for i = 1, select('#', ...) do t[i] = tostring(select(i, ...)) end; return table.concat(t, ' ')
 end
-local function log(...) if AI.DEBUG then
-    local gf = rawget(_G, 'globalFunction'); local txt = _to_text(...); if gf and gf.log and gf.log.info then gf.log
-          .info(txt) else print(txt) end
-  end end
-local function logf(fmt, ...) if AI.DEBUG then
+local function log(...)
+  if AI.DEBUG then
+    local gf = rawget(_G, 'globalFunction'); local txt = _to_text(...); if gf and gf.log and gf.log.info then
+      gf.log
+          .info(txt)
+    else
+      print(txt)
+    end
+  end
+end
+local function logf(fmt, ...)
+  if AI.DEBUG then
     local gf = rawget(_G, 'globalFunction'); local txt = string.format(fmt, ...); if gf and gf.log and gf.log.info then
-      gf.log.info(txt) else print(txt) end
-  end end
+      gf.log.info(txt)
+    else
+      print(txt)
+    end
+  end
+end
 local function safecall(tag, fn, ...)
   if type(fn) ~= "function" then
     logf("[AI][safe:%s] fn=nil", tostring(tag))
@@ -137,7 +145,7 @@ end
 local function ensureAIContainers()
   Card = Card or rawget(_G, "Card") or rawget(_G, "card")
   if not Card then return nil end
-  Card.deckAi = Card.deckAi or {}
+  Card.deckAi = Card.getDeckByName("EnemyDeck").cards
   return Card.deckAi
 end
 local function lifeRatio(actor)
