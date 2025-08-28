@@ -7,7 +7,7 @@ Options / Debug
 - stackMode=false : diffuse update/draw/emit à toutes les scènes
 - stackMode=true  : n’envoie qu’à la scène au sommet (pile)
 ===================================================================== ]]
-scene.debug     = true
+scene.debug     = false
 scene.stackMode = false
 scene.color     = { 1, 1, 1, 1 } -- couleur overlay debug éventuel
 scene.current   = nil
@@ -17,6 +17,7 @@ Helpers internes
 
 -- Helper pour les logs du sceneManager
 local function logScene(msg)
+    if not scene.debug then return end -- ✅ Respecte le flag debug
     local gf = rawget(_G, 'globalFunction')
     if gf and gf.log and gf.log.info then
         gf.log.info("[sceneManager] " .. tostring(msg))
@@ -400,18 +401,18 @@ function scene:update(dt)
     self.list = self.list or {}
     if self.stackMode then
         local topScene = self.list[#self.list]
-        logScene("update() - stackMode=true, top scene: " .. tostring(topScene and topScene.name or "nil"))
+        -- logScene("update() - stackMode=true, top scene: " .. tostring(topScene and topScene.name or "nil")) -- ❌ Trop verbeux
         if topScene and topScene.update then
-            logScene("Calling update() on scene: " .. tostring(topScene.name))
+            -- logScene("Calling update() on scene: " .. tostring(topScene.name)) -- ❌ Trop verbeux
             topScene:update(dt)
         end
         return
     end
-    logScene("update() - stackMode=false, updating all " .. #self.list .. " scenes")
+    -- logScene("update() - stackMode=false, updating all " .. #self.list .. " scenes") -- ❌ Trop verbeux
     for i = 1, #self.list do
         local sc = self.list[i]
         if sc and sc.update then
-            logScene("Calling update() on scene[" .. i .. "]: " .. tostring(sc.name))
+            -- logScene("Calling update() on scene[" .. i .. "]: " .. tostring(sc.name)) -- ❌ Trop verbeux
             sc:update(dt)
         end
     end
@@ -420,12 +421,12 @@ end
 -- Appelle draw() (top-only si stackMode). À appeler depuis love.draw via :  scene:draw()
 function scene:draw()
     self.list = self.list or {}
-    logScene("draw() appelé - stack size: " .. #self.list .. ", stackMode: " .. tostring(self.stackMode))
+    -- logScene("draw() appelé - stack size: " .. #self.list .. ", stackMode: " .. tostring(self.stackMode)) -- ❌ Trop verbeux
 
     if self.stackMode then
         local topScene = self.list[#self.list]
         if topScene and type(topScene.draw) == "function" and topScene.hidden ~= true then
-            logScene("Drawing top scene: " .. tostring(topScene.name))
+            -- logScene("Drawing top scene: " .. tostring(topScene.name)) -- ❌ Trop verbeux
             local ok, err = pcall(topScene.draw, topScene)
             if not ok then
                 print(("[scene] draw error in top scene '%s': %s")
@@ -438,11 +439,11 @@ function scene:draw()
     end
 
     -- Mode stackMode=false - on dessine toutes les scènes
-    logScene("Drawing all " .. #self.list .. " scenes")
+    -- logScene("Drawing all " .. #self.list .. " scenes") -- ❌ Trop verbeux
     for i = 1, #self.list do
         local sc = self.list[i]
         if sc and type(sc.draw) == "function" and sc.hidden ~= true then
-            logScene("Drawing scene[" .. i .. "]: " .. tostring(sc.name))
+            -- logScene("Drawing scene[" .. i .. "]: " .. tostring(sc.name)) -- ❌ Trop verbeux
             local ok, err = pcall(sc.draw, sc)
             if not ok then
                 print(("[scene] draw error in scene '%s' (index %d): %s")

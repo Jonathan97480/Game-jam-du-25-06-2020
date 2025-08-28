@@ -128,7 +128,7 @@ function overlay.mousepressed(self, x, y, button)
 end
 
 function overlay.update(self, dt)
-    print("[DEBUG] overlay_initiative.update() appelé ! dt=" .. tostring(dt) .. ", timer=" .. tostring(timer))
+    -- print("[DEBUG] overlay_initiative.update() appelé ! dt=" .. tostring(dt) .. ", timer=" .. tostring(timer)) -- ❌ Trop verbeux
 
     -- Vérifier les raccourcis clavier globaux
     if globalFunction and globalFunction.endTurnHotkeys and globalFunction.endTurnHotkeys() then
@@ -144,7 +144,7 @@ function overlay.update(self, dt)
 
     if spacePressed then
         spaceTimer = spaceTimer + dt
-        globalFunction.log.info("[overlay_initiative] Compte à rebours espace: " .. spaceTimer .. "/1.0")
+        -- globalFunction.log.info("[overlay_initiative] Compte à rebours espace: " .. spaceTimer .. "/1.0") -- ❌ Trop verbeux
 
         -- LOGIQUE : fermer après 1 seconde
         if spaceTimer >= 1.0 then

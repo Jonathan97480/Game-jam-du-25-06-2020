@@ -12,6 +12,7 @@ local EnemiesMod = nil
 
 -- init actor manager runtime fields
 function actor:init()
+    _G.globalFunction.log.info("[actorManager] Initialisation du module Enemy")
     local Enemy = require("my-librairie/ActorScripts/Enemy/Enemy")
     if Enemy then
         Enemy.listeEnemies = {}
@@ -20,6 +21,7 @@ function actor:init()
 end
 
 function actor:clearEnemies()
+    _G.globalFunction.log.info("[actorManager] Effacement de tous les Ennemis")
     local Enemies = require("my-librairie/ActorScripts/Enemy/Enemies")
     if Enemies then
         Enemies.listeEnemies = {}
@@ -27,19 +29,100 @@ function actor:clearEnemies()
     end
 end
 
-function actor:spawnEnemy(enemyType, args)
-    -- Option A: require the Enemies module at call-time to minimize circular require risk
-    args = args or {}
-    local Enemies = require("my-librairie/ActorScripts/Enemy/Enemies")
-    local factory = Enemies and Enemies.registry and Enemies.registry[enemyType]
-    assert(factory, ("Enemy type inconnu: %s"):format(tostring(enemyType)))
-    local e = factory(args)
-    Enemies.listeEnemies = Enemies.listeEnemies or {}
-    table.insert(Enemies.listeEnemies, e)
+----------------------------------------------------------------------
+-- Spawn d'ennemis avec gestion de doublons et sélection aléatoire
+----------------------------------------------------------------------
+function actor:spawnEnemy(spawnPosition, poolEnemies, options)
+    -- Validation des paramètres d'entrée
+    if not spawnPosition or not spawnPosition.type then
+        _G.globalFunction.log.error("[actorManager:spawnEnemy] spawnPosition invalide ou manque type")
+        return nil
+    end
 
-    --[[ self.enemies = self.enemies or {}
-    table.insert(self.enemies, e) ]]
-    return e
+    if not poolEnemies or type(poolEnemies) ~= "table" or #poolEnemies == 0 then
+        _G.globalFunction.log.error("[actorManager:spawnEnemy] poolEnemies vide ou invalide")
+        return nil
+    end
+
+    -- Options par défaut
+    options = options or {}
+    local allowDuplicates = options.allowDuplicates ~= false -- true par défaut
+    local shufflePool = options.shufflePool or false
+
+    -- Lazy loading du module Enemies pour éviter les require circulaires
+    local Enemies = require("my-librairie/ActorScripts/Enemy/Enemies")
+    if not Enemies then
+        _G.globalFunction.log.error("[actorManager:spawnEnemy] Module Enemies introuvable")
+        return nil
+    end
+
+    -- Vérification des doublons si non autorisés
+    if not allowDuplicates and Enemies.listeEnemies then
+        for _, enemy in ipairs(Enemies.listeEnemies) do
+            if enemy.type == spawnPosition.type then
+                _G.globalFunction.log.warn(("[actorManager:spawnEnemy] Spawn annulé: Ennemi type '%s' déjà présent (doublons interdits)")
+                    :format(spawnPosition.type))
+                return enemy
+            end
+        end
+    end
+
+    -- Mélange de la pool si demandé (copie pour éviter mutation)
+    local workingPool = poolEnemies
+    if shufflePool then
+        workingPool = {}
+        for i, enemy in ipairs(poolEnemies) do
+            workingPool[i] = enemy
+        end
+
+        -- Shuffle Fisher-Yates optimisé
+        math.randomseed(os.time())
+        for i = #workingPool, 2, -1 do
+            local j = math.random(i)
+            workingPool[i], workingPool[j] = workingPool[j], workingPool[i]
+        end
+    end
+
+    -- Sélection des ennemis correspondant au type demandé
+    local candidates = {}
+    for _, enemyTemplate in ipairs(workingPool) do
+        if enemyTemplate.data and enemyTemplate.data.type == spawnPosition.type then
+            table.insert(candidates, enemyTemplate.data)
+        end
+    end
+
+    -- Validation de la sélection
+    if #candidates == 0 then
+        _G.globalFunction.log.error(("[actorManager:spawnEnemy] Aucun ennemi de type '%s' trouvé dans la pool")
+            :format(spawnPosition.type))
+        return nil
+    end
+
+    -- Sélection aléatoire parmi les candidats
+    local selectedData = candidates[math.random(#candidates)]
+
+    -- Création de l'ennemi
+    local spawnData = {
+        x = spawnPosition.x or 0,
+        y = spawnPosition.y or 0,
+        enemyData = selectedData
+    }
+
+    local newEnemy = Enemies.create and Enemies.create(spawnData)
+    if not newEnemy then
+        _G.globalFunction.log.error(("[actorManager:spawnEnemy] Échec création ennemi type '%s'")
+            :format(spawnPosition.type))
+        return nil
+    end
+
+    -- Ajout à la liste des ennemis
+    Enemies.listeEnemies = Enemies.listeEnemies or {}
+    table.insert(Enemies.listeEnemies, newEnemy)
+
+    _G.globalFunction.log.info(("[actorManager:spawnEnemy] Ennemi '%s' spawné en (%d,%d)")
+        :format(spawnPosition.type, spawnPosition.x or 0, spawnPosition.y or 0))
+
+    return newEnemy
 end
 
 ----------------------------------------------------------------------

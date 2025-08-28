@@ -14,35 +14,13 @@ local function getIA()
     return IA
 end
 
-function Enemies.create_orc(args)
-    args = args or {}
-    local e = actor.create(args.name or "Enemy-orc", { idle = { 'img/Actor/Enemy/Enemy-1.png' } },
-        { x = args.x or 0, y = args.y or 400 })
-    e.type = "orc"
-    e.lifeBarConfig = {
-        x = (e.vector2 and e.vector2.x) or 0,
-        y = (e.vector2 and e.vector2.y) - 50 or 0,
-        w = 336,
-        h = 10,
-        position = {
-            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
-            y = (e.vector2 and e.vector2.y) - 50 or 0
-        },
-        size = {
-            w = 150,
-            h = 25
-        }
-    }
-    local ia = getIA()
-    e.ai = ia and ia.new and ia.new(e) or nil
-    return e
-end
 
-function Enemies.create_slime(args)
-    args = args or {}
-    local e = actor.create(args.name or "Enemy-slime", { idle = { 'img/Actor/Enemy/Enemy-2.png' } },
-        { x = args.x or 0, y = args.y or 0 })
-    e.type = "slime"
+function Enemies.create(_spawnData)
+    local args = _spawnData.enemyData or {}
+    local spawnPosition = { x = _spawnData.x or 0, y = _spawnData.y or 0 }
+    local e = actor.create(args.name or "", args.animation,
+        { x = spawnPosition.x or 0, y = spawnPosition.y or 0 })
+
     e.lifeBarConfig = {
         x = (e.vector2 and e.vector2.x) or 0,
         y = (e.vector2 and e.vector2.y) - 50 or 0,
@@ -57,56 +35,14 @@ function Enemies.create_slime(args)
             h = 25
         }
     }
-    local ia = getIA()
-    e.ai = ia and ia.new and ia.new(e) or nil
-    return e
-end
-
-function Enemies.create_knightDeath(args)
-    args = args or {}
-    local e = actor.create(args.name or "Enemy-knightDeath", { idle = { 'img/Actor/Enemy/Enemy-3.png' } },
-        { x = args.x or 0, y = args.y or 0 })
-    e.type = "knightDeath"
-    e.lifeBarConfig = {
-        x = (e.vector2 and e.vector2.x) or 0,
-        y = (e.vector2 and e.vector2.y) - 50 or 0,
-        w = 150,
-        h = 25,
-        position = {
-            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
-            y = (e.vector2 and e.vector2.y) - 50 or 0
-        },
-        size = {
-            w = 150,
-            h = 25
-        }
-    }
+    e.cards = args.cards or {}
+    e.type = args.type or "Empty type"
     e.state = e.state or { life = 12, maxLife = 12 }
-    e.atk = 3
+    e.atk = e.numberAttack
     local ia = getIA()
     e.ai = ia and ia.new and ia.new(e) or nil
     return e
 end
-
-function Enemies.create_spider(args)
-    args = args or {}
-    local e = actor.create(args.name or "Enemy-spider", { idle = { 'img/Actor/Enemy/Enemy-4.png' } },
-        { x = args.x or 0, y = args.y or 0 })
-    e.type = "spider"
-
-    e.state = e.state or { life = 12, maxLife = 12 }
-    e.atk = 3
-    local ia = getIA()
-    e.ai = ia and ia.new and ia.new(e) or nil
-    return e
-end
-
-Enemies.registry = Enemies.registry or {
-    orc = Enemies.create_orc,
-    slime = Enemies.create_slime,
-    knightDeath = Enemies.create_knightDeath,
-    spider = Enemies.create_spider
-}
 
 rawset(_G, "__ENEMY_SINGLETON__", Enemies)
 

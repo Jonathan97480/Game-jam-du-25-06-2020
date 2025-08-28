@@ -63,9 +63,9 @@ local function AutoSPawnEnemy()
         local ec = cfg.enemies or {}
 
         if ec.spawns and type(ec.spawns) == 'table' and #ec.spawns > 0 then
-            for _, s in ipairs(ec.spawns) do
-                if s and s.type then
-                    pcall(function() AM:spawnEnemy(s.type, { x = s.x, y = s.y }) end)
+            for _, spawnPosition in ipairs(ec.spawns) do
+                if spawnPosition and spawnPosition.type then
+                    pcall(function() AM:spawnEnemy(spawnPosition, ec.poolEnemies, ec.options) end)
                 end
             end
         else
@@ -261,9 +261,9 @@ function gameplay.load(self, params)
     safecall("effect.load", function() return effect and effect.load and effect.load() end)
 
     -- Auto-spawn enemies from scene config (params or gameplay.config)
-    local AM = actor or (_G.actorManager or require("my-librairie/actorManager"))
+    --[[  local AM = actor or (_G.actorManager or require("my-librairie/actorManager"))
     if AM and AM.clearEnemies and AM.spawnEnemy then
-        AM:clearEnemies()
+         AM:clearEnemies()
         local cfg = (params and params.config) or gameplay.config or SceneConfig or {}
         local ec = cfg.enemies or {}
 
@@ -286,7 +286,7 @@ function gameplay.load(self, params)
                 end
             end
         end
-    end
+    end ]]
 
     -- Decks
     if Card then
