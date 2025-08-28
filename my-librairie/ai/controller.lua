@@ -12,6 +12,7 @@ local Transition              = require("my-librairie/transition/templateCombatT
 local timerMaxTurnChanged     = 1
 local timerDrawTurned         = 0
 local lastTurnTransitionState = ''
+local globalFunction          = rawget(_G, 'globalFunction')
 
 local AI                      = {
   state               = "idle",
@@ -37,32 +38,16 @@ local AI                      = {
 
 local function logf(fmt, ...)
   if AI.DEBUG then
-    local gf = rawget(_G, 'globalFunction'); local txt = string.format(fmt, ...); if gf and gf.log and gf.log.info then
-      gf.log.info(txt)
+    if globalFunction == nil then globalFunction = rawget(_G, 'globalFunction') or require("my-librairie/globalFunction") end
+    if globalFunction and globalFunction.log and globalFunction.log.info then
+      globalFunction.log.info(txt)
     else
       print(txt)
     end
   end
 end
 
-local function safecall(tag, fn, ...)
-  if type(fn) ~= "function" then
-    logf("[AI][safe:%s] fn=nil", tostring(tag))
-    return false
-  end
-  local ok, err = pcall(fn, ...)
-  if not ok then logf("[AI][safe:%s] ERREUR -> %s", tostring(tag), tostring(err)) end
-  return ok
-end
 
-local function tstr(v, depth)
-  depth = depth or 0
-  if type(v) ~= "table" then return tostring(v) end
-  if depth > 2 then return "{...}" end
-  local parts = {}
-  for k, val in pairs(v) do parts[#parts + 1] = tostring(k) .. "=" .. tstr(val, depth + 1) end
-  return "{" .. table.concat(parts, ", ") .. "}"
-end
 
 -- ---------- VISUEL / LISTENER ----------
 function AI.setListener(l)
@@ -387,7 +372,7 @@ local function runOnPlay(c, enemyActor, heroActor)
   logf("[AI] onPlay détecté sur '%s' -> essais de signatures…", tostring(c.name))
 
   -- 1) c:onPlay(enemy, hero)
-  if safecall("onPlay(self,enemy,hero)", function() return c:onPlay(enemyActor, heroActor) end) then
+  if globalFunction.safecall("onPlay(self,enemy,hero)", function() return c:onPlay(enemyActor, heroActor) end) then
     log("[AI] onPlay OK: self,enemy,hero")
     return true
   end
@@ -408,7 +393,7 @@ local function runOnPlay(c, enemyActor, heroActor)
     return true
   end
   -- 3) c:onPlay(enemy)
-  if safecall("onPlay(enemy)", function() return c:onPlay(enemyActor) end) then
+  if globalFunction.safecall("onPlay(enemy)", function() return c:onPlay(enemyActor) end) then
     log("[AI] onPlay OK: enemy-only")
     return true
   end

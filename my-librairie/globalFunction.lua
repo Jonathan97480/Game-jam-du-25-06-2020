@@ -523,6 +523,19 @@ function globalFunction.log.exportToFile(path)
     return true
 end
 
+globalFunction.tstr = function(table)
+    for k, v in pairs(table) do
+        globalFunction.log.info(tostring(k) .. " = " .. tostring(v))
+    end
+end
+globalFunction.safecall = function(fn, ...)
+    local status, result = pcall(fn, ...)
+    if not status then
+        globalFunction.log.error("Error in safecall: " .. tostring(result))
+    end
+    return result
+end
+
 -- auto init log entry
 globalFunction.log.info("Logger initialized")
 
