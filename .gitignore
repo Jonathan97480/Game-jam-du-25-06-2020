@@ -16,4 +16,5 @@ tests/
 *.swp
 
 # Dossier contenant les logs runtime exportés (ne pas versionner)
-gameLogs/
+gameLogs/INSTRUCTIONS_CORRECTION_MANUELLE.txt
+SOLUTION_DEFINITIVE.md
