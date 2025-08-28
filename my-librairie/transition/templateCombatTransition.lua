@@ -82,6 +82,9 @@ local function safeSwitchWithTransition(target, params, tScript)
     if not ok then SceneManager:switch(target, params) end
 end
 
+
+
+
 -- --------------------------
 -- Classe CombatFlow
 -- --------------------------
@@ -117,6 +120,13 @@ function CombatFlow.new(cfg)
     return self
 end
 
+local function changeState(_state)
+    if type(_state) ~= "string" then
+        logT("Invalid state : le state passé n'est pas une chaîne de caractères: ", type(_state)); return
+    end
+    logT("State ->", _state)
+    CombatFlow.state = _state
+end
 -- --------------------------
 -- API EXPLICITE
 -- --------------------------
@@ -129,17 +139,20 @@ function CombatFlow:startEncounter()
     self.rewardOptions, self.rewardChosenIndex = nil, nil
     self.flagStartOverlayDone, self.flagInitiativeShown, self.flagRewardDone = false, false, false
 
-    GameFlags.first_draft_done = true
+
     if GameFlags.first_draft_done then
         if SceneManager and SceneManager.push then
             SceneManager:push("scene.overlay_start.overlay_start")
         end
-        self.state = "overlay_start"; self.timer = 0
+
+        changeState("overlay_start")
+        self.timer = 0
     else
         if SceneManager and SceneManager.push then
             SceneManager:push("scene.overlay_initiative.overlay_initiative")
         end
-        self.state = "overlay_initiative"; self.timer = 0
+        changeState("overlay_initiative")
+        self.timer = 0
     end
 end
 
@@ -154,7 +167,8 @@ function CombatFlow:finalizeFirstDraftSelection(selectedCards)
     ensurePlayerDeckMax10()
     GameFlags.first_draft_done = true
     if SceneManager.pop then SceneManager:pop() end
-    self.state = "setup_round"; self.timer = 0
+    changeState("setup_round")
+    self.timer = 0
 end
 
 -- Boucle logique
@@ -194,15 +208,34 @@ function CombatFlow:updateEncounter(dt)
     -- ===== FSM =====
     if self.state == "overlay_start" then
         if self.flagStartOverlayDone then
-            if SceneManager and SceneManager.pop then SceneManager:pop() end
-            if SceneManager and SceneManager.push then SceneManager:push("scene.overlay_initiative.overlay_initiative") end
-            self.state = "overlay_initiative"; self.timer = 0
+            logT("Starting transition from overlay_start to overlay_initiative")
+
+            -- Pop avec debug
+            if SceneManager and SceneManager.pop then
+                logT("Popping overlay_start scene")
+                SceneManager:pop()
+            else
+                logT("ERROR: SceneManager.pop not available!")
+            end
+
+            -- Push avec debug
+            if SceneManager and SceneManager.push then
+                logT("Pushing overlay_initiative scene")
+                SceneManager:push("scene.overlay_initiative.overlay_initiative")
+            else
+                logT("ERROR: SceneManager.push not available!")
+            end
+
+            changeState("overlay_initiative")
+            self.timer = 0
+            logT("State transition complete: overlay_start -> overlay_initiative")
         end
         return
     elseif self.state == "overlay_initiative" then
         if self.flagInitiativeShown then
             if SceneManager and SceneManager.pop then SceneManager:pop() end
-            self.state = "setup_round"; self.timer = 0
+            changeState("setup_round")
+            self.timer = 0
         end
         return
     elseif self.state == "setup_round" then
@@ -223,7 +256,7 @@ function CombatFlow:updateEncounter(dt)
         self.enemyMaxSteps = 0
         self.enemyActionStartT = 0
         --TODO GERAIT LINITIATIVE
-        self.state = "enemies_round_start"; self.timer = 0
+        changeState("enemies_round_start")
     elseif self.state == "enemies_round_start" then
         -- Tous les ennemis vivants vont jouer, un par un
         self.enemyOrder = livingEnemies()
@@ -239,7 +272,7 @@ function CombatFlow:updateEncounter(dt)
             self.enemyStarted = false
             if self.enemyIndex > #self.enemyOrder then
                 -- Fin du tour de tous les ennemis → joueur
-                self.state = "player_turn"; self.timer = 0; setTour("player")
+                changeState("player_turn")
                 if Hero and Hero.actor then
                     refillPower(Hero.actor, "player")
                 end
@@ -285,19 +318,23 @@ function CombatFlow:updateEncounter(dt)
 
         if done then
             -- Passer à l’ennemi suivant (petite transition optionnelle)
-            self.state = "enemy_turn_transition"; self.timer = 0; return
+            changeState("enemy_turn_transition")
+            self.timer = 0; return
         end
     elseif self.state == "enemy_turn_transition" then
         if self.timer >= eEndT then
             self.enemyIndex = self.enemyIndex + 1
             self.enemyStarted = false
             if self.enemyIndex > #self.enemyOrder then
-                self.state = "player_turn"; self.timer = 0; setTour("player")
+                changeState("player_turn")
+                self.timer = 0;
+                setTour("player")
                 if Hero and Hero.actor then
                     refillPower(Hero.actor, "player")
                 end
             else
-                self.state = "enemy_turn"; self.timer = 0
+                changeState("enemy_turn")
+                self.timer = 0
             end
         end
     elseif self.state == "player_turn" then
@@ -319,10 +356,12 @@ function CombatFlow:updateEncounter(dt)
                 local pick = cards[math.random(n)]; if pick then self.rewardOptions[i] = table.clone(pick) end
             end
             if cfg.overlays.reward then SceneManager:push(cfg.overlays.reward) end
-            self.state = "reward_choice"; self.timer = 0
+            changeState("reward_choice")
+            self.timer = 0
         else
             -- Sinon, nouveau round
-            self.state = "setup_round"; self.timer = 0
+            changeState("setup_round")
+            self.timer = 0
         end
     elseif self.state == "reward_choice" then
         if self.flagRewardDone and self.rewardChosenIndex then
@@ -337,9 +376,23 @@ function CombatFlow:updateEncounter(dt)
             end
             self.rewardOptions, self.rewardChosenIndex = nil, nil
             if SceneManager.pop then SceneManager:pop() end
-            -- Nouveau round après récompense
-            self.state = "setup_round"; self.timer = 0
+
+            -- FIX: Terminer le combat au lieu de setup_round pour éviter boucle infinie
+            -- Car setup_round -> enemies_round_start -> victory_check -> reward_choice = BOUCLE
+            logT("Combat terminé après récompense, retour au menu/monde")
+            changeState("combat_completed")
+            self.timer = 0
         end
+    elseif self.state == "combat_completed" then
+        -- Combat terminé avec succès, retourner au menu ou à la carte du monde
+        logT("Combat completed, exiting to main menu")
+        if SceneManager and SceneManager.gotoScene then
+            SceneManager:gotoScene("scene.menu.menu")
+        elseif SceneManager and SceneManager.pop then
+            -- Fallback: pop jusqu'au menu
+            SceneManager:pop()
+        end
+        return
     elseif self.state == "game_over" then
         -- On attend l’overlay Game Over (bouton → menu par exemple)
         return
@@ -353,7 +406,9 @@ function CombatFlow:drawEncounter() end
 function CombatFlow:playerEndTurn()
     if self.state ~= "player_turn" then return false end
     setTour("transition")
-    self.state = "enemies_round_start"; self.timer = 0
+    changeState("enemies_round_start")
+    setTour("enemy")
+    self.timer = 0
     return true
 end
 
@@ -367,12 +422,14 @@ function CombatFlow:onPlayerDefeated()
     if self.gameoverShown then return end
     self.gameoverShown = true
     if self.cfg.overlays.gameover then SceneManager:push(self.cfg.overlays.gameover) end
-    self.state = "game_over"; self.timer = 0; setTour("transition")
+    changeState("game_over")
+    self.timer = 0
+    setTour("transition")
 end
 
 -- Overlays : boutons “continuer/OK”
 function CombatFlow:confirmStartOverlay()
-    GameFlags.first_draft_done = true
+    GameFlags.first_draft_done = false
     self.flagStartOverlayDone = true
     -- Laisser la FSM gérer la transition vers overlay_initiative
 end
@@ -388,7 +445,9 @@ end
 -- Fonctions de compatibilité pour main.lua
 function CombatFlow:maskInput()
     -- Bloquer les inputs pendant les overlays
-    return self.state == "overlay_start" or self.state == "overlay_initiative" or self.state == "reward_choice"
+    return self.state == "overlay_start"
+        or self.state == "overlay_initiative"
+        or self.state == "reward_choice"
 end
 
 function CombatFlow:isActive()
