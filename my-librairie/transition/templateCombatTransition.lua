@@ -45,7 +45,16 @@ local function logT(...)
     if gf and gf.log and gf.log.info then gf.log.info(msg) else print(msg) end
 end
 
-local function clampDt(dt) return (dt > 0.05) and 0.05 or dt end
+local function clampDt(dt)
+    local gf = rawget(_G, 'globalFunction')
+    if gf and gf.clampDt then
+        return gf.clampDt(dt)
+    else
+        -- Fallback si globalFunction n'est pas disponible
+        if not dt or type(dt) ~= "number" then return 0 end
+        return (dt > 0.05) and 0.05 or dt
+    end
+end
 
 local function setTour(tag)
     if _G.Tour ~= tag then

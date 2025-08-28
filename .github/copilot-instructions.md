@@ -101,6 +101,7 @@ lua test/nom_du_test.lua
 - `globalFunction.lerp(a, b, speed)` : Interpolation stable avec anti-jitter
 - `globalFunction.lerpNum(a, b, t)` : Interpolation pour nombres simples
 - `globalFunction.clamp(val, min, max)` : Force valeur dans intervalle
+- `globalFunction.clampDt(dt)` : Protège contre dt nil et limite les gros sauts temporels (>0.05s)
 - `globalFunction.mapRange(val, inMin, inMax, outMin, outMax)` : Conversion d'échelle
 - `globalFunction.progress(current, max)` : Ratio sécurisé (évite /0)
 - `globalFunction.distSqr(x1, y1, x2, y2)` : Distance² pour comparaisons

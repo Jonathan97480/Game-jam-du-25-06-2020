@@ -558,6 +558,13 @@ globalFunction.lerpNum = function(a, b, t)
     return a + (b - a) * math.max(0, math.min(1, t))
 end
 
+-- Clamp delta time: protège contre les valeurs nil et limite les gros dt
+-- Utile pour éviter les bugs avec dt nil et limiter les sauts temporels
+globalFunction.clampDt = function(dt)
+    if not dt or type(dt) ~= "number" then return 0 end
+    return (dt > 0.05) and 0.05 or dt
+end
+
 -- Progression sécurisée (évite division par zéro)
 globalFunction.progress = function(current, max)
     if max <= 0 then return 0 end
