@@ -1,0 +1,20 @@
+# Ignorer les dossiers et fichiers spécifiques
+test/
+tests/
+*.zip
+*.psd
+*.psd~
+*.psd.bak
+*.psdorig
+*.psdorig~
+
+# Fichiers temporaires et sauvegardes
+*.tmp
+*.log
+*.bak
+*.orig
+*.swp
+
+# Dossier contenant les logs runtime exportés (ne pas versionner)
+gameLogs/INSTRUCTIONS_CORRECTION_MANUELLE.txt
+SOLUTION_DEFINITIVE.md

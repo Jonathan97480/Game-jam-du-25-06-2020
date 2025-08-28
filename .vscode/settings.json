@@ -1,0 +1,19 @@
+{
+    "github.copilot.chat.codesearch.enabled": true,
+    "Lua.diagnostics.globals": [
+        "love"
+    ],
+    "Lua.diagnostics.disable": [
+        "undefined-global"
+    ],
+    "Lua.workspace.library": [
+        "${workspaceFolder}/my-librairie/love_stubs.lua"
+    ],
+    "spellright.documentTypes": [
+        "latex",
+        "plaintext",
+        "html",
+        "scss",
+        "xml"
+    ]
+}
