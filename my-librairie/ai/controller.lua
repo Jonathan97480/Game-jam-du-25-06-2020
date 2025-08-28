@@ -45,9 +45,9 @@ local function logf(fmt, ...)
   if AI.DEBUG then
     if globalFunction == nil then globalFunction = rawget(_G, 'globalFunction') or require("my-librairie/globalFunction") end
     if globalFunction and globalFunction.log and globalFunction.log.info then
-      globalFunction.log.info(txt)
+      globalFunction.log.info(string.format(fmt, ...))
     else
-      print(txt)
+      print(string.format(fmt, ...))
     end
   end
 end
@@ -96,9 +96,9 @@ local function _autoWireTelegraph()
     if type(Telegraph.setEnabled) == "function" then
       Telegraph:setEnabled(true)
     end
-    log("[AI] Telegraph auto-câblé depuis le contrôleur.")
+    logf("[AI] Telegraph auto-câblé depuis le contrôleur.")
   else
-    log("[AI] Telegraph indisponible (require a échoué) : visuel désactivé.")
+    logf("[AI] Telegraph indisponible (require a échoué) : visuel désactivé.")
   end
 end
 
@@ -269,8 +269,8 @@ local function chooseDeterministic(deck, powerNow)
   local heroActor  = Hero and Hero.actor
   local enemyActor = Enemies and Enemies.curentEnemy
 
-  logf("[AI] status  enemy: %s", tstr(snap(enemyActor)))
-  logf("[AI] status  hero : %s", tstr(snap(heroActor)))
+  logf("[AI] status  enemy: %s", globalFunction.tstr(snap(enemyActor)))
+  logf("[AI] status  hero : %s", globalFunction.tstr(snap(heroActor)))
 
   local playable = {}
   for i, c in ipairs(deck) do
@@ -279,14 +279,14 @@ local function chooseDeterministic(deck, powerNow)
       local t   = cardType(c)
       local eff = getEffects(c)
       logf("[AI] card[%d]: name=%s type=%s cost=%d  eff.hero=%s eff.enemy=%s",
-        i, tostring(c.name), t, cost, tstr(eff.hero), tstr(eff.enemy))
+        i, tostring(c.name), t, cost, globalFunction.tstr(eff.hero), globalFunction.tstr(eff.enemy))
       playable[#playable + 1] = { i = i, c = c, t = t }
     else
       logf("[AI] card[%d] INJOUABLE (cost=%d): %s", i, cost, tostring(c.name))
     end
   end
   if #playable == 0 then
-    log("[AI] aucune carte jouable → fin de tour")
+    logf("[AI] aucune carte jouable → fin de tour")
     return nil, nil
   end
 
@@ -298,29 +298,29 @@ local function chooseDeterministic(deck, powerNow)
   local eSH = getShield(enemyActor)
 
   if eHP <= 0.35 and #g.heal > 0 then
-    log("[AI] priorité: HEAL"); return g.heal[1].i, g.heal[1].c
+    logf("[AI] priorité: HEAL"); return g.heal[1].i, g.heal[1].c
   end
   if eSH <= 2 and #g.shield > 0 then
-    log("[AI] priorité: SHIELD"); return g.shield[1].i, g.shield[1].c
+    logf("[AI] priorité: SHIELD"); return g.shield[1].i, g.shield[1].c
   end
   if hHP <= 0.40 and #g.attack > 0 then
-    log("[AI] priorité: ATTACK"); return g.attack[1].i, g.attack[1].c
+    logf("[AI] priorité: ATTACK"); return g.attack[1].i, g.attack[1].c
   end
 
   if #g.attack > 0 then
-    log("[AI] défaut -> ATTACK"); return g.attack[1].i, g.attack[1].c
+    logf("[AI] défaut -> ATTACK"); return g.attack[1].i, g.attack[1].c
   end
   if #g.shield > 0 then
-    log("[AI] défaut -> SHIELD"); return g.shield[1].i, g.shield[1].c
+    logf("[AI] défaut -> SHIELD"); return g.shield[1].i, g.shield[1].c
   end
   if #g.heal > 0 then
-    log("[AI] défaut -> HEAL"); return g.heal[1].i, g.heal[1].c
+    logf("[AI] défaut -> HEAL"); return g.heal[1].i, g.heal[1].c
   end
   if #g.control > 0 then
-    log("[AI] défaut -> CONTROL"); return g.control[1].i, g.control[1].c
+    logf("[AI] défaut -> CONTROL"); return g.control[1].i, g.control[1].c
   end
   if #g.other > 0 then
-    log("[AI] défaut -> OTHER"); return g.other[1].i, g.other[1].c
+    logf("[AI] défaut -> OTHER"); return g.other[1].i, g.other[1].c
   end
   return nil, nil
 end
@@ -329,7 +329,7 @@ end
 local function callCardSystem(c, enemyActor, heroActor)
   Card = Card or rawget(_G, "Card") or rawget(_G, "card")
   if not Card then
-    log("[AI] CARD-SYS: Card=nil -> impossible d’afficher/jouer via UI")
+    logf("[AI] CARD-SYS: Card=nil -> impossible d’afficher/jouer via UI")
     return false, "no_card_module"
   end
 
@@ -363,7 +363,7 @@ local function callCardSystem(c, enemyActor, heroActor)
   end
 
   if not okAny then
-    log("[AI] CARD-SYS: aucune API ne fonctionne (on passera par onPlay/fallback)")
+    logf("[AI] CARD-SYS: aucune API ne fonctionne (on passera par onPlay/fallback)")
     return false, "no_card_api"
   end
 
@@ -378,11 +378,11 @@ local function runOnPlay(c, enemyActor, heroActor)
 
   -- 1) c:onPlay(enemy, hero)
   if globalFunction.safecall("onPlay(self,enemy,hero)", function() return c:onPlay(enemyActor, heroActor) end) then
-    log("[AI] onPlay OK: self,enemy,hero")
+    logf("[AI] onPlay OK: self,enemy,hero")
     return true
   end
   -- 2) c:onPlay({ctx})
-  if safecall("onPlay({ctx})", function()
+  if globalFunction.safecall("onPlay({ctx})", function()
         return c:onPlay({
           self = c,
           source = enemyActor,
@@ -394,21 +394,21 @@ local function runOnPlay(c, enemyActor, heroActor)
           who = "Enemy"
         })
       end) then
-    log("[AI] onPlay OK: ctx-table")
+    logf("[AI] onPlay OK: ctx-table")
     return true
   end
   -- 3) c:onPlay(enemy)
   if globalFunction.safecall("onPlay(enemy)", function() return c:onPlay(enemyActor) end) then
-    log("[AI] onPlay OK: enemy-only")
+    logf("[AI] onPlay OK: enemy-only")
     return true
   end
   -- 4) onPlay(c, enemy, hero)
-  if safecall("onPlay(c,enemy,hero)", function() return c.onPlay(c, enemyActor, heroActor) end) then
-    log("[AI] onPlay OK: plain(c,enemy,hero)")
+  if globalFunction.safecall("onPlay(c,enemy,hero)", function() return c.onPlay(c, enemyActor, heroActor) end) then
+    logf("[AI] onPlay OK: plain(c,enemy,hero)")
     return true
   end
 
-  log("[AI] onPlay présent mais aucune signature n’a abouti.")
+  logf("[AI] onPlay présent mais aucune signature n’a abouti.")
   return false
 end
 
@@ -423,7 +423,8 @@ local function applyCard(c)
 
   local cost       = tonumber(c.cost or c.PowerBlow or c.power or 1) or 1
   local eff        = getEffects(c)
-  logf("[AI] applyCard '%s' cost=%d eff.hero=%s eff.enemy=%s", tostring(c.name), cost, tstr(eff.hero), tstr(eff.enemy))
+  logf("[AI] applyCard '%s' cost=%d eff.hero=%s eff.enemy=%s", tostring(c.name), cost, globalFunction.tstr(eff.hero),
+    globalFunction.tstr(eff.enemy))
 
   -- état avant
   local bE, bH = snap(enemyActor), snap(heroActor)
@@ -447,7 +448,7 @@ local function applyCard(c)
 
   -- 4) Si toujours rien, appliquer le fallback générique à partir des champs
   if not changed then
-    log("[AI] aucun effet visuel/script → fallback générique")
+    logf("[AI] aucun effet visuel/script → fallback générique")
     applyGeneric(heroActor, enemyActor, eff)
   end
 
@@ -462,13 +463,13 @@ local function applyCard(c)
     for k, _ in pairs(c) do keys[#keys + 1] = tostring(k) end
     table.sort(keys)
     logf("[AI][WARN] aucun changement d'état après '%s'. keys={%s}", tostring(c.name), table.concat(keys, ", "))
-    if c.effect or c.Effect then logf("[AI]  effect=%s", tstr(c.effect or c.Effect, 1)) end
-    if c.effects or c.Effects then logf("[AI]  effects(list)=%s", tstr(c.effects or c.Effects, 1)) end
+    if c.effect or c.Effect then logf("[AI]  effect=%s", globalFunction.tstr(c.effect or c.Effect, 1)) end
+    if c.effects or c.Effects then logf("[AI]  effects(list)=%s", globalFunction.tstr(c.effects or c.Effects, 1)) end
     if type(c.onPlay) == "function" then
       if usedOnPlay then
-        log("[AI]  onPlay: <function> (appelé, mais pas d'effet)")
+        logf("[AI]  onPlay: <function> (appelé, mais pas d'effet)")
       else
-        log("[AI]  onPlay: <function> (non appelé)")
+        logf("[AI]  onPlay: <function> (non appelé)")
       end
     end
     if okCardSys then logf("[AI]  NOTE: pipeline utilisé -> %s (mais aucun delta d’état détecté)", tostring(labelUsed)) end
@@ -483,7 +484,7 @@ function AI.load()
   AI.busy, AI.running, AI._endSent, AI.enemy, AI._badDtWarned =
       false, false, false, nil, false
   _autoWireTelegraph() -- auto-câblage visuel si dispo
-  log("[AI] Contrôleur simple chargé")
+  logf("[AI] Contrôleur simple chargé")
 end
 
 function AI:startTurn(enemy)
@@ -508,7 +509,7 @@ function AI:update(dt)
 
   if type(e) ~= "table" or type(e.state) ~= "table" then
     if not self._endSent and Transition and Transition.requestEndTurn then
-      log("[AI] pas d'ennemi valide → fin de tour")
+      logf("[AI] pas d'ennemi valide → fin de tour")
       Transition.requestEndTurn()
       self._endSent = true
     end
@@ -540,7 +541,7 @@ function AI:update(dt)
     local deck = ensureAIContainers()
     if not deck or #deck == 0 then
       if not self._endSent then
-        log("[AI] deck IA vide → fin de tour")
+        logf("[AI] deck IA vide → fin de tour")
         -- Marque et envoie immédiatement la demande de fin de tour au Transition Manager
         self._endSent = true
         if Transition and Transition.requestEndTurn then
@@ -630,7 +631,7 @@ function AI:update(dt)
   elseif self.state == "endturn" then
     if not self._endSent then
       self._endSent = true
-      log("[AI] fin de tour -> Transition.requestEndTurn()")
+      logf("[AI] fin de tour -> Transition.requestEndTurn()")
       if Transition and Transition.requestEndTurn then Transition.requestEndTurn() end
       _notify("onTurnEnd")
       -- Évite le spam : on attend que Transition bascule le tour
@@ -645,7 +646,7 @@ end
 
 function AI.draw()
   if not AI.listener or not AI.listener.draw then
-    log("[AI] draw: pas de listener ou draw non implémenté")
+    logf("[AI] draw: pas de listener ou draw non implémenté")
     return
   else
     AI.listener:draw()

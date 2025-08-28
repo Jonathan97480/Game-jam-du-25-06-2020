@@ -45,16 +45,6 @@ local function logT(...)
     if gf and gf.log and gf.log.info then gf.log.info(msg) else print(msg) end
 end
 
-local function clampDt(dt)
-    local gf = rawget(_G, 'globalFunction')
-    if gf and gf.clampDt then
-        return gf.clampDt(dt)
-    else
-        -- Fallback si globalFunction n'est pas disponible
-        if not dt or type(dt) ~= "number" then return 0 end
-        return (dt > 0.05) and 0.05 or dt
-    end
-end
 
 local function setTour(tag)
     if _G.Tour ~= tag then
@@ -120,20 +110,28 @@ function CombatFlow.new(cfg)
     return self
 end
 
+-- Singleton global pour que changeState puisse y accéder
+local Singleton = nil
+
 local function changeState(_state)
     if type(_state) ~= "string" then
         logT("Invalid state : le state passé n'est pas une chaîne de caractères: ", type(_state)); return
     end
     logT("State ->", _state)
-    CombatFlow.state = _state
+    if Singleton then
+        Singleton.state = _state
+    end
 end
+
 -- --------------------------
 -- API EXPLICITE
 -- --------------------------
 
 -- Démarre un affrontement (appeler quand la scène gameplay se lance)
 function CombatFlow:startEncounter()
-    self.state = "boot"; self.timer = 0; self.round = 0
+    changeState("boot")
+
+    self.timer = 0; self.round = 0
     self.enemyOrder, self.enemyIndex, self.enemyStarted = {}, 0, false
     self.victoryTriggered, self.gameoverShown = false, false
     self.rewardOptions, self.rewardChosenIndex = nil, nil
@@ -143,9 +141,10 @@ function CombatFlow:startEncounter()
     if GameFlags.first_draft_done then
         if SceneManager and SceneManager.push then
             SceneManager:push("scene.overlay_start.overlay_start")
+            changeState("overlay_start")
         end
 
-        changeState("overlay_start")
+
         self.timer = 0
     else
         if SceneManager and SceneManager.push then
@@ -173,7 +172,12 @@ end
 
 -- Boucle logique
 function CombatFlow:updateEncounter(dt)
-    dt = clampDt(dt); if dt <= 0 then return end
+    if type(dt) ~= "number" or dt == nil then
+        dt = _G.globalFunction.clampDt(dt)
+    end
+
+    if dt <= 0 then return end
+
     self.timer        = self.timer + dt
 
     -- Raccourcis config
@@ -474,7 +478,7 @@ end
 -- --------------------------
 -- Export / Singleton + Aliases compat
 -- --------------------------
-local Singleton                                   = CombatFlow.new(DefaultConfig)
+Singleton                                         = CombatFlow.new(DefaultConfig)
 
 -- Aliases (anciens noms → nouveaux) pour ne rien casser :
 Singleton.load                                    = function(self) return Singleton:startEncounter() end
