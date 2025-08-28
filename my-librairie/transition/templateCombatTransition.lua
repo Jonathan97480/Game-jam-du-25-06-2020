@@ -176,7 +176,7 @@ function CombatFlow:updateEncounter(dt)
         dt = _G.globalFunction.clampDt(dt)
     end
 
-    if dt <= 0 then return end
+    if dt <= 0 then dt = 0.016 end
 
     self.timer        = self.timer + dt
 
@@ -489,6 +489,7 @@ Singleton.onEnemyDied                             = function(self) return Single
 Singleton.onHeroDied                              = function(self) return Singleton:onPlayerDefeated() end
 Singleton.continueFromStartOverlay                = function(self) return Singleton:confirmStartOverlay() end
 Singleton.ackInitiativeOverlay                    = function(self) return Singleton:confirmInitiativeOverlay() end
+Singleton.announceContinue                        = function(self) return Singleton:confirmInitiativeOverlay() end
 Singleton.getRewardOptions                        = function(self) return Singleton:getRewardChoices() end
 Singleton.rewardSelect                            = function(self, i) return Singleton:chooseRewardByIndex(i) end
 Singleton.cmdRestart                              = function(self) return Singleton:restartEncounterWithTransition() end

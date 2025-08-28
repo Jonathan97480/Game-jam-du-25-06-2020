@@ -89,7 +89,7 @@ Configuration Flags & Constants
 
 -- Game state flags
 _G.GameFlags = _G.GameFlags or {
-    first_draft_done = false,
+    first_draft_done = true,
     debug_mode = false,
     hud_debug_energy = false
 }
