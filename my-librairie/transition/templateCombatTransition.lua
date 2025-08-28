@@ -3,7 +3,29 @@
 -- premier draft géré avec overlay_start (plus de overlay_deckdraft)
 
 -- ============== Require paresseux (anti-cycles) ==============
---[[ local function SM() return rawget(_G, "scene") or require("my-librairie/sceneManager") end
+--[[ local function SM() return rawget(_G, "scene") or require("my-librairie/sceneM-- Overlays : boutons "continuer/OK"
+function CombatFlow:confirmStartOverlay()
+    GameFlags.first_draft_done = true
+    self.flagStartOverlayDone = true
+    SceneManager:pop()
+    logT("overlay_start confirmé - affichage overlay_initiative")
+    -- Afficher overlay_initiative maintenant
+    SceneManager:push(self.cfg.overlays.initiative or "scene.overlay_initiative.overlay_initiative")
+end
+
+function CombatFlow:confirmInitiativeOverlay() 
+    self.flagInitiativeShown = true
+    SceneManager:pop()
+    logT("overlay_initiative confirmé - démarrage round")
+    -- Maintenant démarrer le round
+    setTour("setup_round")
+    self.state = "setup_round"; self.timer = 0
+end
+
+-- Appelé par overlay_initiative quand l'utilisateur clique ou attend
+function CombatFlow:announceContinue()
+    return self:confirmInitiativeOverlay()
+endnd
 local function AM() return rawget(_G, "actorManager") or require("my-librairie/actorManager") end
 local function EN() return rawget(_G, "Enemies") or require("my-librairie/ActorScripts/Enemy/Enemies") end
 local function HERO() return rawget(_G, "Hero") or require("my-librairie/ActorScripts/player/Hero") end
@@ -135,7 +157,9 @@ function CombatFlow:startEncounter()
         return
     end
 
-    -- Pas de draft: setup direct
+    -- Pas de draft: afficher overlay_start immédiatement
+    logT("Démarrage encounter - affichage overlay_start")
+    SceneManager:push("scene.overlay_start.overlay_start")
     self.state = "setup_round"; self.timer = 0
 end
 
@@ -385,6 +409,7 @@ Singleton.onEnemyDied                             = function(self) return self:o
 Singleton.onHeroDied                              = function(self) return self:onPlayerDefeated() end
 Singleton.continueFromStartOverlay                = function(self) return self:confirmStartOverlay() end
 Singleton.ackInitiativeOverlay                    = function(self) return self:confirmInitiativeOverlay() end
+Singleton.announceContinue                        = function(self) return self:announceContinue() end
 Singleton.getRewardOptions                        = function(self) return self:getRewardChoices() end
 Singleton.rewardSelect                            = function(self, i) return self:chooseRewardByIndex(i) end
 Singleton.cmdRestart                              = function(self) return self:restartEncounterWithTransition() end
