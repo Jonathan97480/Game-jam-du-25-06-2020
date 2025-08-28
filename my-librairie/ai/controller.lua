@@ -1,14 +1,19 @@
 -- my-librairie/ai/controller.lua
 -- IA : logique de jeu des cartes (pipeline Card.* + fallback) + auto-câblage du télégraphe (visuel optionnel)
 
--- Accès aux globales centralisées (chargées via my-librairie/globals.lua)
-local actorMgr                = _G.actorManager
-local Card                    = _G.Card
-local Hero                    = _G.Hero
-local Enemies                 = _G.Enemies
-local globalFunction          = _G.globalFunction
+-- Chargement sécurisé pour éviter les boucles circulaires
+local function _safeRequire(name)
+    local ok, mod = pcall(require, name)
+    return ok and mod or nil
+end
 
-local Transition              = require("my-librairie/transition/templateCombatTransition")
+local actorMgr                = _G.actorManager or _safeRequire("my-librairie/actorManager")
+local Card                    = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
+local Hero                    = _G.Hero or rawget(_G, "Hero")
+local Enemies                 = _G.Enemies or rawget(_G, "Enemies")
+local globalFunction          = _G.globalFunction or rawget(_G, 'globalFunction')
+
+local Transition              = _safeRequire("my-librairie/transition/templateCombatTransition")
 
 local timerMaxTurnChanged     = 1
 local timerDrawTurned         = 0

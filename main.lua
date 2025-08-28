@@ -3,13 +3,13 @@ if arg[#arg] == "vsc_debug" then require("lldebugger").start() end
 -- ***********Config Window Game*************
 love.window.setTitle("Tactique Cards")
 
--- Chargement centralisé de toutes les globales
+-- Chargement centralisé de toutes les globales AVANT tout require de scène
 local globals = require("my-librairie/globals")
 
 -- input manager (unified mouse/gamepad helpers) - désormais global
 -- inputManager est maintenant accessible via _G.inputManager
 
--- Modules locaux (non-globaux)
+-- Modules locaux (non-globaux) - chargés APRÈS les globales
 local menu = require("scene.menu.menu")
 
 -- Returns the distance between two points.

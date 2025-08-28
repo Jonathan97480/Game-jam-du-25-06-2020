@@ -86,18 +86,49 @@ menu.button = {
             -- btn correspond au bouton cliqué (transmis depuis menu.hover)
             if btn and btn.cmd == 'play' then
                 _log("[menu] Play cliqué → switch vers gameplay")
-                -- charger la config gameplay et la transmettre à la scène
-                local okCfg, cfg = pcall(require, "scene.gameplay.config")
-                if not okCfg then cfg = nil end
-                local okSwitch, tgt = pcall(function()
-                    return scene:switchWithTransition("scene.gameplay.gameplay", { config = cfg })
-                end)
-                if not okSwitch or not tgt then
-                    _log("[menu] scene:switch('scene.gameplay.gameplay') a échoué, tentative alternative sans config")
-                    local okSwitch2, tgt2 = pcall(function() return scene:switchWithTransition("scene.gameplay.gameplay") end)
-                    if not okSwitch2 or not tgt2 then
-                        _log("[menu] impossible de switcher vers gameplay : aucune require/switch n'a fonctionné")
+                
+                -- Vérification des globales
+                if not scene then
+                    _log("[menu] ERREUR: scene global n'est pas disponible")
+                    return
+                end
+                
+                if not scene.switchWithTransition then
+                    _log("[menu] ERREUR: scene.switchWithTransition n'existe pas")
+                    return
+                end
+                
+                -- Tentative de chargement des différents chemins possibles pour gameplay
+                local gameplayPaths = {
+                    "scene.gameplay.gameplay",
+                    "scene/gameplay/gameplay", 
+                    "scene.gameplay",
+                    "scene/gameplay"
+                }
+                
+                local gameplayLoaded = false
+                for _, path in ipairs(gameplayPaths) do
+                    local ok, gameplayScene = pcall(require, path)
+                    if ok and gameplayScene then
+                        _log("[menu] Gameplay trouvé avec le chemin: " .. path)
+                        local switchOk, result = pcall(function()
+                            return scene:switchWithTransition(path, {})
+                        end)
+                        if switchOk then
+                            _log("[menu] Switch réussi vers: " .. path)
+                            gameplayLoaded = true
+                            break
+                        else
+                            _log("[menu] Échec du switch vers " .. path .. ": " .. tostring(result))
+                        end
+                    else
+                        _log("[menu] Impossible de charger: " .. path .. " (" .. tostring(gameplayScene) .. ")")
                     end
+                end
+                
+                if not gameplayLoaded then
+                    _log("[menu] ERREUR: Impossible de charger la scène de gameplay")
+                    _log("[menu] Vérifiez que scene/gameplay/gameplay.lua existe et fonctionne")
                 end
             end
         end
@@ -196,19 +227,34 @@ Paramètres : (aucun)
 Retour : nil
 ]]
 function menu.hover()
-    local input_ok, input = pcall(require, "my-librairie/inputManager")
-    local okc, cursor = pcall(require, "my-librairie/cursor")
+    -- Utiliser les globales pour l'input si disponible
+    local gf = _G.globalFunction
     local mx, my = 0, 0
-    if okc and cursor and cursor.get then mx, my = cursor.get() end
-    -- detecter un "just pressed" (appui) plutôt que l'état pressed/held pour éviter
-    -- les problèmes de timing dus à l'ordre d'update
-    local isClickNow = false
-    if input_ok and input and input.justPressed then
-        isClickNow = input.justPressed()
-    else
-        local okI, iface = pcall(require, "my-librairie/inputInterface")
-        if okI and iface and iface.justPressedAction then isClickNow = iface.justPressedAction() end
+    
+    -- Récupération de la position de la souris
+    local okc, cursor = pcall(require, "my-librairie/cursor")
+    if okc and cursor and cursor.get then 
+        mx, my = cursor.get() 
     end
+    
+    -- Détection du clic avec globalFunction en priorité
+    local isClickNow = false
+    if gf and gf.mouse and gf.mouse.click then
+        isClickNow = gf.mouse.click() == true -- Force boolean conversion
+    else
+        -- Fallback sur inputManager
+        local input_ok, input = pcall(require, "my-librairie/inputManager")
+        if input_ok and input and input.justPressed then
+            isClickNow = input.justPressed()
+        else
+            -- Dernier fallback
+            local okI, iface = pcall(require, "my-librairie/inputInterface")
+            if okI and iface and iface.justPressedAction then 
+                isClickNow = iface.justPressedAction() 
+            end
+        end
+    end
+    
     for _, value in pairs(menu.button) do
         local inside = (mx >= value.vector2.x) and (mx <= value.vector2.x + value.width) and (my >= value.vector2.y) and
             (my <= value.vector2.y + value.height)
@@ -216,8 +262,14 @@ function menu.hover()
             if isClickNow and not isclick then
                 isclick = true
                 value.color.curent = value.color.click
+                -- Logs de debug pour voir si le clic est détecté
+                _log("[menu] Clic détecté sur bouton: " .. (value.cmd or value.texte or "inconnu"))
                 -- transmettre le bouton courant à la fonction d'action
-                value.action(value)
+                if value.action then
+                    value.action(value)
+                else
+                    _log("[menu] ERREUR: bouton sans fonction action")
+                end
                 break
             else
                 value.color.curent = value.color.hover
