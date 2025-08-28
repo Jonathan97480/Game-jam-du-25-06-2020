@@ -56,8 +56,15 @@ function love.load()
     end)
   end)
 
+  globalFunction.log.info("[main.lua] love.load() appelé - début initialisation")
+
+  globalFunction.log.info("[main.lua] Ajout de la scène menu")
   scene:add(menu) -- ← deux-points
-  scene:load()    -- pas besoin de dt ici
+
+  globalFunction.log.info("[main.lua] Appel de scene:load()")
+  scene:load() -- pas besoin de dt ici
+
+  globalFunction.log.info("[main.lua] love.load() terminé")
 end
 
 -- UPDATE
@@ -93,6 +100,12 @@ function love.draw()
   love.graphics.scale(screen.ratioScreen.width, screen.ratioScreen.height)
   scene:draw()
   Transition.draw()
+
+  -- ✅ RENDU HUD CENTRALISÉ - Le HUD est rendu ici une seule fois pour tout le jeu
+  if _G.hud and type(_G.hud.draw) == 'function' then
+    _G.hud.draw()
+  end
+
   -- draw global logs panel if enabled (globalFunction may be set by module)
   local gf = rawget(_G, "globalFunction") or rawget(_G, "myFunction") or rawget(_G, "myFonction")
   if type(gf) == 'table' and type(gf.drawLogs) == 'function' then

@@ -1,5 +1,5 @@
--- scene/overlay_initiative.lua
--- Overlay d'initiative converti au système HUD modulaire
+-- scene/overlay_initiative/overlay_initiative.lua
+-- LOGIQUE MÉTIER UNIQUEMENT pour l'overlay d'initiative
 local overlay = { name = "overlay_initiative" }
 
 -- Fonction de chargement sécurisé
@@ -8,247 +8,225 @@ local function _safeRequire(name)
     return ok and mod or nil
 end
 
+-- Dépendances
 local Transition     = _safeRequire("my-librairie/transition/templateCombatTransition")
-local hud            = _G.hud
-local inputManager   = _safeRequire("my-librairie/inputManager")
+local inputInterface = _safeRequire("my-librairie/inputInterface")
+local InitiativeHUD  = _safeRequire("scene/overlay_initiative/HUD/initiative_overlay_hud")
 
+-- Variables de logique métier
 local W, H
 local timer          = 0
-local hold           = 10  -- secondes avant auto-continue (peut être réduit)
-local who            = "?"
-local spacePressed   = false -- Flag pour savoir si espace a été pressé
-local spaceTimer     = 0   -- Timer depuis que espace a été pressé
+local hold           = 10    -- secondes avant auto-continue
+local who            = "?"   -- qui commence le combat
+local spacePressed   = false -- a-t-on pressé espace ?
+local spaceTimer     = 0     -- temps depuis que espace a été pressé
 local globalFunction = _G.globalFunction
 
--- IDs des éléments HUD
-local PANEL_ID = "initiative_panel"
-local TITLE_ID = "initiative_title"
-local MESSAGE_ID = "initiative_message"
-local STATUS_ID = "initiative_status"
-local BACKGROUND_ID = "initiative_bg"
+-- Instance graphique
+local hudRenderer    = nil
+
+-- ============================
+-- LOGIQUE D'INITIALISATION
+-- ============================
 
 function overlay.load(self)
-    globalFunction.log.info("[overlay_initiative] load() called!")
+    globalFunction.log.info("[overlay_initiative] load() - LOGIQUE")
+
+    -- Récupération des dimensions d'écran
     W = (screen and screen.gameReso and screen.gameReso.width) or love.graphics.getWidth()
     H = (screen and screen.gameReso and screen.gameReso.height) or love.graphics.getHeight()
-    
-    -- S'assurer que le HUD est disponible
-    if not hud then
-        globalFunction.log.warn("[overlay_initiative] HUD system not available, fallback mode")
-        return
+
+    -- Création du renderer graphique
+    if InitiativeHUD then
+        hudRenderer = InitiativeHUD.create()
+        globalFunction.log.info("[overlay_initiative] Renderer créé")
+    else
+        globalFunction.log.warn("[overlay_initiative] Pas de renderer, mode fallback")
     end
-    
-    globalFunction.log.info("[overlay_initiative] load() finished, W=" .. W .. ", H=" .. H)
+
+    globalFunction.log.info("[overlay_initiative] load() terminé, W=" .. W .. ", H=" .. H)
 end
 
 function overlay.enter(self)
-    globalFunction.log.info("[overlay_initiative] enter() called!")
+    globalFunction.log.info("[overlay_initiative] enter() - LOGIQUE D'ENTRÉE")
+
+    -- Reset de tous les timers
     timer = 0
-    spacePressed = false -- Reset le flag espace
-    spaceTimer = 0       -- Reset le timer espace
-    
-    -- Qui commence ? le manager doit l'avoir décidé avant d'entrer dans cet état
-    if Transition and Transition.getInitiative then
-        who = Transition.getInitiative() == "Enemy" and "L'ennemi commence !" or "Vous commencez !"
-    elseif _G.Tour == "Enemy" then
-        who = "L'ennemi commence !"
-    else
-        who = "Vous commencez !"
-    end
-    
-    if hud then
-        self:createHudElements()
-    end
-    
-    globalFunction.log.info("[overlay_initiative] enter() finished, who=" .. who)
+    spacePressed = false
+    spaceTimer = 0
+
+    -- Déterminer qui commence (LOGIQUE MÉTIER)
+    who = self:determineWhoStarts()
+
+    -- Afficher l'interface graphique
+    self:showInterface()
+
+    globalFunction.log.info("[overlay_initiative] enter() terminé, qui commence: " .. who)
 end
 
-function overlay.createHudElements(self)
-    -- Background semi-transparent plein écran
-    hud.addIcon(BACKGROUND_ID, {
-        x = 0,
-        y = 0,
-        w = W,
-        h = H,
-        layer = "background",
-        color = {0, 0, 0, 0.6}
-    })
-    
-    -- Panel principal centré
-    local boxW, boxH = math.min(800, W * 0.8), math.min(320, H * 0.5)
-    local panelX, panelY = (W - boxW) / 2, (H - boxH) / 2
-    
-    hud.setPanel(PANEL_ID, panelX, panelY, boxW, boxH, {}, {
-        color = {20/255, 22/255, 26/255, 0.95},
-        layer = "props"
-    })
-    
-    -- Titre "Initiative"
-    hud.addLabel(TITLE_ID, {
-        text = "Initiative",
-        x = panelX,
-        y = panelY + 24,
-        w = boxW,
-        layer = "card",
-        font = "title",
-        color = {1, 1, 1, 1},
-        align = "center"
-    })
-    
-    -- Message qui commence
-    hud.addLabel(MESSAGE_ID, {
-        text = who,
-        x = panelX + 20,
-        y = panelY + 110,
-        w = boxW - 40,
-        layer = "card",
-        font = "subtitle",
-        color = {1, 1, 1, 1},
-        align = "center"
-    })
-    
-    -- Message de statut (en bas)
-    local statusText = "Appuyez sur ESPACE pour continuer (" .. hold .. "s)"
-    hud.addLabel(STATUS_ID, {
-        text = statusText,
-        x = panelX + 20,
-        y = panelY + boxH - 48,
-        w = boxW - 40,
-        layer = "card",
-        font = "normal",
-        color = {1, 1, 1, 1},
-        align = "center"
-    })
+-- ============================
+-- LOGIQUE MÉTIER
+-- ============================
+
+function overlay.determineWhoStarts(self)
+    -- LOGIQUE : déterminer qui commence le combat
+    if Transition and Transition.getInitiative then
+        local initiative = Transition.getInitiative()
+        return (initiative == "Enemy") and "L'ennemi commence !" or "Vous commencez !"
+    elseif _G.Tour == "Enemy" then
+        return "L'ennemi commence !"
+    else
+        return "Vous commencez !"
+    end
+end
+
+function overlay.showInterface(self)
+    -- DÉLÉGATION au renderer graphique
+    if hudRenderer then
+        local statusText = self:getStatusText()
+        hudRenderer:show(W, H, who, statusText)
+    end
+end
+
+function overlay.getStatusText(self)
+    -- LOGIQUE : générer le texte de statut
+    if spacePressed then
+        local remainSpace = math.max(0, math.ceil(1.0 - spaceTimer))
+        return "Fermeture dans " .. remainSpace .. " seconde(s)..."
+    else
+        local remain = math.max(0, math.ceil(hold - timer))
+        return "Appuyez sur ESPACE pour continuer (" .. remain .. "s)"
+    end
+end
+
+-- ============================
+-- GESTION DES ENTRÉES
+-- ============================
+
+function overlay.keypressed(self, key)
+    globalFunction.log.info("[overlay_initiative] LOGIQUE : touche pressée: " .. tostring(key))
+
+    -- LOGIQUE : réaction à l'espace, entrée, etc.
+    if key == "space" or key == "return" then
+        if not spacePressed then
+            globalFunction.log.info("[overlay_initiative] LOGIQUE : début du compte à rebours")
+            spacePressed = true
+            spaceTimer = 0
+        end
+    end
+end
+
+function overlay.mousepressed(self, x, y, button)
+    globalFunction.log.info("[overlay_initiative] LOGIQUE : clic souris détecté: " .. tostring(button))
+
+    -- Permettre le clic pour continuer
+    if button == 1 and not spacePressed then -- clic gauche
+        globalFunction.log.info("[overlay_initiative] LOGIQUE : clic pour continuer")
+        spacePressed = true
+        spaceTimer = 0
+    end
 end
 
 function overlay.update(self, dt)
-    -- Mise à jour du système input
-    if inputManager then
-        inputManager.update(dt)
-    end
-    
-    -- Mise à jour du système HUD
-    if hud then
-        hud.update(dt)
-    end
-    
-    timer = timer + dt
-    globalFunction.log.info("[overlay_initiative] update() timer=" ..
-        timer .. ", spacePressed=" .. tostring(spacePressed))
+    print("[DEBUG] overlay_initiative.update() appelé ! dt=" .. tostring(dt) .. ", timer=" .. tostring(timer))
 
-    -- Si espace a été pressé, compter 1 seconde puis fermer
+    -- Vérifier les raccourcis clavier globaux
+    if globalFunction and globalFunction.endTurnHotkeys and globalFunction.endTurnHotkeys() then
+        if not spacePressed then
+            globalFunction.log.info("[overlay_initiative] LOGIQUE : raccourci détecté, début du compte à rebours")
+            spacePressed = true
+            spaceTimer = 0
+        end
+    end
+
+    -- LOGIQUE : progression des timers
+    timer = timer + dt
+
     if spacePressed then
         spaceTimer = spaceTimer + dt
-        globalFunction.log.info("[overlay_initiative] space countdown: " .. spaceTimer .. "/1.0")
-        
-        -- Mettre à jour le texte de statut
-        if hud then
-            local remainSpace = math.max(0, math.ceil(1.0 - spaceTimer))
-            hud.setText(STATUS_ID, "Fermeture dans " .. remainSpace .. " seconde(s)...")
-        end
-        
-        if spaceTimer >= 1.0 then -- 1 seconde après espace
-            globalFunction.log.info("[overlay_initiative] 1 second passed, closing overlay directly")
+        globalFunction.log.info("[overlay_initiative] Compte à rebours espace: " .. spaceTimer .. "/1.0")
+
+        -- LOGIQUE : fermer après 1 seconde
+        if spaceTimer >= 1.0 then
+            globalFunction.log.info("[overlay_initiative] 1 seconde écoulée, fermeture")
             self:closeOverlay()
+            return
         end
     else
-        -- Mettre à jour le timer de statut
-        if hud then
-            local remain = math.max(0, math.ceil(hold - timer))
-            hud.setText(STATUS_ID, "Appuyez sur ESPACE pour continuer (" .. remain .. "s)")
-        end
-        
-        -- Auto-continue après le délai normal
+        -- LOGIQUE : auto-fermeture après délai
         if timer >= hold then
-            globalFunction.log.info("[overlay_initiative] Auto-continue timeout reached, closing overlay directly")
+            globalFunction.log.info("[overlay_initiative] Délai auto-fermeture atteint")
             self:closeOverlay()
+            return
         end
+    end
+
+    -- Mise à jour de l'affichage
+    self:updateInterface()
+end
+
+function overlay.updateInterface(self)
+    -- DÉLÉGATION au renderer graphique
+    if hudRenderer then
+        local statusText = self:getStatusText()
+        hudRenderer:updateStatus(statusText)
     end
 end
 
 function overlay.closeOverlay(self)
-    -- Nettoyer les éléments HUD
-    if hud then
-        hud.remove(BACKGROUND_ID)
-        hud.remove(PANEL_ID)
-        hud.remove(TITLE_ID)
-        hud.remove(MESSAGE_ID)
-        hud.remove(STATUS_ID)
+    globalFunction.log.info("[overlay_initiative] LOGIQUE : fermeture de l'overlay")
+
+    -- Nettoyer l'affichage
+    if hudRenderer then
+        hudRenderer:hide()
     end
-    
-    -- Fermer l'overlay
-    if _G.scene and _G.scene.pop then
-        globalFunction.log.info("[overlay_initiative] Calling scene:pop() to close overlay")
+
+    -- CORRECTIF: Utiliser la fonction du templateCombatTransition au lieu de faire pop() directement
+    -- Cela évite le conflit où les deux systèmes font pop() en même temps
+    if Transition and Transition.confirmInitiativeOverlay then
+        globalFunction.log.info("[overlay_initiative] Notification au Transition system via confirmInitiativeOverlay()")
+        Transition.confirmInitiativeOverlay()
+    elseif _G.scene and _G.scene.pop then
+        -- Fallback si Transition pas disponible
+        globalFunction.log.warn("[overlay_initiative] Fallback: Transition non disponible, pop() direct")
         _G.scene:pop()
+    else
+        globalFunction.log.error("[overlay_initiative] ERREUR: Aucun moyen de fermer l'overlay !")
     end
 end
+
+-- ============================
+-- RENDU
+-- ============================
 
 function overlay.draw(self)
-    -- Le système HUD s'occupe du rendu
-    if hud then
-        hud.draw()
-    else
-        -- Fallback vers le rendu manuel si HUD non disponible
-        self:drawFallback()
-    end
+    -- ✅ HUD rendu centralisé dans main.lua - plus besoin d'appeler hudRenderer:draw() ici
+
+    -- Les éléments HUD sont automatiquement affichés par main.lua après hud.draw()
+    -- Le HUD d'initiative est créé dans enter() et sera automatiquement rendu
 end
 
-function overlay.drawFallback(self)
-    -- Rendu de fallback (ancien système)
-    love.graphics.setColor(0, 0, 0, 0.6)
-    love.graphics.rectangle("fill", 0, 0, W, H)
-
-    -- Panel central
-    local boxW, boxH = math.min(800, W * 0.8), math.min(320, H * 0.5)
-    local x, y = (W - boxW) / 2, (H - boxH) / 2
-    
-    love.graphics.setColor(20/255, 22/255, 26/255, 0.95)
-    love.graphics.rectangle("fill", x, y, boxW, boxH, 16)
-    
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.setFont(love.graphics.newFont(36))
-    love.graphics.printf("Initiative", x, y + 24, boxW, "center")
-    
-    love.graphics.setFont(love.graphics.newFont(28))
-    love.graphics.printf(who, x + 20, y + 110, boxW - 40, "center")
-
-    love.graphics.setFont(love.graphics.newFont(18))
-    -- Affichage différent selon l'état
-    if spacePressed then
-        local remainSpace = math.max(0, math.ceil(1.0 - spaceTimer))
-        love.graphics.printf("Fermeture dans " .. remainSpace .. " seconde(s)...", x + 20, y + boxH - 48,
-            boxW - 40, "center")
-    else
-        local remain = math.max(0, math.ceil(hold - timer))
-        love.graphics.printf("Appuyez sur ESPACE pour continuer (" .. remain .. "s)", x + 20, y + boxH - 48,
-            boxW - 40, "center")
-    end
-end
-
--- Entrées utilisateur pour "skip"
-function overlay.keypressed(self, key)
-    globalFunction.log.info("[overlay_initiative] ⚡ KEYPRESSED CALLED! Key: " .. tostring(key))
-    globalFunction.log.info("[overlay_initiative] Key pressed: " .. tostring(key))
-    if key == "space" or key == "return" or key == "kpenter" then
-        globalFunction.log.info("[overlay_initiative] 🚀 SPACE DETECTED! spacePressed was:" .. tostring(spacePressed))
-        globalFunction.log.info("[overlay_initiative] Space pressed! spacePressed was:" .. tostring(spacePressed))
-        if not spacePressed then -- Évite de redéclencher si déjà en cours
-            spacePressed = true
-            spaceTimer = 0       -- Reset le timer à 0 pour commencer le compte à rebours d'1 seconde
-            globalFunction.log.info("[overlay_initiative] ✅ SPACE FLAG SET! Timer started for 1 second countdown")
-            globalFunction.log.info("[overlay_initiative] Timer started for 1 second countdown")
-        end
-    else
-        globalFunction.log.info("[overlay_initiative] Other key pressed: " .. tostring(key))
-    end
-end
+-- ============================
+-- NETTOYAGE
+-- ============================
 
 function overlay.leave(self)
-    globalFunction.log.info("[overlay_initiative] leave() called - cleaning up HUD elements")
-    self:closeOverlay()
+    globalFunction.log.info("[overlay_initiative] leave() - NETTOYAGE LOGIQUE")
+
+    -- Nettoyer le renderer seulement
+    if hudRenderer then
+        hudRenderer:hide()
+        hudRenderer = nil
+    end
+
+    -- Reset des variables
+    timer = 0
+    spacePressed = false
+    spaceTimer = 0
+    who = "?"
 end
 
--- Pour éviter que le HUD "mange" la souris pendant l'overlay :
+-- Capture de souris pour éviter les interactions pendant l'overlay
 function overlay.isMouseOver()
     return true
 end

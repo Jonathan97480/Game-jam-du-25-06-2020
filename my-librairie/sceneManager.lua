@@ -174,23 +174,30 @@ end
 -- ctorArgsList est un tableau d’arguments positionnels pour le constructeur.
 function scene:add(sceneOrNameOrCtor, ctorArgsList)
     self.list = self.list or {}
+    logScene("add() appelé avec argument: " ..
+        tostring(sceneOrNameOrCtor) .. " (type: " .. type(sceneOrNameOrCtor) .. ")")
 
     if sceneOrNameOrCtor == nil then
+        logScene("add() argument nil - rien ajouté")
         if scene.debug then print("[sceneManager] add: argument scene nil (rien ajouté)") end
         return nil
     end
 
     local s = sceneOrNameOrCtor
     if type(s) == "string" then
+        logScene("add() traitement string: " .. s)
         local mod, errLog = _tryRequireAny(s)
         if not mod then
+            logScene("add() require échoué pour: " .. s .. " | " .. tostring(errLog))
             if scene.debug then print(("[sceneManager] add: require a échoué pour '%s' | %s"):format(s, tostring(errLog))) end
             return nil
         end
         s = mod
     elseif type(s) == "function" then
+        logScene("add() traitement function")
         local ok, inst = _constructWithArgs(s, ctorArgsList)
         if not ok then
+            logScene("add() constructeur échoué: " .. tostring(inst))
             if scene.debug then print("[sceneManager] add: constructeur a échoué: " .. tostring(inst)) end
             return nil
         end
@@ -198,12 +205,14 @@ function scene:add(sceneOrNameOrCtor, ctorArgsList)
     end
 
     if type(s) ~= "table" then
+        logScene("add() type invalide: " .. type(s))
         if scene.debug then print("[sceneManager] add: type invalide, attendu table/string/function, reçu " .. type(s)) end
         return nil
     end
 
     s.name = s.name or s.id or s.__name or s.__type or "scene"
     table.insert(self.list, s)
+    logScene("add() réussi - scène ajoutée: " .. tostring(s.name) .. " - stack size: " .. #self.list)
     if scene.debug then print(("[sceneManager] added scene: %s"):format(tostring(s.name))) end
     return s
 end
@@ -227,6 +236,12 @@ end
 -- Vide la pile/liste de scènes.
 function scene:clear()
     self.list = {}
+
+    -- ✅ Vider le HUD quand toutes les scènes sont supprimées
+    if _G.hud and type(_G.hud.clear) == 'function' then
+        _G.hud.clear()
+        if scene.debug then print("[sceneManager] HUD vidé après clear()") end
+    end
 end
 
 -- Retourne la scène au sommet (ou nil).
@@ -280,6 +295,8 @@ function scene:push(target, ctorArgsList)
     self.list = self.list or {}
 
     local prevTop = self.list[#self.list]
+    logScene("push() appelé - stack size avant: " ..
+        #self.list .. ", previous top: " .. tostring(prevTop and prevTop.name or "nil"))
     if prevTop then callAny(prevTop, "pause") end
 
     local tgt, err = _resolveTarget(target, ctorArgsList)
@@ -289,9 +306,11 @@ function scene:push(target, ctorArgsList)
     end
 
     table.insert(self.list, tgt)
+    logScene("Scene ajoutée à la pile: " .. tostring(tgt.name) .. " - nouveau stack size: " .. #self.list)
     callAny(tgt, "load")
     callAny(tgt, "enter")
     if scene.debug then print("[sceneManager] push -> " .. tostring(tgt.name)) end
+    logScene("Nouvelle TOP scene: " .. tostring(tgt.name))
 
     scene.current = tgt
     return tgt
@@ -325,6 +344,12 @@ function scene:pop(count)
     else
         if scene.debug then print("[sceneManager] pop -> pile vide") end
         logScene("Stack maintenant vide")
+
+        -- ✅ Vider le HUD SEULEMENT quand la pile devient complètement vide
+        if _G.hud and type(_G.hud.clear) == 'function' then
+            _G.hud.clear()
+            if scene.debug then print("[sceneManager] HUD vidé après pop() - pile vide") end
+        end
     end
 
     logScene("pop() terminé - stack size final: " .. #self.list)
@@ -343,20 +368,26 @@ Boucle de vie (load/update/draw/emit)
 -- Appelle load() sur chaque scène (à appeler depuis love.load via :  scene:load())
 function scene:load()
     self.list = self.list or {}
+    logScene("load() appelé - stack size: " .. #self.list)
 
     local calls = 0
     for i = 1, #self.list do
         local sc = self.list[i]
         if sc and type(sc.load) == "function" then
             calls = calls + 1
+            logScene("Calling load() on scene[" .. i .. "]: " .. tostring(sc.name))
             local ok, err = pcall(sc.load, sc)
             if not ok then
                 print(("[scene] load error in scene '%s' (index %d): %s")
                     :format(tostring(sc.name or "?"), i, tostring(err)))
+                logScene("load() erreur dans scene[" .. i .. "]: " .. tostring(err))
             end
+        else
+            logScene("Scene[" .. i .. "] pas de fonction load: " .. tostring(sc and sc.name or "nil"))
         end
     end
 
+    logScene("load() terminé - " .. calls .. " scène(s) appelées")
     if scene.debug then
         print(("[sceneManager] load: %d scène(s) appelées"):format(calls))
     end
@@ -369,40 +400,49 @@ function scene:update(dt)
     self.list = self.list or {}
     if self.stackMode then
         local topScene = self.list[#self.list]
-        if topScene and topScene.update then topScene:update(dt) end
+        logScene("update() - stackMode=true, top scene: " .. tostring(topScene and topScene.name or "nil"))
+        if topScene and topScene.update then
+            logScene("Calling update() on scene: " .. tostring(topScene.name))
+            topScene:update(dt)
+        end
         return
     end
+    logScene("update() - stackMode=false, updating all " .. #self.list .. " scenes")
     for i = 1, #self.list do
         local sc = self.list[i]
-        if sc and sc.update then sc:update(dt) end
+        if sc and sc.update then
+            logScene("Calling update() on scene[" .. i .. "]: " .. tostring(sc.name))
+            sc:update(dt)
+        end
     end
 end
 
 -- Appelle draw() (top-only si stackMode). À appeler depuis love.draw via :  scene:draw()
 function scene:draw()
     self.list = self.list or {}
+    logScene("draw() appelé - stack size: " .. #self.list .. ", stackMode: " .. tostring(self.stackMode))
 
     if self.stackMode then
         local topScene = self.list[#self.list]
         if topScene and type(topScene.draw) == "function" and topScene.hidden ~= true then
+            logScene("Drawing top scene: " .. tostring(topScene.name))
             local ok, err = pcall(topScene.draw, topScene)
             if not ok then
                 print(("[scene] draw error in top scene '%s': %s")
                     :format(tostring(topScene.name or ("#" .. tostring(#self.list))), tostring(err)))
             end
+        else
+            logScene("No valid top scene to draw")
         end
         return
     end
 
     -- Mode stackMode=false - on dessine toutes les scènes
+    logScene("Drawing all " .. #self.list .. " scenes")
     for i = 1, #self.list do
         local sc = self.list[i]
         if sc and type(sc.draw) == "function" and sc.hidden ~= true then
-            -- Ajout de logging pour debug visual persistence
-            if sc.name and sc.name:find("overlay_start") then
-                logScene("Drawing overlay_start à index " .. i .. " / " .. #self.list)
-            end
-
+            logScene("Drawing scene[" .. i .. "]: " .. tostring(sc.name))
             local ok, err = pcall(sc.draw, sc)
             if not ok then
                 print(("[scene] draw error in scene '%s' (index %d): %s")

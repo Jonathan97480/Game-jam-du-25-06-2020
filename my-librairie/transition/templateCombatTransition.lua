@@ -241,8 +241,13 @@ function CombatFlow:updateEncounter(dt)
         end
         return
     elseif self.state == "overlay_initiative" then
+        -- Vérifier si l'overlay_initiative a été confirmé
         if self.flagInitiativeShown then
-            if SceneManager and SceneManager.pop then SceneManager:pop() end
+            logT("🚪 flagInitiativeShown=true, closing overlay_initiative and moving to setup_round")
+            if SceneManager and SceneManager.pop then
+                logT("Popping overlay_initiative scene")
+                SceneManager:pop()
+            end
             changeState("setup_round")
             self.timer = 0
         end
@@ -445,7 +450,10 @@ function CombatFlow:confirmStartOverlay()
     -- Laisser la FSM gérer la transition vers overlay_initiative
 end
 
-function CombatFlow:confirmInitiativeOverlay() self.flagInitiativeShown = true end
+function CombatFlow:confirmInitiativeOverlay()
+    logT("🔥 confirmInitiativeOverlay() called! Setting flagInitiativeShown=true")
+    self.flagInitiativeShown = true
+end
 
 function CombatFlow:getRewardChoices() return self.rewardOptions or {} end
 
@@ -455,10 +463,10 @@ end
 
 -- Fonctions de compatibilité pour main.lua
 function CombatFlow:maskInput()
-    -- Bloquer les inputs pendant les overlays
+    -- Bloquer les inputs pendant les overlays (SAUF overlay_initiative qui a besoin d'update)
     return self.state == "overlay_start"
-        or self.state == "overlay_initiative"
         or self.state == "reward_choice"
+    -- overlay_initiative a besoin de scene:update() pour ses timers !
 end
 
 function CombatFlow:isActive()
@@ -511,7 +519,9 @@ local M                                           = setmetatable({
     -- Fonctions appelées par main.lua
     maskInput = function() return Singleton:maskInput() end,
     isActive = function() return Singleton:isActive() end,
-    canDeal = function() return Singleton:canDeal() end
+    canDeal = function() return Singleton:canDeal() end,
+    -- Fonction appelée par overlay_initiative
+    confirmInitiativeOverlay = function() return Singleton:confirmInitiativeOverlay() end
 }, { __index = Singleton })
 
 -- noms chargeables

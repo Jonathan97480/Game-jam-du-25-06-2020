@@ -139,5 +139,9 @@ function I.getActiveSource()
     return activeSource
 end
 
+function I.GetKeyPressed()
+    return love.keyboard.getKeyPressed()
+end
+
 I.init()
 return I

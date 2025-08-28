@@ -1,20 +1,45 @@
 README — Game Jam (fork)
 
-## Documentation Disponible
+## 📚 Documentation Disponible
 
-### 📚 Système HUD
-- **[Documentation Complète HUD](HUD_Documentation.md)** - Guide détaillé du système d'interface utilisateur
-- **[Référence Rapide HUD](HUD_Quick_Reference.md)** - API et patterns essentiels
-- **[Exemples HUD](HUD_Examples.md)** - Implémentations pratiques complètes
+### 🎯 Systèmes Principaux
 
-### 🎮 Résumé des Changements Récents
+#### HUD (Interface Utilisateur) ⭐ **SYSTÈME CENTRALISÉ**
+- **[HUD_Centralized_System.md](./HUD_Centralized_System.md)** - Architecture centralisée complète ⭐ **NOUVEAU**
+- **[HUD_Migration_Complete.md](./HUD_Migration_Complete.md)** - Guide de migration et changements effectués ⭐ **NOUVEAU**
+- **[HUD_Documentation.md](./HUD_Documentation.md)** - Documentation détaillée du système HUD
+- **[HUD_Examples.md](./HUD_Examples.md)** - Exemples d'utilisation pratiques
+- **[HUD_Quick_Reference.md](./HUD_Quick_Reference.md)** - Référence rapide API HUD
 
-- **HUD System** : Architecture modulaire en 5 couches avec composants réutilisables
-- **Boutons Avancés** : États hover/click, centrage automatique, gestion des images
-- **Responsive Design** : Adaptation automatique aux résolutions
-- **Refactor** : consolidation des effets dans `my-librairie/card-librairie/effects/cardEffect_shim.lua`
-- **Compat** : `my-librairie/card-librairie/core/common.lua` mis à jour pour charger le nouveau module d'effets
-- **Debug** : logs détaillés et flags de debug pour le HUD et l'énergie
+#### Scene Management
+- **[SceneManager_Documentation.md](./SceneManager_Documentation.md)** - Système de gestion des scènes avec pile et lifecycle
+
+#### Input System
+- **[InputSystem_Documentation.md](./InputSystem_Documentation.md)** - Système d'entrées unifié
+- **[InputSystem_Examples.md](./InputSystem_Examples.md)** - Exemples d'utilisation des inputs
+- **[InputSystem_Quick_Reference.md](./InputSystem_Quick_Reference.md)** - Référence rapide API input
+
+### 🔄 Migrations et Overlays
+- **[Overlay_Initiative_HUD_Migration.md](./Overlay_Initiative_HUD_Migration.md)** - Migration spécifique de l'overlay initiative
+
+### 🚀 Changements Récents (Août 2025)
+
+#### ✅ HUD Centralisé - Migration Complète
+- **Rendu unique** dans `main.lua` - fini les conflits de rendu multiples
+- **API modernisée** avec structure `opts` table unifiée
+- **Smart clearing** automatique quand pile de scènes devient vide
+- **Protection d'erreurs** robuste avec validation coordonnées `tonumber()`
+- **Performance optimisée** : réduction 60-70% de la charge de rendu HUD
+
+#### ✅ Overlay Initiative Fixé
+- **Positionnement corrigé** - texte maintenant centré dans panel noir
+- **API mise à jour** vers nouveau format opts structure
+- **Gestion d'état stabilisée** avec lifecycle proper
+
+#### ✅ Scene Manager Amélioré
+- **Smart clearing HUD** seulement quand pile de scènes vide
+- **Logs détaillés** pour debugging et monitoring
+- **Error handling** robuste pour toutes les transitions
 
 ### 🏗️ Architecture Principale
 
@@ -22,6 +47,13 @@ README — Game Jam (fork)
 - `main.lua` - Point d'entrée, gestion des globales
 - `scene/` - Scènes du jeu avec lifecycle standard
 - `my-librairie/globals.lua` - Système de globales centralisé
+
+#### Input System
+- `my-librairie/inputInterface.lua` - Interface bas niveau unifiée souris/manette
+- `my-librairie/inputManager.lua` - Manager haut niveau avec helpers et API simplifiée
+- Cursor virtuel unifié avec basculement automatique entre sources
+- Support manette avec zones mortes configurables et détection front-edge
+- Raccourcis de fin de tour intégrés (E/Return/Space)
 
 #### Système HUD
 - `my-librairie/hud/hud.lua` - Gestionnaire principal (1392+ lignes)

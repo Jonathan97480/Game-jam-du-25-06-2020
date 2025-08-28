@@ -19,9 +19,10 @@ function hud_overlay.pause(self) end
 
 
 function hud_overlay.draw(self)
-    -- Orchestration du rendu HUD (background, éléments, etc.)
+    -- ✅ HUD rendu centralisé dans main.lua - plus besoin d'appeler hud.draw() ici
+    -- Orchestration du rendu HUD background uniquement si nécessaire
     if hud.drawBackground then hud.drawBackground() end
-    if hud.draw then hud.draw() end
+    -- hud.draw() est maintenant appelé automatiquement par main.lua
 end
 
 function hud_overlay.hover(self, ...)

@@ -176,9 +176,7 @@ end
 
 -- Draw HUD elements
 function hud_overlay_start.draw()
-    if hud and hud.draw then
-        hud.draw()
-    end
+    -- ✅ HUD rendu centralisé dans main.lua - plus besoin d'appeler hud.draw() ici
 
     -- Custom drawing for card images (if needed)
     -- This part might need custom rendering since card.canvas needs special handling

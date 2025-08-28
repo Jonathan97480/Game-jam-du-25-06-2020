@@ -1054,6 +1054,17 @@ Retour : aucune valeur (nil).
 ]]
 
 function hud.draw()
+  -- ✅ Optimisation : Return si le HUD est vide (pas d'éléments à rendre)
+  local hasElements = false
+  for _, layer in ipairs(LAYERS) do
+    local lst = layers[layer] or {}
+    if #lst > 0 then
+      hasElements = true
+      break
+    end
+  end
+  if not hasElements then return end
+
   ensureFont()
   -- ensure screen ratio is up-to-date so HUD scaling uses correct values
   if screen and type(screen.UpdateRatio) == 'function' then pcall(screen.UpdateRatio) end
@@ -1109,10 +1120,17 @@ function hud.draw()
                 -- draw a filled rect as panel background, prefer el.color or default
                 local col = el.color or { 0.18, 0.05, 0.22, 0.85 }
                 love.graphics.setColor(col[1] or 1, col[2] or 1, col[3] or 1, col[4] or 1)
-                love.graphics.rectangle("fill", el.x or 0, el.y or 0, el.w or 0, el.h or 0)
+
+                -- ✅ Protection contre les valeurs non-numériques
+                local x = tonumber(el.x) or 0
+                local y = tonumber(el.y) or 0
+                local w = tonumber(el.w) or 0
+                local h = tonumber(el.h) or 0
+
+                love.graphics.rectangle("fill", x, y, w, h)
                 -- optional outline
                 love.graphics.setColor(0.9, 0.75, 1.0, 0.8)
-                love.graphics.rectangle("line", el.x or 0, el.y or 0, el.w or 0, el.h or 0)
+                love.graphics.rectangle("line", x, y, w, h)
                 love.graphics.setColor(1, 1, 1, 1)
               end
             end

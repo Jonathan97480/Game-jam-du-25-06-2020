@@ -523,12 +523,12 @@ function globalFunction.log.exportToFile(path)
     return true
 end
 
-globalFunction.tstr = function(table)
-    if type(table) ~= "table" then
-        return tostring(table)
+globalFunction.tstr = function(tbl)
+    if type(tbl) ~= "table" then
+        return tostring(tbl)
     end
     local parts = {}
-    for k, v in pairs(table) do
+    for k, v in pairs(tbl) do
         parts[#parts + 1] = tostring(k) .. "=" .. tostring(v)
     end
     return "{" .. table.concat(parts, ", ") .. "}"

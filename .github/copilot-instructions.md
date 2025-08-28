@@ -34,121 +34,22 @@ local function _safeRequire(name)
 end
 ```
 
-### 2. Scene Manager avec Stack
-- Les scènes supportent les méthodes : `load`, `enter`, `update`, `draw`, `leave`, `unload`, `resume`
-- Mode stack (`stackMode=true`) : seule la scène au sommet reçoit les events
-- Usage : `scene:push("scene.menu.menu")`, `scene:pop()`
+### 2. SceneManager - Navigation avec Pile
+**Documentation complète** : Voir `docs/SceneManager_Documentation.md`
 
-### 3. SceneManager - Gestionnaire de Scènes Modulaire
-Le système SceneManager (`my-librairie/sceneManager.lua`) offre une architecture robuste pour la gestion des scènes avec support de pile et lifecycle complet.
+Le système SceneManager (`my-librairie/sceneManager.lua`) gère la navigation avec une pile de scènes :
+- **API** : `scene:push()`, `scene:pop()`, `scene:switch()`
+- **Lifecycle** : `load`, `enter`, `update`, `draw`, `pause`, `resume`, `leave`, `unload`
+- **Modes** : `stackMode=false` (broadcast) / `stackMode=true` (top-only)
+- **Events** : Dispatch automatique des événements LÖVE2D vers les scènes
 
-**Architecture Principale** :
-- **Pile de scènes** : Stack avec push/pop pour overlays et navigation
-- **Deux modes** : `stackMode=false` (diffusion globale) / `stackMode=true` (top-only)
-- **Lifecycle complet** : load → enter → update/draw → pause/resume → leave → unload
-- **Event dispatching** : Propagation automatique des événements LÖVE2D
-- **Require flexible** : Fallback automatique point/slash pour compatibilité
-
-**API Core** :
-```lua
--- Gestion de pile
-scene:push("scene.gameplay.gameplay")          -- Empile nouvelle scène
-scene:pop(2)                                   -- Retire n scènes du sommet
-scene:switch("scene.menu.menu")                -- Remplace toute la pile
-scene:clear()                                  -- Vide la pile complètement
-
--- Navigation avancée
-scene:switchWithTransition(target, params, transitionOpts)  -- Avec effet de transition
-scene:top()                                    -- Retourne scène au sommet
-scene:count()                                  -- Nombre de scènes dans la pile
-
--- Cycle de vie (appelés automatiquement)
-scene:load()        -- Bootstrap depuis love.load
-scene:update(dt)    -- Update loop depuis love.update  
-scene:draw()        -- Rendu depuis love.draw
-```
-
-**Lifecycle des Scènes** :
-```lua
--- Structure standard d'une scène
-local myScene = { name = "my_scene" }
-
-function myScene.load(self)      -- Chargement initial (une fois)
-function myScene.enter(self)     -- Entrée sur la pile (peut être multiple)
-function myScene.update(self, dt) -- Update loop (si scène active)
-function myScene.draw(self)      -- Rendu (selon stackMode)
-function myScene.pause(self)     -- Pause quand autre scène empilée dessus
-function myScene.resume(self)    -- Reprise quand scène au-dessus supprimée
-function myScene.leave(self)     -- Sortie de la pile
-function myScene.unload(self)    -- Nettoyage final (destructeur)
-
--- Events LÖVE2D (optionnels)
-function myScene.mousepressed(self, x, y, button)
-function myScene.keypressed(self, key, scancode, isrepeat)
-```
-
-**Event Dispatching** :
-```lua
--- Dispatch automatique depuis main.lua
-scene:mousepressed(x, y, button)     -- → scene.mousepressed() si existe
-scene:keypressed(key, scancode)      -- → scene.keypressed() si existe  
-scene:emit("custom_event", params)   -- Events personnalisés
-
--- Propagation intelligente
--- stackMode=false : broadcast à toutes les scènes (z-order inversé)
--- stackMode=true  : seule la scène au sommet reçoit l'event
-```
-
-**Patterns d'Usage** :
-```lua
--- Menu principal → Gameplay
-scene:switch("scene.gameplay.gameplay")
-
--- Overlay temporaire (pause, options)
-scene:push("scene.overlay.pause")     -- Par-dessus gameplay
--- ... utilisateur interact ...
-scene:pop()                           -- Retour au gameplay
-
--- Séquence overlay (combat start → initiative → reward)
-scene:push("scene.overlay_start.overlay_start")     -- Début combat
--- Continue cliqué → transition
-scene:pop()                                         -- Supprime start
-scene:push("scene.overlay_initiative.overlay_initiative")  -- Affiche initiative
-
--- Debug: pile des scènes  
-for i, sc in ipairs(scene:get()) do
-    print(i, sc.name or "unnamed")
-end
-```
-
-**Mode StackMode** :
-```lua
--- Mode diffusion (défaut) - toutes les scènes reçoivent update/draw/events
-scene.stackMode = false  
--- Useful for: backgrounds, persistent UI, multiple overlays
-
--- Mode pile strict - seule la scène au sommet est active
-scene.stackMode = true   
--- Useful for: modal dialogs, exclusive overlays, pause systems
-```
-
-**Debug & Logging** :
-```lua
-scene.debug = true                    -- Active les logs de navigation
--- Logs automatiques: "push →", "pop →", "switch →", erreurs lifecycle
-
--- Logs dans gameLogs/ pour investigation
--- - hud_clicks.log : clicks dispatches
--- - scene_list.log : état de la pile (manual dump)
-```
-
-### 4. Système de Cartes Façade
+### 3. Système de Cartes Façade
 `Card` expose une API unifiée qui délègue aux sous-modules :
 - `Card.hand`, `Card.deck`, `Card.graveyard` : états principaux
 - Génération : `Card.loadCards()`
 - Tirage : `Card.tirage(n)`
 
-### 5. HUD Système Modulaire & Responsive
+### 4. HUD Système Modulaire & Responsive
 Le système HUD (`my-librairie/hud/`) offre une architecture en couches avec composants réutilisables.
 
 **Gestionnaire Principal** : `hud.lua` (1259+ lignes)
@@ -166,23 +67,34 @@ Le système HUD (`my-librairie/hud/`) offre une architecture en couches avec com
 
 **API Principale** :
 ```lua
--- Éléments simples
-hud.addIcon(id, layer, position, texture, opts)
-hud.addLabel(id, layer, position, text, font, color)
-hud.addBar(id, layer, position, w, h, color, progress)
+-- Éléments simples avec opts table structure
+hud.addIcon(id, {layer = "background", x = 100, y = 50, texture = "icon.png"})
+hud.addLabel(id, {layer = "props", x = 200, y = 100, text = "Score:", font = 20, color = {1,1,1}})
+hud.addBar(id, {layer = "props", x = 50, y = 150, w = 200, h = 20, color = {0,1,0}, progress = 0.7})
 
--- Interactions
-hud.addButton(id, layer, position, w, h, callback, opts)
+-- Interactions avec callbacks
+hud.addButton(id, {layer = "button", x = 300, y = 200, w = 100, h = 40, callback = function() end})
 hud.setButtonCallback(id, callback)
 
--- Panels & Layout
-hud.setPanel(id, position, w, h, bg, children)
+-- Panels & Layout avec enfants
+hud.setPanel(id, {x = 100, y = 100, w = 300, h = 200, bg = {0,0,0,0.8}, children = {}})
 hud.addChild(parentId, childElement)
 
--- Gestion états
+-- Gestion états et animations
 hud.setVisible(id, visible)
 hud.setValue(id, value)
 hud.animateProgress(id, targetProgress, duration)
+
+-- Rendu centralisé (UNIQUEMENT dans main.lua)
+function love.draw()
+    -- Rendu des scènes d'abord
+    scene:draw()
+    
+    -- Puis rendu HUD centralisé
+    if _G.hud and type(_G.hud.draw) == 'function' then
+        _G.hud.draw()
+    end
+end
 ```
 
 ## Workflow de Développement
@@ -222,40 +134,46 @@ lua test/nom_du_test.lua
 - **Legacy** : Fallback automatique point/slash dans `sceneManager`
 - **ÉVITER** : `rawget(_G, "nom")` - utiliser le système centralisé
 
-### Patterns HUD Modulaires
+### Patterns HUD Centralisé
+- **Rendu Unique** : `hud.draw()` appelé UNIQUEMENT dans `main.lua`, jamais dans les scènes
+- **API Opts** : Toutes les fonctions HUD utilisent maintenant une table `opts` : `hud.addIcon(id, {layer, x, y, texture})`
 - **Composants** : `require("my-librairie.hud.button.button").new(...)` pour instances
 - **Manager** : `_G.hud` pour API globale (add/set/get functions)
 - **Couches** : Utiliser constantes `"background"/"decor"/"props"/"card"/"button"`
+- **Smart Clear** : HUD vidé automatiquement quand pile de scènes vide (plus de duplication)
+- **Protection** : Coordination de protection contre les erreurs de rendu multi-scènes
 - **Draw Safe** : `require("my-librairie.hud.draw")` pour wrapper LÖVE2D testable
 - **Responsive** : Positions automatiquement adaptées via `responsive.lua`
 
 ### Patterns SceneManager
-- **Structure de scène** : Toujours définir `{ name = "scene_name" }` en premier
-- **Lifecycle complet** : Implémenter `load`, `enter`, `update`, `draw`, `leave`, `unload`, `resume`
-- **Event handling** : `mousepressed`, `keypressed` avec paramètres LÖVE2D standard
+**Documentation complète** : Voir `docs/SceneManager_Documentation.md`
+- **Structure** : Toujours définir `{ name = "scene_name" }` en premier
+- **Lifecycle** : Implémenter `load`, `enter`, `update`, `draw`, `leave`, `unload`
 - **Navigation** : `scene:push()` pour overlays, `scene:switch()` pour changement complet
-- **Debug** : `scene.debug = true` pour logs détaillés des transitions
-- **Target resolution** : Utiliser chemins complets `"scene.folder.filename"` ou `"scene/folder/filename"`
-- **Stack safety** : Vérifier `scene:count()` avant opérations complexes
+- **Debug** : `scene.debug = true` pour logs détaillés
 - **Error handling** : Toutes les méthodes de scène doivent gérer les erreurs gracieusement
 
 ## Points d'Intégration Clés
 
 1. **SceneManager Architecture** : Système central de navigation avec pile et lifecycle
+   - **Documentation complète** : Voir `docs/SceneManager_Documentation.md`
    - **Stack Management** : `push/pop/switch` pour navigation et overlays
-   - **Lifecycle Hooks** : Implémentation complète `load→enter→update/draw→pause/resume→leave→unload`
-   - **Event Dispatching** : Propagation automatique des events LÖVE2D vers scènes actives
-   - **Mode Stack** : `stackMode=false` (broadcast) vs `stackMode=true` (top-only)
-   - **Debug Integration** : Logs détaillés dans `gameLogs/` pour diagnostic
+   - **Lifecycle Hooks** : `load→enter→update/draw→pause/resume→leave→unload`
+   - **Event Dispatching** : Propagation automatique des events LÖVE2D
+   - **Debug Integration** : Logs détaillés dans `gameLogs/`
 
 2. **Scene Lifecycle** : Toute nouvelle scène doit implémenter les méthodes standard
 3. **Card Effects** : Centralisation dans `card-librairie/effects/`
 4. **Actor System** : `actorManager.lua` pour gestion entités de combat
-5. **HUD Architecture** : Système en couches avec composants modulaires
-   - **Couches** : Respect de l'ordre background→decor→props→card→button
-   - **Responsive** : Utilise `my-librairie/responsive.lua` pour adaptation automatique
-   - **Composants** : Button/Panel/Text réutilisables avec API consistante
-   - **Integration** : `hud.update(dt)` et `hud.draw()` dans scene lifecycle
+5. **HUD Architecture Centralisée** : Système unifiée avec rendu centralisé dans `main.lua`
+   - **Rendu Centralisé** : `hud.draw()` appelé UNIQUEMENT dans `main.lua` après le rendu des scènes
+   - **Couches** : Respect de l'ordre background→decor→props→card→button (5 couches)
+   - **API Unifiée** : 20+ fonctions (addIcon, addLabel, addBar, addButton, setPanel, etc.)
+   - **Responsive** : Adaptation automatique via `my-librairie/responsive.lua` 
+   - **Composants** : Button/Panel/Text réutilisables avec opts table structure
+   - **Smart Clearing** : HUD vidé automatiquement quand la pile de scènes devient vide
+   - **Error Prevention** : Protection contre conflits de rendu multi-scènes
+   - **Overlays Support** : Gestion intelligente des overlays sans duplication HUD
 6. **Responsive Global** : `my-librairie/responsive.lua` pour adaptation écrans
 7. **Input Unifié** : `inputManager.lua` unifie souris/gamepad
 
