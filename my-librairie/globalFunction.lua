@@ -524,9 +524,14 @@ function globalFunction.log.exportToFile(path)
 end
 
 globalFunction.tstr = function(table)
-    for k, v in pairs(table) do
-        globalFunction.log.info(tostring(k) .. " = " .. tostring(v))
+    if type(table) ~= "table" then
+        return tostring(table)
     end
+    local parts = {}
+    for k, v in pairs(table) do
+        parts[#parts + 1] = tostring(k) .. "=" .. tostring(v)
+    end
+    return "{" .. table.concat(parts, ", ") .. "}"
 end
 globalFunction.safecall = function(fn, ...)
     local status, result = pcall(fn, ...)

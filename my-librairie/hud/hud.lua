@@ -459,6 +459,14 @@ function hud.remove(id)
   elements[id] = nil
 end
 
+-- Clear all HUD elements (complete reset)
+function hud.clear()
+  elements = {}
+  for layerName, _ in pairs(layers) do
+    layers[layerName] = {}
+  end
+end
+
 -- Create a panel (transparent icon) and return it. If panel exists it will be replaced.
 --[[
 Fonction : hud.setPanel

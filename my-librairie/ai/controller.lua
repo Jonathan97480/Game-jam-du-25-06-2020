@@ -44,10 +44,17 @@ local AI                      = {
 local function logf(fmt, ...)
   if AI.DEBUG then
     if globalFunction == nil then globalFunction = rawget(_G, 'globalFunction') or require("my-librairie/globalFunction") end
-    if globalFunction and globalFunction.log and globalFunction.log.info then
-      globalFunction.log.info(string.format(fmt, ...))
+    local args = { ... }
+    local message
+    if #args > 0 then
+      message = string.format(fmt, ...)
     else
-      print(string.format(fmt, ...))
+      message = fmt
+    end
+    if globalFunction and globalFunction.log and globalFunction.log.info then
+      globalFunction.log.info(message)
+    else
+      print(message)
     end
   end
 end
@@ -278,8 +285,8 @@ local function chooseDeterministic(deck, powerNow)
     if cost <= (enemyActor and (enemyActor.state and enemyActor.state.power or 0) or 0) then
       local t   = cardType(c)
       local eff = getEffects(c)
-      logf("[AI] card[%d]: name=%s type=%s cost=%d  eff.hero=%s eff.enemy=%s",
-        i, tostring(c.name), t, cost, globalFunction.tstr(eff.hero), globalFunction.tstr(eff.enemy))
+      logf("[AI] card[%d]: name=%s type=%s cost=%d  eff.hero=%s eff.enemy=%s", i, tostring(c.name), t, cost,
+        globalFunction.tstr(eff.hero), globalFunction.tstr(eff.enemy))
       playable[#playable + 1] = { i = i, c = c, t = t }
     else
       logf("[AI] card[%d] INJOUABLE (cost=%d): %s", i, cost, tostring(c.name))
@@ -463,8 +470,8 @@ local function applyCard(c)
     for k, _ in pairs(c) do keys[#keys + 1] = tostring(k) end
     table.sort(keys)
     logf("[AI][WARN] aucun changement d'état après '%s'. keys={%s}", tostring(c.name), table.concat(keys, ", "))
-    if c.effect or c.Effect then logf("[AI]  effect=%s", globalFunction.tstr(c.effect or c.Effect, 1)) end
-    if c.effects or c.Effects then logf("[AI]  effects(list)=%s", globalFunction.tstr(c.effects or c.Effects, 1)) end
+    if c.effect or c.Effect then logf("[AI]  effect=%s", globalFunction.tstr(c.effect or c.Effect)) end
+    if c.effects or c.Effects then logf("[AI]  effects(list)=%s", globalFunction.tstr(c.effects or c.Effects)) end
     if type(c.onPlay) == "function" then
       if usedOnPlay then
         logf("[AI]  onPlay: <function> (appelé, mais pas d'effet)")

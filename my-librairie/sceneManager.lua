@@ -15,6 +15,16 @@ scene.current   = nil
 Helpers internes
 ===================================================================== ]]
 
+-- Helper pour les logs du sceneManager
+local function logScene(msg)
+    local gf = rawget(_G, 'globalFunction')
+    if gf and gf.log and gf.log.info then
+        gf.log.info("[sceneManager] " .. tostring(msg))
+    else
+        print("[sceneManager] " .. tostring(msg))
+    end
+end
+
 -- Appelle obj[method] en essayant (self, argsList...) puis fallback (argsList...)
 local function callAny(obj, methodName, argsList)
     local fn = obj and obj[methodName]
@@ -291,14 +301,18 @@ end
 function scene:pop(count)
     self.list = self.list or {}
     count = tonumber(count) or 1
+    logScene("pop() appelé avec count=" .. count .. " - stack size avant: " .. #self.list)
+
     if #self.list == 0 then
         if scene.debug then print("[sceneManager] pop: pile déjà vide") end
+        logScene("pop() sur pile vide")
         return nil
     end
 
     for i = 1, count do
         local topScene = table.remove(self.list)
         if not topScene then break end
+        logScene("Suppression scene " .. tostring(topScene.name) .. " - iteration " .. i)
         callAny(topScene, "leave")
         callAny(topScene, "unload")
     end
@@ -307,9 +321,13 @@ function scene:pop(count)
     if newTop then
         callAny(newTop, "resume")
         if scene.debug then print("[sceneManager] pop -> " .. tostring(newTop.name)) end
+        logScene("Nouvelle top scene: " .. tostring(newTop.name))
     else
         if scene.debug then print("[sceneManager] pop -> pile vide") end
+        logScene("Stack maintenant vide")
     end
+
+    logScene("pop() terminé - stack size final: " .. #self.list)
     return newTop
 end
 
@@ -376,9 +394,15 @@ function scene:draw()
         return
     end
 
+    -- Mode stackMode=false - on dessine toutes les scènes
     for i = 1, #self.list do
         local sc = self.list[i]
         if sc and type(sc.draw) == "function" and sc.hidden ~= true then
+            -- Ajout de logging pour debug visual persistence
+            if sc.name and sc.name:find("overlay_start") then
+                logScene("Drawing overlay_start à index " .. i .. " / " .. #self.list)
+            end
+
             local ok, err = pcall(sc.draw, sc)
             if not ok then
                 print(("[scene] draw error in scene '%s' (index %d): %s")

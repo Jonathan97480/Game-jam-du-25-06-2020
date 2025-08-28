@@ -212,8 +212,26 @@ end
 
 -- Cleanup HUD elements
 function hud_overlay_start.unload()
-    if hud and hud.clear then
-        hud.clear()
+    print("DEBUG: hud_overlay_start.unload() called")
+
+    if hud then
+        -- Remove overlay-specific elements instead of clearing everything
+        local elementsToRemove = {
+            "overlay_bg", "title", "cards_grid", "continue_btn"
+        }
+
+        -- Remove card elements
+        for i = 1, 10 do
+            elementsToRemove[#elementsToRemove + 1] = "card_" .. i .. "_bg"
+            elementsToRemove[#elementsToRemove + 1] = "card_" .. i .. "_text"
+        end
+
+        for _, id in ipairs(elementsToRemove) do
+            if hud.remove then
+                hud.remove(id)
+                print("DEBUG: Removed HUD element:", id)
+            end
+        end
     end
 end
 
