@@ -309,6 +309,16 @@ function hud.addButton(id, opts)
     sfx = opts.sfx,
     interactive = true,
     parent = opts.parent,
+    -- Style properties for background and states - only if no image provided
+    bgColor = opts.bgColor or (opts.img and nil or { 0.8, 0.8, 0.8, 1 }),         -- No default background if image
+    hoverColor = opts.hoverColor or (opts.img and nil or { 0.9, 0.9, 0.9, 1 }),   -- No hover color if image
+    clickColor = opts.clickColor or (opts.img and nil or { 0.7, 0.7, 0.7, 1 }),   -- No click color if image
+    textColor = opts.textColor or { 1, 1, 1, 1 },                                 -- Default white text
+    borderColor = opts.borderColor or (opts.img and nil or { 0.4, 0.4, 0.4, 1 }), -- No border if image
+    cornerRadius = opts.cornerRadius or 8,                                        -- Rounded corners
+    -- State tracking
+    _isHovered = false,
+    _isPressed = false
   }
   if not el.w or not el.h then
     el.w, el.h = dimsFrom(el)
@@ -829,6 +839,36 @@ function hud.update(dt)
     end)
   end
 
+  -- Update button states (hover/press detection)
+  local mx, my = 0, 0
+  local mouseDown = false
+
+  -- Get mouse position safely
+  if love and love.mouse and love.mouse.getPosition then
+    local ok, x, y = pcall(love.mouse.getPosition)
+    if ok then mx, my = x or 0, y or 0 end
+  end
+
+  -- Get mouse state safely
+  if love and love.mouse and love.mouse.isDown then
+    local ok, down = pcall(love.mouse.isDown, 1)
+    if ok then mouseDown = down end
+  end
+
+  -- Update all interactive elements (buttons)
+  for id, el in pairs(elements) do
+    if el and el.interactive and el.type == "button" then
+      local isInside = mx >= (el.x or 0) and mx <= (el.x or 0) + (el.w or 0) and
+          my >= (el.y or 0) and my <= (el.y or 0) + (el.h or 0)
+
+      -- Update hover state
+      el._isHovered = isInside
+
+      -- Update press state
+      el._isPressed = isInside and mouseDown
+    end
+  end
+
   -- update label values
   local H = rawget(_G, "Hero") or rawget(_G, "hero")
   local val = (H and H.actor and H.actor.state and H.actor.state.power) or 0
@@ -1086,6 +1126,34 @@ function hud.draw()
         elseif el.type == "label" then
           love.graphics.print(el.text or "", el.x or 0, el.y or 0)
         elseif el.type == "button" then
+          -- Draw button background with hover/click states (only if no image)
+          if not el.img then
+            local bgColor = el.bgColor
+            if el._isPressed then
+              bgColor = el.clickColor
+            elseif el._isHovered then
+              bgColor = el.hoverColor
+            end
+
+            -- Draw background rectangle
+            if bgColor then
+              love.graphics.setColor(bgColor[1] or 1, bgColor[2] or 1, bgColor[3] or 1, bgColor[4] or 1)
+              love.graphics.rectangle("fill", el.x or 0, el.y or 0, el.w or 0, el.h or 0, el.cornerRadius or 8)
+            end
+
+            -- Draw border
+            if el.borderColor then
+              love.graphics.setColor(el.borderColor[1] or 1, el.borderColor[2] or 1, el.borderColor[3] or 1,
+                el.borderColor[4] or 1)
+              love.graphics.setLineWidth(2)
+              love.graphics.rectangle("line", el.x or 0, el.y or 0, el.w or 0, el.h or 0, el.cornerRadius or 8)
+            end
+          end
+
+          -- Reset color for image/text
+          love.graphics.setColor(1, 1, 1, 1)
+
+          -- Draw button image if available
           if el.img then
             local iw, ih = 0, 0
             if el.img.getDimensions then iw, ih = el.img:getDimensions() end
@@ -1095,9 +1163,74 @@ function hud.draw()
             if el.h and ih and ih > 0 then sy_img = (el.h / ih) end
             if el.w and not el.h and ih and ih > 0 then sy_img = sx_img end
             if el.h and not el.w and iw and iw > 0 then sx_img = sy_img end
-            love.graphics.draw(el.img, el.x or 0, el.y or 0, 0, sx_img, sy_img)
+
+            -- Apply hover/click effects to image (tint or opacity)
+            if el._isPressed and el.clickColor then
+              -- Tint image with click color
+              love.graphics.setColor(el.clickColor[1] or 1, el.clickColor[2] or 1, el.clickColor[3] or 1,
+                el.clickColor[4] or 1)
+            elseif el._isHovered and el.hoverColor then
+              -- Tint image with hover color
+              love.graphics.setColor(el.hoverColor[1] or 1, el.hoverColor[2] or 1, el.hoverColor[3] or 1,
+                el.hoverColor[4] or 1)
+            else
+              -- Normal image color
+              love.graphics.setColor(1, 1, 1, 1)
+            end
+
+            -- Apply click offset for pressed effect
+            local offsetX = el._isPressed and 2 or 0
+            local offsetY = el._isPressed and 2 or 0
+            love.graphics.draw(el.img, (el.x or 0) + offsetX, (el.y or 0) + offsetY, 0, sx_img, sy_img)
+
+            -- Reset color for text
+            love.graphics.setColor(1, 1, 1, 1)
           end
-          if el.text and el.text ~= "" then love.graphics.print(el.text, el.tx or (el.x + 10), el.ty or (el.y + 10)) end
+
+          -- Draw button text
+          if el.text and el.text ~= "" then
+            -- Set text color
+            if el.textColor then
+              love.graphics.setColor(el.textColor[1] or 1, el.textColor[2] or 1, el.textColor[3] or 1,
+                el.textColor[4] or 1)
+            end
+
+            -- Apply click offset for pressed effect and center text properly
+            local offsetX = el._isPressed and 2 or 0
+            local offsetY = el._isPressed and 2 or 0
+
+            -- Get text dimensions for proper centering
+            local font = love.graphics.getFont()
+            local textWidth = 0
+            local textHeight = 0
+            if font then
+              textWidth = font:getWidth(el.text)
+              textHeight = font:getHeight()
+            end
+
+            -- Calculate centered position or use custom tx/ty if provided
+            local textX, textY
+            if el.tx and el.tx ~= (el.x + 10) then
+              -- Custom position provided
+              textX = el.tx
+            else
+              -- Auto-center horizontally
+              textX = (el.x or 0) + ((el.w or 0) - textWidth) / 2
+            end
+
+            if el.ty and el.ty ~= (el.y + 10) then
+              -- Custom position provided
+              textY = el.ty
+            else
+              -- Auto-center vertically
+              textY = (el.y or 0) + ((el.h or 0) - textHeight) / 2
+            end
+
+            love.graphics.print(el.text, textX + offsetX, textY + offsetY)
+
+            -- Reset color
+            love.graphics.setColor(1, 1, 1, 1)
+          end
         elseif el.type == "bar" then
           local max = (el.max or 1); if max <= 0 then max = 1 end
           local ratio = math.max(0, math.min(1, (el.current or 0) / max))

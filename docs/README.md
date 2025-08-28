@@ -1,18 +1,38 @@
 README — Game Jam (fork)
 
-Résumé rapide des changements récents
+## Documentation Disponible
 
-- Refactor : consolidation des effets dans `my-librairie/card-librairie/effects/cardEffect_shim.lua`.
-- Compat : `my-librairie/card-librairie/core/common.lua` mis à jour pour charger le nouveau module d'effets, avec fallback vers l'ancien chemin si nécessaire.
-- HUD : correction de l'initialisation du module HUD (`my-librairie/hud/hudManager.lua`) pour éviter une erreur "attempt to index global 'hud' (a nil value)".
-- Divers : petites défenses ajoutées et logs de debug (option `HUD_DEBUG_ENERGY`) pour tracer les changements d'énergie.
+### 📚 Système HUD
+- **[Documentation Complète HUD](HUD_Documentation.md)** - Guide détaillé du système d'interface utilisateur
+- **[Référence Rapide HUD](HUD_Quick_Reference.md)** - API et patterns essentiels
+- **[Exemples HUD](HUD_Examples.md)** - Implémentations pratiques complètes
 
-Où regarder
+### 🎮 Résumé des Changements Récents
 
-- Code principal : `main.lua`, `scene/gameplay.lua`.
-- Librairie de cartes : `my-librairie/card-librairie/` (core, play, effects, cardEffect).
-- Gestion des acteurs : `my-librairie/actorManager.lua`.
-- HUD : `my-librairie/hud/hudManager.lua`.
+- **HUD System** : Architecture modulaire en 5 couches avec composants réutilisables
+- **Boutons Avancés** : États hover/click, centrage automatique, gestion des images
+- **Responsive Design** : Adaptation automatique aux résolutions
+- **Refactor** : consolidation des effets dans `my-librairie/card-librairie/effects/cardEffect_shim.lua`
+- **Compat** : `my-librairie/card-librairie/core/common.lua` mis à jour pour charger le nouveau module d'effets
+- **Debug** : logs détaillés et flags de debug pour le HUD et l'énergie
+
+### 🏗️ Architecture Principale
+
+#### Code Principal
+- `main.lua` - Point d'entrée, gestion des globales
+- `scene/` - Scènes du jeu avec lifecycle standard
+- `my-librairie/globals.lua` - Système de globales centralisé
+
+#### Système HUD
+- `my-librairie/hud/hud.lua` - Gestionnaire principal (1392+ lignes)
+- `my-librairie/hud/button/` - Composants boutons modulaires
+- `my-librairie/hud/panel/` - Système de conteneurs
+- `my-librairie/responsive.lua` - Adaptation responsive automatique
+
+#### Librairie de Cartes
+- `my-librairie/card-librairie/` - Core, play, effects, cardEffect
+- `my-librairie/actorManager.lua` - Gestion des entités de combat
+- `ressources/` - Données de cartes et effets
 
 Comment tester localement
 
