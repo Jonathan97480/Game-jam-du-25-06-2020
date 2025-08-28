@@ -540,3 +540,4 @@ end
 globalFunction.log.info("Logger initialized")
 
 return globalFunction
+
