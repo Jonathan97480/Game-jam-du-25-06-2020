@@ -13,7 +13,7 @@ function CombatFlow:confirmStartOverlay()
     SceneManager:push(self.cfg.overlays.initiative or "scene.overlay_initiative.overlay_initiative")
 end
 
-function CombatFlow:confirmInitiativeOverlay() 
+function CombatFlow:confirmInitiativeOverlay()
     self.flagInitiativeShown = true
     SceneManager:pop()
     logT("overlay_initiative confirmé - démarrage round")
@@ -145,19 +145,14 @@ function CombatFlow:startEncounter()
     self.rewardOptions, self.rewardChosenIndex = nil, nil
     self.flagStartOverlayDone, self.flagInitiativeShown, self.flagRewardDone = false, false, false
 
-    -- Draft unique au tout premier combat
-    if not GameFlags.first_draft_done then
+    -- Draft unique au tout premier combat (seulement si configuré ET pas encore fait)
+    if self.cfg.overlays.reward and not GameFlags.first_draft_done then
         self.state = "first_draft"; self.timer = 0
-        if self.cfg.overlays.reward then
-            SceneManager:push(self.cfg.overlays.reward); logT("Overlay reward")
-        else
-            ensurePlayerDeckMax10(); GameFlags.first_draft_done = true
-            self.state = "setup_round"; self.timer = 0
-        end
+        SceneManager:push(self.cfg.overlays.reward); logT("Overlay reward (draft)")
         return
     end
 
-    -- Pas de draft: afficher overlay_start immédiatement
+    -- Dans tous les cas: overlay_start s'affiche pour commencer chaque combat
     logT("Démarrage encounter - affichage overlay_start")
     SceneManager:push("scene.overlay_start.overlay_start")
     self.state = "setup_round"; self.timer = 0
