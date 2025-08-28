@@ -179,7 +179,8 @@ function CombatFlow:updateEncounter(dt)
         end
     end
 
-    local heroDead = Hero and Hero.actor and Hero.actor.state and (Hero.actor.state.dead or (Hero.actor.state.life or 0) <= 0)
+    local heroDead = Hero and Hero.actor and Hero.actor.state and
+        (Hero.actor.state.dead or (Hero.actor.state.life or 0) <= 0)
 
     -- ===== FSM =====
     if self.state == "overlay_start" then
@@ -364,9 +365,7 @@ end
 function CombatFlow:confirmStartOverlay()
     GameFlags.first_draft_done = true
     self.flagStartOverlayDone = true
-    SceneManager:pop()
-    setTour("setup_round")
-    self.state = "setup_round"; self.timer = 0
+    -- Laisser la FSM gérer la transition vers overlay_initiative
 end
 
 function CombatFlow:confirmInitiativeOverlay() self.flagInitiativeShown = true end
@@ -375,6 +374,22 @@ function CombatFlow:getRewardChoices() return self.rewardOptions or {} end
 
 function CombatFlow:chooseRewardByIndex(i)
     self.rewardChosenIndex = tonumber(i); self.flagRewardDone = true
+end
+
+-- Fonctions de compatibilité pour main.lua
+function CombatFlow:maskInput()
+    -- Bloquer les inputs pendant les overlays
+    return self.state == "overlay_start" or self.state == "overlay_initiative" or self.state == "reward_choice"
+end
+
+function CombatFlow:isActive()
+    -- Le système de transition est toujours actif en combat
+    return true
+end
+
+function CombatFlow:canDeal()
+    -- Permettre la distribution de cartes si pas d'overlay bloquant
+    return not self:maskInput()
 end
 
 -- Navigation de scènes avec transition visuelle (fade/slide) :
@@ -394,23 +409,29 @@ end
 local Singleton                                   = CombatFlow.new(DefaultConfig)
 
 -- Aliases (anciens noms → nouveaux) pour ne rien casser :
-Singleton.load                                    = function(self) return self:startEncounter() end
-Singleton.update                                  = function(self, dt) return self:updateEncounter(dt) end
-Singleton.draw                                    = function(self) return self:drawEncounter() end
-Singleton.requestEndTurn                          = function(self) return self:playerEndTurn() end
-Singleton.onEnemyDied                             = function(self) return self:onAnyEnemyDefeated() end
-Singleton.onHeroDied                              = function(self) return self:onPlayerDefeated() end
-Singleton.continueFromStartOverlay                = function(self) return self:confirmStartOverlay() end
-Singleton.ackInitiativeOverlay                    = function(self) return self:confirmInitiativeOverlay() end
-Singleton.announceContinue                        = function(self) return self:announceContinue() end
-Singleton.getRewardOptions                        = function(self) return self:getRewardChoices() end
-Singleton.rewardSelect                            = function(self, i) return self:chooseRewardByIndex(i) end
-Singleton.cmdRestart                              = function(self) return self:restartEncounterWithTransition() end
-Singleton.cmdBackToMenu                           = function(self) return self:returnToMenuWithTransition() end
-Singleton.completeFirstDraft                      = function(self, cards) return self:finalizeFirstDraftSelection(cards) end
+Singleton.load                                    = function(self) return Singleton:startEncounter() end
+Singleton.update                                  = function(self, dt) return Singleton:updateEncounter(dt) end
+Singleton.draw                                    = function(self) return Singleton:drawEncounter() end
+Singleton.requestEndTurn                          = function(self) return Singleton:playerEndTurn() end
+Singleton.onEnemyDied                             = function(self) return Singleton:onAnyEnemyDefeated() end
+Singleton.onHeroDied                              = function(self) return Singleton:onPlayerDefeated() end
+Singleton.continueFromStartOverlay                = function(self) return Singleton:confirmStartOverlay() end
+Singleton.ackInitiativeOverlay                    = function(self) return Singleton:confirmInitiativeOverlay() end
+Singleton.getRewardOptions                        = function(self) return Singleton:getRewardChoices() end
+Singleton.rewardSelect                            = function(self, i) return Singleton:chooseRewardByIndex(i) end
+Singleton.cmdRestart                              = function(self) return Singleton:restartEncounterWithTransition() end
+Singleton.cmdBackToMenu                           = function(self) return Singleton:returnToMenuWithTransition() end
+Singleton.completeFirstDraft                      = function(self, cards)
+    return Singleton:finalizeFirstDraftSelection(
+        cards)
+end
 
 local M                                           = setmetatable({
-    new = function(cfg) return CombatFlow.new(cfg) end
+    new = function(cfg) return CombatFlow.new(cfg) end,
+    -- Fonctions appelées par main.lua
+    maskInput = function() return Singleton:maskInput() end,
+    isActive = function() return Singleton:isActive() end,
+    canDeal = function() return Singleton:canDeal() end
 }, { __index = Singleton })
 
 -- noms chargeables
