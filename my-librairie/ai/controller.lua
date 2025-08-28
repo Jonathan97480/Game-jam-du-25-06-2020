@@ -34,21 +34,7 @@ local AI                      = {
   listener            = nil,  -- objet visuel optionnel (voir telegraph.lua)
 }
 
--- ---------- LOG / SAFE ----------
-local function _to_text(...)
-  local t = {}
-  for i = 1, select('#', ...) do t[i] = tostring(select(i, ...)) end; return table.concat(t, ' ')
-end
-local function log(...)
-  if AI.DEBUG then
-    local gf = rawget(_G, 'globalFunction'); local txt = _to_text(...); if gf and gf.log and gf.log.info then
-      gf.log
-          .info(txt)
-    else
-      print(txt)
-    end
-  end
-end
+
 local function logf(fmt, ...)
   if AI.DEBUG then
     local gf = rawget(_G, 'globalFunction'); local txt = string.format(fmt, ...); if gf and gf.log and gf.log.info then
@@ -58,6 +44,7 @@ local function logf(fmt, ...)
     end
   end
 end
+
 local function safecall(tag, fn, ...)
   if type(fn) ~= "function" then
     logf("[AI][safe:%s] fn=nil", tostring(tag))
@@ -67,6 +54,7 @@ local function safecall(tag, fn, ...)
   if not ok then logf("[AI][safe:%s] ERREUR -> %s", tostring(tag), tostring(err)) end
   return ok
 end
+
 local function tstr(v, depth)
   depth = depth or 0
   if type(v) ~= "table" then return tostring(v) end
