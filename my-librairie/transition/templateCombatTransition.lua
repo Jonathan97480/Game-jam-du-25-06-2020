@@ -138,21 +138,13 @@ function CombatFlow:startEncounter()
     self.flagStartOverlayDone, self.flagInitiativeShown, self.flagRewardDone = false, false, false
 
 
-    if GameFlags.first_draft_done then
-        if SceneManager and SceneManager.push then
-            SceneManager:push("scene.overlay_start.overlay_start")
-            changeState("overlay_start")
-        end
-
-
-        self.timer = 0
-    else
-        if SceneManager and SceneManager.push then
-            SceneManager:push("scene.overlay_initiative.overlay_initiative")
-        end
-        changeState("overlay_initiative")
-        self.timer = 0
+    -- Toujours afficher overlay_start au début de chaque combat
+    logT("CT:startEncounter -> pushing start overlay (always show at combat start)")
+    if SceneManager and SceneManager.push then
+        SceneManager:push("scene.overlay_start.overlay_start")
+        changeState("overlay_start")
     end
+    self.timer = 0
 end
 
 -- Appelé par l’overlay de draft : selectedCards = {10 cartes}
@@ -214,17 +206,30 @@ function CombatFlow:updateEncounter(dt)
         if self.flagStartOverlayDone then
             logT("Starting transition from overlay_start to overlay_initiative")
 
-            -- Pop avec debug
+            -- CORRECTIF: Pop DEUX scènes - overlay_initiative ET overlay_start
+            -- Car overlay_initiative peut être pushé par-dessus overlay_start
             if SceneManager and SceneManager.pop then
-                logT("Popping overlay_start scene")
-                SceneManager:pop()
+                logT("Popping current scene stack (potentially 2 scenes: overlay_initiative + overlay_start)")
+                -- Pop toutes les scènes overlay pour repartir sur une base propre
+                local currentStackSize = SceneManager.list and #SceneManager.list or 0
+                logT("Current stack size before cleanup: " .. currentStackSize)
+
+                -- Pop jusqu'à retomber sur la scène gameplay de base
+                while SceneManager.list and #SceneManager.list > 1 do
+                    local topScene = SceneManager.list[#SceneManager.list]
+                    if topScene and topScene.name and not topScene.name:find("overlay") then
+                        break -- On a atteint la scène de base
+                    end
+                    logT("Popping overlay scene: " .. tostring(topScene and topScene.name or "unknown"))
+                    SceneManager:pop()
+                end
             else
                 logT("ERROR: SceneManager.pop not available!")
             end
 
-            -- Push avec debug
+            -- Push overlay_initiative sur une pile propre
             if SceneManager and SceneManager.push then
-                logT("Pushing overlay_initiative scene")
+                logT("Pushing overlay_initiative scene on clean stack")
                 SceneManager:push("scene.overlay_initiative.overlay_initiative")
             else
                 logT("ERROR: SceneManager.push not available!")
@@ -433,8 +438,10 @@ end
 
 -- Overlays : boutons “continuer/OK”
 function CombatFlow:confirmStartOverlay()
-    GameFlags.first_draft_done = false
+    -- NE PAS modifier GameFlags.first_draft_done ici !
+    -- Ce flag contrôle les récompenses de draft, pas l'overlay de début de combat
     self.flagStartOverlayDone = true
+    logT("confirmStartOverlay -> flagStartOverlayDone=true, will transition to initiative")
     -- Laisser la FSM gérer la transition vers overlay_initiative
 end
 
