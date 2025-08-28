@@ -45,8 +45,42 @@ end
 - Génération : `Card.loadCards()`
 - Tirage : `Card.tirage(n)`
 
-### 4. HUD Modulaire
-Système HUD basé sur composants réutilisables (`my-librairie/hud/`) avec gestion responsive automatique.
+### 4. HUD Système Modulaire & Responsive
+Le système HUD (`my-librairie/hud/`) offre une architecture en couches avec composants réutilisables.
+
+**Gestionnaire Principal** : `hud.lua` (1259+ lignes)
+- **5 couches de rendu** : `background` → `decor` → `props` → `card` → `button`
+- **API unifiée** : 20+ fonctions add/set/get pour tous types d'éléments
+- **Responsive intégré** : Adaptation automatique aux résolutions
+- **Cache de ressources** : Optimisation chargement fonts/images
+
+**Composants Disponibles** :
+- **Button** (`button/button.lua`) : Boutons cliquables avec états hover/click
+- **Panel** (`panel/panel.lua`) : Conteneurs avec enfants et couleurs de fond
+- **Text** (`text/text.lua`) : Texte avec fonts variables et couleurs
+- **Slider/Checkbox** : Composants d'interface avancés
+- **Draw** (`draw.lua`) : Wrapper LÖVE2D sécurisé pour tests/mocks
+
+**API Principale** :
+```lua
+-- Éléments simples
+hud.addIcon(id, layer, position, texture, opts)
+hud.addLabel(id, layer, position, text, font, color)
+hud.addBar(id, layer, position, w, h, color, progress)
+
+-- Interactions
+hud.addButton(id, layer, position, w, h, callback, opts)
+hud.setButtonCallback(id, callback)
+
+-- Panels & Layout
+hud.setPanel(id, position, w, h, bg, children)
+hud.addChild(parentId, childElement)
+
+-- Gestion états
+hud.setVisible(id, visible)
+hud.setValue(id, value)
+hud.animateProgress(id, targetProgress, duration)
+```
 
 ## Workflow de Développement
 
@@ -85,13 +119,25 @@ lua test/nom_du_test.lua
 - **Legacy** : Fallback automatique point/slash dans `sceneManager`
 - **ÉVITER** : `rawget(_G, "nom")` - utiliser le système centralisé
 
+### Patterns HUD Modulaires
+- **Composants** : `require("my-librairie.hud.button.button").new(...)` pour instances
+- **Manager** : `_G.hud` pour API globale (add/set/get functions)
+- **Couches** : Utiliser constantes `"background"/"decor"/"props"/"card"/"button"`
+- **Draw Safe** : `require("my-librairie.hud.draw")` pour wrapper LÖVE2D testable
+- **Responsive** : Positions automatiquement adaptées via `responsive.lua`
+
 ## Points d'Intégration Clés
 
 1. **Scene Lifecycle** : Toute nouvelle scène doit implémenter les méthodes standard
 2. **Card Effects** : Centralisation dans `card-librairie/effects/`
 3. **Actor System** : `actorManager.lua` pour gestion entités de combat
-4. **Responsive** : `my-librairie/responsive.lua` pour adaptation écrans
-5. **Input** : `inputManager.lua` unifie souris/gamepad
+4. **HUD Architecture** : Système en couches avec composants modulaires
+   - **Couches** : Respect de l'ordre background→decor→props→card→button
+   - **Responsive** : Utilise `my-librairie/responsive.lua` pour adaptation automatique
+   - **Composants** : Button/Panel/Text réutilisables avec API consistante
+   - **Integration** : `hud.update(dt)` et `hud.draw()` dans scene lifecycle
+5. **Responsive Global** : `my-librairie/responsive.lua` pour adaptation écrans
+6. **Input Unifié** : `inputManager.lua` unifie souris/gamepad
 
 ## Utilitaires GlobalFunction (Éviter les Duplications)
 

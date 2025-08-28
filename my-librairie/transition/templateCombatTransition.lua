@@ -129,7 +129,7 @@ function CombatFlow:startEncounter()
     self.rewardOptions, self.rewardChosenIndex = nil, nil
     self.flagStartOverlayDone, self.flagInitiativeShown, self.flagRewardDone = false, false, false
 
-
+    GameFlags.first_draft_done = true
     if GameFlags.first_draft_done then
         if SceneManager and SceneManager.push then
             SceneManager:push("scene.overlay_start.overlay_start")
