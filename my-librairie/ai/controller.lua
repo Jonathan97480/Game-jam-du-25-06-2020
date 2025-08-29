@@ -29,6 +29,13 @@ local AI                      = {
   currentCard         = nil,
   lastPlayed          = nil,
 
+  -- NOUVEAU : Système de limite de jeu par tour
+  maxPlaysPerTurn     = 3,  -- Nombre maximum de cartes par tour (configurable)
+  playsThisTurn       = 0,  -- Compteur des cartes jouées ce tour
+  chainCards          = {}, -- File des cartes en chaîne à jouer
+  chainTimer          = 0,  -- Timer pour gérer les délais entre cartes
+  deckSnapshot        = {}, -- Snapshot du deck avant de jouer une carte
+
   busy                = false,
   running             = false,
   _endSent            = false,
@@ -70,6 +77,12 @@ end
 function AI.setConfig(opts)
   if type(opts) ~= "table" then return end
   if opts.telegraphMin ~= nil then AI.telegraphMin = tonumber(opts.telegraphMin) or AI.telegraphMin end
+
+  -- NOUVEAU : Configuration du système de limite de jeu
+  if opts.maxPlaysPerTurn ~= nil then
+    AI.maxPlaysPerTurn = math.max(1, tonumber(opts.maxPlaysPerTurn) or AI.maxPlaysPerTurn)
+    logf("[AI] Configuration: maxPlaysPerTurn = %d", AI.maxPlaysPerTurn)
+  end
 end
 
 local function _notify(event, ...)
@@ -108,6 +121,69 @@ local function _autoWireTelegraph()
   else
     logf("[AI] Telegraph indisponible (require a échoué) : visuel désactivé.")
   end
+end
+
+-- ---------- GESTION CARTES EN CHAÎNE ----------
+-- Détecte les nouvelles cartes ajoutées au deck après avoir joué une carte
+local function detectNewCardsInDeck(deckBefore, deckAfter)
+  local newCards = {}
+  
+  -- Comparer les decks pour détecter les nouvelles cartes
+  if #deckAfter > #deckBefore then
+    logf("[AI] Deck agrandi: %d → %d cartes", #deckBefore, #deckAfter)
+    
+    -- Les nouvelles cartes sont généralement ajoutées à la fin
+    for i = #deckBefore + 1, #deckAfter do
+      if deckAfter[i] then
+        table.insert(newCards, deckAfter[i])
+        logf("[AI] Nouvelle carte détectée: '%s'", deckAfter[i].name or "?")
+      end
+    end
+  end
+  
+  return newCards
+end
+
+-- Capture l'état du deck avant de jouer une carte
+local function captureDecKState()
+  if not (Card and Card.deckAi and Card.deckAi.cards) then
+    return {}
+  end
+  
+  -- Crée une copie de la liste des cartes (références, pas deep copy)
+  local snapshot = {}
+  for i, card in ipairs(Card.deckAi.cards) do
+    snapshot[i] = card
+  end
+  
+  logf("[AI] Deck snapshot: %d cartes", #snapshot)
+  return snapshot
+end
+
+-- Ajoute des cartes à la file des cartes en chaîne avec délai
+local function addChainCardsWithDelay(cards)
+  for _, card in ipairs(cards) do
+    table.insert(AI.chainCards, {
+      card = card,
+      delay = 1.0, -- 1 seconde de délai entre chaque carte
+      timer = 0    -- Timer pour gérer le délai
+    })
+    logf("[AI] Carte ajoutée à la chaîne (délai 1s): '%s'", card.name or "?")
+  end
+end
+
+-- Vérifie s'il reste de la place pour jouer plus de cartes ce tour
+local function canPlayMoreCards()
+  local totalPlanned = AI.playsThisTurn + #AI.chainCards
+  return totalPlanned < AI.maxPlaysPerTurn
+end
+
+-- Réinitialise le compteur pour un nouveau tour
+local function resetTurnCounter()
+  AI.playsThisTurn = 0
+  AI.chainCards = {}
+  AI.chainTimer = 0 -- Timer pour gérer les délais entre cartes
+  logf("[AI] Compteur de tour réinitialisé (max: %d cartes)", AI.maxPlaysPerTurn)
 end
 
 -- ---------- SNAP / DELTA ----------
@@ -346,7 +422,7 @@ local function applyGeneric(heroActor, enemyActor, eff)
   if e.shield and e.shield > 0 then pcall(function() shield.applique(nil, enemyActor, e.shield) end) end
   if e.epine and e.epine > 0 then pcall(function() epine.applique(nil, enemyActor, e.epine) end) end
   if h.attack and h.attack > 0 then pcall(function() attack.applique(nil, enemyActor, heroActor, h.attack) end) end
-  if h.skip and h.skip > 0 then pcall(function() actorMgr.applyEffect(heroActor, "skip", h.skip) end) end
+  if h.skip and h.skip > 0 and actorMgr then pcall(function() actorMgr.applyEffect(heroActor, "skip", h.skip) end) end
 end
 
 -- ---------- CHOIX ----------
@@ -360,7 +436,7 @@ local function cardType(c)
   return "other"
 end
 
-local function chooseDeterministic(deck, powerNow)
+local function chooseDeterministic(deck, playsRemaining)
   if not deck or #deck == 0 then return nil, nil end
   Hero = Hero or rawget(_G, "Hero")
   if not Enemies then
@@ -375,6 +451,7 @@ local function chooseDeterministic(deck, powerNow)
 
   logf("[AI] status  enemy: %s", globalFunction.tstr(snap(enemyActor)))
   logf("[AI] status  hero : %s", globalFunction.tstr(snap(heroActor)))
+  logf("[AI] plays remaining this turn: %d", playsRemaining or 0)
 
   -- Détection des alliés pour ciblage intelligent
   local allies = getAllAllies(enemyActor)
@@ -388,8 +465,15 @@ local function chooseDeterministic(deck, powerNow)
       globalFunction.tstr(eff.hero), globalFunction.tstr(eff.enemy))
     playable[#playable + 1] = { i = i, c = c, t = t, eff = eff }
   end
+
   if #playable == 0 then
     logf("[AI] aucune carte jouable → fin de tour")
+    return nil, nil
+  end
+
+  -- Vérification de la limite de jeu par tour
+  if playsRemaining <= 0 then
+    logf("[AI] limite de cartes atteinte ce tour (%d/%d) → fin de tour", AI.playsThisTurn, AI.maxPlaysPerTurn)
     return nil, nil
   end
 
@@ -681,14 +765,16 @@ local function applyCard(c)
   local enemyActor = currentEnemy
   local heroActor  = Hero and Hero.actor
 
-  local cost       = tonumber(c.cost or c.PowerBlow or c.power or 1) or 1
   local eff        = getEffects(c)
 
-  logf("[AI] applyCard '%s' cost=%d eff.hero=%s eff.enemy=%s", tostring(c.name), cost, globalFunction.tstr(eff.hero),
+  logf("[AI] applyCard '%s' eff.hero=%s eff.enemy=%s", tostring(c.name), globalFunction.tstr(eff.hero),
     globalFunction.tstr(eff.enemy))
 
   -- état avant
   local bE, bH = snap(enemyActor), snap(heroActor)
+  
+  -- Capturer l'état du deck avant de jouer la carte
+  local deckBefore = captureDecKState()
 
   -- 1) Tenter le pipeline officiel des cartes (affichage + logique interne)
   local okCardSys, labelUsed = callCardSystem(c, enemyActor, heroActor)
@@ -737,6 +823,17 @@ local function applyCard(c)
   end
 end
 
+-- Détecter les nouvelles cartes ajoutées au deck après avoir joué cette carte
+local function handleChainCards(cardPlayed, deckBefore)
+  if not deckBefore then return end
+  
+  local newCards = detectNewCardsInDeck(deckBefore)
+  if #newCards > 0 then
+    logf("[AI] Cartes ajoutées au deck après avoir joué '%s': %d cartes", tostring(cardPlayed.name), #newCards)
+    addChainCardsWithDelay(newCards)
+  end
+end
+
 -- ---------- API ----------
 function AI.load(_enemy)
   ensureAIContainers(_enemy)
@@ -758,9 +855,13 @@ function AI:startTurn(enemy)
   self._endSent     = false
   self.busy         = true
   self.running      = true
+
+  -- NOUVEAU : Réinitialisation du système de compteur de tour
+  resetTurnCounter()
+
   _notify("onTurnStart", enemy)
   ensureAIContainers(enemy)
-  logf("[AI] startTurn (power=%s)", tostring(enemy and enemy.state and enemy.state.power))
+  logf("[AI] startTurn - limite: %d cartes par tour", AI.maxPlaysPerTurn)
 end
 
 function AI:isTurnDone() return self._endSent == true end
@@ -769,6 +870,27 @@ function AI:update(dt)
   dt = normDt(dt)
   EnemiesManager = EnemiesManager or rawget(_G, "EnemiesManager")
   local e = currentEnemy
+
+  -- Gestion du timer pour les cartes en chaîne
+  if AI.chainTimer > 0 then
+    AI.chainTimer = AI.chainTimer - dt
+    if AI.chainTimer <= 0 and #AI.chainCards > 0 and AI.playsThisTurn < AI.maxPlaysPerTurn then
+      -- Timer écoulé, jouer la prochaine carte en chaîne
+      local nextChainCard = table.remove(AI.chainCards, 1)
+      logf("[AI] Timer écoulé, jouer carte en chaîne: '%s'", nextChainCard.name or "?")
+      
+      -- Rechercher l'index de la carte en chaîne dans le deck
+      for i, deckCard in ipairs(Card.deckAi.cards) do
+        if deckCard == nextChainCard then
+          self.currentIndex, self.currentCard = i, deckCard
+          self.state = "resolve" -- Jouer immédiatement la carte en chaîne
+          AI.chainTimer = 0 -- Reset timer
+          logf("[AI] Jouer carte en chaîne immédiatement: index=%d", i)
+          break
+        end
+      end
+    end
+  end
 
   if type(e) ~= "table" or type(e.state) ~= "table" then
     if not self._endSent and Transition and Transition.requestEndTurn then
@@ -821,8 +943,8 @@ function AI:update(dt)
       return
     end
 
-    local powerNow = tonumber(e.state.power or 0) or 0
-    local idx, c = chooseDeterministic(Card.deckAi.cards, powerNow)
+    local playsRemaining = AI.maxPlaysPerTurn - AI.playsThisTurn
+    local idx, c = chooseDeterministic(Card.deckAi.cards, playsRemaining)
     if not idx or not c then
       self.state = "endturn"
       return
@@ -831,16 +953,15 @@ function AI:update(dt)
     -- éviter de jouer 2x la même carte quand il y a d'autres options
     if self.lastPlayed and c.name == self.lastPlayed and #Card.deckAi.cards > 1 then
       for i, cc in ipairs(Card.deckAi.cards) do
-        local cost = tonumber(cc.cost or cc.PowerBlow or cc.power or 1) or 1
-        if i ~= idx and cost <= powerNow and cc.name ~= self.lastPlayed then
+        if i ~= idx and cc.name ~= self.lastPlayed then
           idx, c = i, cc; break
         end
       end
     end
 
     self.currentIndex, self.currentCard = idx, c
-    logf("[AI] choose -> %s", tostring(c.name))
-    _notify("onCardChosen", c, idx, powerNow, { enemy = e, card = c })
+    logf("[AI] choose -> %s (plays: %d/%d)", tostring(c.name), AI.playsThisTurn + 1, AI.maxPlaysPerTurn)
+    _notify("onCardChosen", c, idx, playsRemaining, { enemy = e, card = c })
     self.timer = self.telegraphMin
 
     -- Si on a un listener ou si on peut afficher, on passe en télégraphe, sinon on résout direct
@@ -861,18 +982,20 @@ function AI:update(dt)
       logf("[AI] resolve -> %s", tostring(c.name))
       _notify("onResolveStart", c)
 
+      -- Capturer l'état du deck avant de jouer la carte
+      local deckBefore = captureDecKState()
+
       -- Tenter de jouer/appliquer la carte
       applyCard(c)
 
       _notify("onResolveDone", c)
 
-      -- Gestion du coût (si on a passé free=true au pipeline)
-      -- → On déduit toujours ici pour éviter double-décompte aléatoire.
-      local cost = tonumber(c.cost or c.PowerBlow or c.power or 1) or 1
-      local bE = snap(e)
-      e.state.power = math.max(0, (e.state.power or 0) - cost)
-      local aE = snap(e)
-      logf("[AI] POWER after cost %d -> %s", cost, delta(bE, aE))
+      -- NOUVEAU : Gestion des cartes en chaîne et compteur de tour
+      AI.playsThisTurn = AI.playsThisTurn + 1
+      logf("[AI] Carte jouée '%s' (%d/%d ce tour)", tostring(c.name), AI.playsThisTurn, AI.maxPlaysPerTurn)
+
+      -- Détection et ajout des nouvelles cartes ajoutées au deck
+      handleChainCards(c, deckBefore)
 
       -- Retrait de la carte du deck IA si elle y est encore
       --[[  local deck = ensureAIContainers() ]]
@@ -887,9 +1010,34 @@ function AI:update(dt)
       end
 
       self.lastPlayed = c.name
+
+      -- Vérifier s'il faut jouer une carte en chaîne immédiatement
+      if #AI.chainCards > 0 and AI.playsThisTurn < AI.maxPlaysPerTurn then
+        local nextChainCard = table.remove(AI.chainCards, 1)
+        logf("[AI] Carte en chaîne à jouer: '%s'", nextChainCard.name or "?")
+
+        -- Rechercher l'index de la carte en chaîne dans le deck
+        for i, deckCard in ipairs(Card.deckAi.cards) do
+          if deckCard == nextChainCard then
+            self.currentIndex, self.currentCard = i, deckCard
+            self.state = "telegraph" -- Rester dans le cycle pour jouer la chaîne
+            logf("[AI] Préparation carte en chaîne: index=%d", i)
+            return
+          end
+        end
+        logf("[AI] WARN: Carte en chaîne '%s' non trouvée dans le deck", nextChainCard.name or "?")
+      end
     end
     self.currentIndex, self.currentCard = nil, nil
-    self.state = "endturn"
+
+    -- Vérifier si on peut encore jouer des cartes ce tour
+    if AI.playsThisTurn < AI.maxPlaysPerTurn and #Card.deckAi.cards > 0 then
+      logf("[AI] Peut encore jouer %d cartes ce tour", AI.maxPlaysPerTurn - AI.playsThisTurn)
+      self.state = "choose" -- Retourner au choix de carte
+    else
+      logf("[AI] Fin de tour: %d cartes jouées (limite: %d)", AI.playsThisTurn, AI.maxPlaysPerTurn)
+      self.state = "endturn"
+    end
   elseif self.state == "endturn" then
     if not self._endSent then
       self._endSent = true
