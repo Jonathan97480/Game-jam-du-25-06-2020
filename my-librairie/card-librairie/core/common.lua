@@ -1,6 +1,7 @@
 -- my-librairie/card-librairie/core/common.lua
 -- Données, utilitaires, RNG/shuffle, canvas, normalisation, tirage, Deck Global.
 local screen = rawget(_G, "screen") or require("my-librairie/responsive")
+
 -- Formerly required 'applyEffect'. After refactor effects live under `effects/cardEffect_shim`.
 local ok, applyEffect = pcall(require, "my-librairie/card-librairie/effects/cardEffect_shim")
 if not ok then
@@ -194,14 +195,48 @@ function Common._computeSlot(i, n)
 end
 
 function Common._updateHandTargets()
-    local n = Common.hand:size()
-    for i, _card in ipairs(Common.hand.cards) do
-        -- 🎯 IGNORER les cartes marquées comme jouées pour éviter leur repositionnement
-        if _card._playing then
-            if DEBUG then
-                print(string.format("[Common._updateHandTargets] 🏷️ Ignorer carte jouée: %s", _card.name or "?"))
+    -- ===== PROTECTION SIMPLE CONTRE CIBLAGE ACTIF =====
+    local CardTargetSelection = rawget(_G, "CardTargetSelection")
+    if CardTargetSelection and CardTargetSelection.isSelectingTarget then
+        -- Ne pas repositionner si ciblage en cours
+        return
+    end
+
+    -- ===== ANCIENS LOGS (conservés pour compatibilité) =====
+    local gf = rawget(_G, 'globalFunction')
+    local function _log(fmt, ...)
+        local text = string.format(fmt, ...)
+        if gf and gf.log and gf.log.info then gf.log.info(text) else print(text) end
+    end
+
+    -- Stack trace pour identifier qui appelle cette fonction
+    local function getStackTrace()
+        local stack = debug.traceback("", 2)
+        local lines = {}
+        for line in stack:gmatch("[^\r\n]+") do
+            if line:find("%.lua:") and not line:find("common.lua") then
+                table.insert(lines, line:match("([^/\\]+%.lua:%d+)"))
+                if #lines >= 3 then break end
             end
+        end
+        return table.concat(lines, " -> ")
+    end
+
+    local stack = getStackTrace()
+    local n = Common.hand:size()
+
+    _log("[🔍 _updateHandTargets] ✅ AUTORISÉ par CardManager - %d cartes en main", n)
+    _log("[🔍 _updateHandTargets] 📞 Appelé depuis: %s", stack or "inconnu")
+
+    for i, _card in ipairs(Common.hand.cards) do
+        -- 🎯 UTILISER CardManager pour vérifier protection
+        if CardManager.isCardPlaying(_card) then
+            _log("[🔍 _updateHandTargets] 🛡️  PROTECTION CardManager - Carte protégée: %s (position conservée)",
+                _card.name or "carte")
         else
+            local oldPosX = _card.vector2 and _card.vector2.x or "nil"
+            local oldPosY = _card.vector2 and _card.vector2.y or "nil"
+
             local tx, ty = Common._computeSlot(i, n)
             if not _card.target then _card.target = { x = 0, y = 0 } end
             if not _card.scale then _card.scale = { x = SCALE_BASE, y = SCALE_BASE } end
@@ -210,11 +245,20 @@ function Common._updateHandTargets()
             if not _card.vector2 then _card.vector2 = { x = tx, y = ty } end
             if not _card.oldVector2 then _card.oldVector2 = { x = tx, y = ty } end
             if not _card._targetPos then _card._targetPos = { x = tx, y = ty } end
+
+            _log("[🔍 _updateHandTargets] 📍 REPOSITIONNEMENT - Carte %d: %s", i, _card.name or "sans nom")
+            _log("[🔍 _updateHandTargets] 📍   Position avant: (%s, %s)", tostring(oldPosX), tostring(oldPosY))
+            _log("[🔍 _updateHandTargets] 📍   Position après: (%d, %d)", tx, ty)
+
             _card.target.x, _card.target.y         = tx, ty
             _card.oldVector2.x, _card.oldVector2.y = tx, ty
             _card._targetPos.x, _card._targetPos.y = tx, ty
+
+            _log("[🔍 _updateHandTargets] ✅ Targets mis à jour pour: %s", _card.name or "carte")
         end
     end
+
+    _log("[🔍 _updateHandTargets] 🏁 TERMINÉ - Traité %d cartes", n)
 end
 
 function Common.ensureDeck(deck, max)

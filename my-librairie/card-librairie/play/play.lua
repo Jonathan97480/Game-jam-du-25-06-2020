@@ -1,7 +1,20 @@
 -- my-librairie/card-librairie/play/play.lua
-local Common = require("my-librairie/card-librairie/core/common")
-local Layout = require("my-librairie/card-librairie/ui/layout")
-local Anim   = require("my-librairie/card-librairie/play/anim")
+local Common      = require("my-librairie/card-librairie/core/common")
+local Layout      = require("my-librairie/card-librairie/ui/layout")
+local Anim        = require("my-librairie/card-librairie/play/anim")
+
+-- Import du nouveau CardManager
+local CardManager = require("my-librairie/card-librairie/card_manager")
+
+-- Fonction de log pour le système
+local function _log(message)
+    local gf = rawget(_G, "globalFunction")
+    if gf and gf.log and gf.log.info then
+        gf.log.info("[play.lua] " .. tostring(message))
+    else
+        print("[play.lua] " .. tostring(message))
+    end
+end
 
 local function getHud() return rawget(_G, "hud") end
 local function getHero() return rawget(_G, "Hero") end
@@ -11,29 +24,75 @@ local function getTour() return rawget(_G, "Tour") end
 local M = {}
 
 function M.cardToGraveyard(c)
-    for i = #Common.hand.cards, 1, -1 do
-        if Common.hand.cards[i] == c then
-            table.remove(Common.hand.cards, i)
-            break
+    local cardRemoved = false
+
+    -- PRIORITÉ 1: Vérifier si la carte est en standby
+    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+    if CardStandbyPlay and CardStandbyPlay.hasCardInStandby() then
+        local standbyCard = CardStandbyPlay.getStandbyCard()
+        if standbyCard == c then
+            _log("📍 Carte trouvée en STANDBY - retrait du standby au lieu de la main")
+            -- La carte sera retirée du standby par CardStandbyPlay.confirmCardPlay()
+            cardRemoved = true
         end
     end
+
+    -- PRIORITÉ 2: Si pas en standby, chercher dans la main
+    if not cardRemoved then
+        for i = #Common.hand.cards, 1, -1 do
+            if Common.hand.cards[i] == c then
+                table.remove(Common.hand.cards, i)
+                _log("📍 Carte retirée de la MAIN (index " .. i .. ")")
+                cardRemoved = true
+                break
+            end
+        end
+    end
+
+    if not cardRemoved then
+        _log("⚠️ ATTENTION: Carte '" .. (c.name or "?") .. "' non trouvée ni en standby ni en main !")
+    end
+
+    -- Ajouter au cimetière
     if Common.graveyard.cards and Common.graveyard.addCard then
         Common.graveyard:addCard(c)
+        _log("💀 Carte ajoutée au cimetière: " .. (c.name or "?"))
     end
-    if not Common.__dragLock and Common._updateHandTargets then
-        Common._updateHandTargets()
-    end
+
+    -- NOUVEAU : Utiliser CardManager pour gestion sécurisée
+    CardManager.onCardMoveToGrave(c, "cardToGraveyard - play.lua")
 end
 
 local function _tryPlay(_card, free)
-    local tour = getTour()
-    if _card.actorTag == 'Hero' and tour ~= 'player' then return false end
-    if _card.actorTag ~= 'Hero' and tour ~= 'Enemy' then return false end
+    -- ===== LOGS DÉTAILLÉS DES CONDITIONS =====
+    _log("🎮 [ANALYSE CONDITIONS CARTE] Début vérification pour: " .. (_card.name or "carte sans nom"))
 
-    local HeroG               = getHero()
-    local EnemiesG            = getEnemies()
-    local source              = (_card.actorTag == 'Hero') and (HeroG and HeroG.actor) or
-    (EnemiesG and EnemiesG.curentEnemy)
+    local tour = getTour()
+    _log("📊 Condition TOUR - Actuel: " .. tostring(tour) .. " / Requis pour carte: " .. tostring(_card.actorTag))
+
+    -- Condition 1: Tour valide
+    if _card.actorTag == 'Hero' and tour ~= 'player' then
+        _log("❌ ÉCHEC CONDITION 1: Tour Hero mais tour actuel n'est pas 'player'")
+        return false
+    end
+    if _card.actorTag ~= 'Hero' and tour ~= 'Enemy' then
+        _log("❌ ÉCHEC CONDITION 1: Tour Ennemi mais tour actuel n'est pas 'Enemy'")
+        return false
+    end
+    _log("✅ CONDITION 1 OK: Tour valide")
+
+    local HeroG    = getHero()
+    local EnemiesG = getEnemies()
+    local source   = (_card.actorTag == 'Hero') and (HeroG and HeroG.actor) or
+        (EnemiesG and EnemiesG.curentEnemy)
+
+    -- Condition 2: Source valide
+    _log("📊 Condition SOURCE - Trouvée: " .. (source and (source.name or "source sans nom") or "AUCUNE"))
+    if not source then
+        _log("❌ ÉCHEC CONDITION 2: Source manquante")
+        return false
+    end
+    _log("✅ CONDITION 2 OK: Source valide")
 
     -- ===== NOUVEAU SYSTÈME DE CIBLAGE MANUEL =====
     local target              = nil
@@ -43,29 +102,52 @@ local function _tryPlay(_card, free)
     if _card.actorTag == 'Hero' and CardTargetSelection and CardTargetSelection.selectedTarget then
         -- Utiliser la cible sélectionnée manuellement
         target = CardTargetSelection.selectedTarget
-        print("[play.lua] Utilisation cible manuelle:", target.name or "Ennemi")
+        _log("🎯 [CIBLAGE MANUEL] Cible trouvée: " .. (target.name or "Ennemi"))
+    elseif _card.actorTag == 'Hero' and CardTargetSelection and _card.selectedTarget then
+        -- Vérifier si la carte a une cible assignée directement
+        target = _card.selectedTarget
+        _log("🎯 [CIBLAGE DIRECT] Cible trouvée sur carte: " .. (target.name or "Ennemi"))
     else
         -- Fallback sur l'ancien système automatique
         target = (_card.actorTag == 'Hero') and (EnemiesG and EnemiesG.curentEnemy) or (HeroG and HeroG.actor)
         if _card.actorTag == 'Hero' then
-            print("[play.lua] Utilisation cible automatique:", target and target.name or "Aucune")
+            _log("🎯 [CIBLAGE AUTO] Cible automatique: " .. (target and target.name or "AUCUNE"))
         end
     end
     -- ===== FIN NOUVEAU SYSTÈME DE CIBLAGE =====
 
-    if not source then return false end
-    if _card._resolving then return false end
+    -- Condition 3: État de résolution
+    _log("📊 Condition RESOLVING - État _resolving: " .. tostring(_card._resolving))
+    if _card._resolving then
+        _log("❌ ÉCHEC CONDITION 3: Carte déjà en cours de résolution")
+        return false
+    end
+    _log("✅ CONDITION 3 OK: Carte pas en résolution")
+
     _card._resolving = true
     local prevCurrent = M._currentPlaying
     M._currentPlaying = _card
 
     local cost = tonumber(_card.PowerBlow or 0) or 0
+    _log("📊 Condition COÛT - Coût carte: " .. tostring(cost) .. " / Gratuit: " .. tostring(free))
+
     if (source.tag == 'Hero') then
+        if source.state and source.state.power then
+            _log("📊 Énergie source - Disponible: " .. tostring(source.state.power) .. " / Requis: " .. tostring(cost))
+        end
+
+        -- Condition 4: Coût suffisant
         if not free and source.state and source.state.power and source.state.power < cost then
+            _log("❌ ÉCHEC CONDITION 4: Énergie insuffisante (" ..
+                tostring(source.state.power) .. " < " .. tostring(cost) .. ")")
             _card._resolving = false; M._currentPlaying = prevCurrent; return false
         end
+        _log("✅ CONDITION 4 OK: Coût validé")
+
+        -- Déduction du coût
         if not free and source.state and source.state.power then
             source.state.power = source.state.power - cost
+            _log("💰 Coût déduit - Nouvelle énergie: " .. tostring(source.state.power))
             local hud = getHud()
             if hud and type(hud.updateLabel) == "function" then
                 hud.updateLabel('energy_text', tostring(source.state.power))
@@ -74,6 +156,9 @@ local function _tryPlay(_card, free)
             end
         end
     end
+
+    _log("🎯 CIBLE FINALE - " .. (target and target.name or "AUCUNE CIBLE"))
+    _log("🚀 TOUTES CONDITIONS REMPLIES - Exécution effet carte...")
 
     if _card.Effect then
         Common.playCard(_card, source, target)
@@ -91,12 +176,20 @@ local function _tryPlay(_card, free)
     end
 
     _card._suppressOnPlay = nil
+
+    -- NOUVEAU : Notification CardManager du début de jeu
+    CardManager.onCardPlayStart(_card, "_tryPlay - play.lua")
+
     _card._playing = true
     _card._anim = { kind = "jump", t = 0, d = 0.35, startX = _card.vector2.x, startY = _card.vector2.y }
     _card._safetyTimer = 0.6
 
     _card._resolving = false
     M._currentPlaying = prevCurrent
+
+    _log("🎉 [SUCCÈS CONDITIONS] Carte jouée avec succès: " .. (_card.name or "carte sans nom"))
+    _log("===============================================")
+
     return true
 end
 M._tryPlay = _tryPlay

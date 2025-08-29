@@ -13,6 +13,9 @@ end
 -- Dependencies
 local globalFunction = _G.globalFunction or rawget(_G, 'globalFunction')
 
+-- Import du nouveau CardManager
+local CardManager = _safeRequire("my-librairie/card-librairie/card_manager")
+
 -- Module principal
 local CardTargetSelection = {}
 
@@ -177,6 +180,15 @@ end
 function CardTargetSelection.reset(keepDragLock)
     _logf("Reset état module (keepDragLock=%s)", tostring(keepDragLock))
 
+    -- Récupérer la carte qui était en cours de ciblage
+    local card = CardTargetSelection.cardBeingPlayed
+    local success = keepDragLock -- keepDragLock indique généralement un succès
+
+    -- NOUVEAU : Notifier CardManager de la fin de ciblage
+    if CardManager and card then
+        CardManager.onTargetingEnd(card, success)
+    end
+
     -- DÉSACTIVER LE LOCK pour permettre le repositionnement normal
     -- SAUF si keepDragLock=true (carte jouée avec succès)
     if not keepDragLock then
@@ -261,6 +273,11 @@ function CardTargetSelection.startTargetSelection(card)
     CardTargetSelection.animationCompleted = false -- Reset du flag d'animation
     CardTargetSelection.stats.selectionsStarted = CardTargetSelection.stats.selectionsStarted + 1
 
+    -- NOUVEAU : Notifier CardManager du début de ciblage
+    if CardManager then
+        CardManager.onTargetingStart(card)
+    end
+
     -- ACTIVER LE LOCK pour empêcher le repositionnement automatique des cartes
     _setDragLock(true)
 
@@ -281,17 +298,21 @@ function CardTargetSelection.cancelSelection()
     _logf("Annulation sélection pour carte: %s",
         CardTargetSelection.cardBeingPlayed and CardTargetSelection.cardBeingPlayed.name or "inconnue")
 
-    -- DÉSACTIVER LE LOCK pour permettre le repositionnement normal
-    _setDragLock(false)
-
-    -- Restaurer la carte en main
-    if CardTargetSelection.cardBeingPlayed then
-        CardTargetSelection._restoreCardToHand(CardTargetSelection.cardBeingPlayed)
+    -- NOUVEAU : Remettre la carte en main via CardStandbyPlay
+    local CardStandbyPlay = _G.CardStandbyPlay
+    if CardStandbyPlay and CardStandbyPlay.hasCardInStandby() then
+        local success = CardStandbyPlay.returnCardToHand()
+        _logf("Carte remise en main via CardStandbyPlay: %s", tostring(success))
+    else
+        -- Fallback : ancien système
+        _setDragLock(false)
+        if CardTargetSelection.cardBeingPlayed then
+            CardTargetSelection._restoreCardToHand(CardTargetSelection.cardBeingPlayed)
+        end
     end
 
     CardTargetSelection.stats.selectionsCancelled = CardTargetSelection.stats.selectionsCancelled + 1
-    -- Le lock est déjà désactivé ci-dessus, pas besoin de le refaire
-    CardTargetSelection.reset(true) -- keepDragLock = true car on a déjà géré le lock
+    CardTargetSelection.reset(true) -- keepDragLock = true car CardStandbyPlay gère le lock
 
     _logf("Sélection annulée avec succès")
     return true
@@ -299,13 +320,21 @@ end
 
 -- Sélectionne une cible et finalise le processus
 function CardTargetSelection.selectTarget(enemy)
+    _logf("🎯 [SELECTTARGET APPELÉ] Début sélection cible...")
+    _logf("📊 État isSelectingTarget: %s", tostring(CardTargetSelection.isSelectingTarget))
+    _logf("📊 Ennemi fourni: %s", enemy and enemy.name or "AUCUN")
+    _logf("📊 Carte en cours: %s",
+        CardTargetSelection.cardBeingPlayed and CardTargetSelection.cardBeingPlayed.name or "AUCUNE")
+
     if not CardTargetSelection.isSelectingTarget then
         _logError("selectTarget appelé mais aucune sélection en cours")
+        _logError("❌ [SELECTTARGET] ÉCHEC: Aucune sélection en cours")
         return false
     end
 
     if not enemy then
         _logError("selectTarget appelé sans ennemi")
+        _logError("❌ [SELECTTARGET] ÉCHEC: Ennemi manquant")
         return false
     end
 
@@ -313,11 +342,22 @@ function CardTargetSelection.selectTarget(enemy)
         enemy.name or "ennemi sans nom",
         CardTargetSelection.cardBeingPlayed and CardTargetSelection.cardBeingPlayed.name or "carte sans nom")
 
+    _logf("🎯 [SELECTTARGET] Assignation cible...")
+    -- CORRECTION CRITIQUE: Assigner la cible AVANT d'appeler _executeCardPlay
     CardTargetSelection.selectedTarget = enemy
     CardTargetSelection.stats.selectionsCompleted = CardTargetSelection.stats.selectionsCompleted + 1
 
+    -- IMPORTANT: Assigner aussi la cible directement à la carte pour tryPlay()
+    if CardTargetSelection.cardBeingPlayed then
+        CardTargetSelection.cardBeingPlayed.selectedTarget = enemy
+        _logf("🎯 Cible assignée à la carte AVANT tryPlay: %s", enemy.name or "?")
+        _logf("🎯 [SELECTTARGET] Cible assignée à la carte: %s", enemy.name or "?")
+    end
+
+    _logf("🚀 [SELECTTARGET] Appel _executeCardPlay...")
     -- Déclencher le jeu de la carte avec la cible sélectionnée
     local success = CardTargetSelection._executeCardPlay()
+    _logf("📊 [SELECTTARGET] Résultat _executeCardPlay: %s", tostring(success))
 
     if success then
         _logf("Carte jouée avec succès sur cible sélectionnée")
@@ -345,13 +385,29 @@ end
 
 -- Obtient la liste des ennemis actuelle (compatible EnemiesG et Enemies)
 function CardTargetSelection.getEnemyList()
+    -- Diagnostic détaillé des gestionnaires d'ennemis disponibles
+    local enemiesViaG = rawget(_G, "Enemies")
+    local singletonViaG = rawget(_G, "__ENEMY_SINGLETON__")
+    local enemiesG = rawget(_G, "EnemiesG")
+
+    _logf("🔍 DEBUG getEnemyList - Gestionnaires disponibles:")
+    _logf("  - _G.Enemies: %s", enemiesViaG and "présent" or "nil")
+    if enemiesViaG then
+        _logf("    - .listeEnemies: %s (%d éléments)",
+            enemiesViaG.listeEnemies and "présent" or "nil",
+            enemiesViaG.listeEnemies and #enemiesViaG.listeEnemies or 0)
+        _logf("    - .curentEnemy: %s", enemiesViaG.curentEnemy and "présent" or "nil")
+    end
+    _logf("  - _G.__ENEMY_SINGLETON__: %s", singletonViaG and "présent" or "nil")
+    _logf("  - _G.EnemiesG: %s", enemiesG and "présent" or "nil")
+
     -- Tenter d'accéder aux différents patterns de stockage des ennemis
-    local enemiesManager = rawget(_G, "Enemies") or rawget(_G, "__ENEMY_SINGLETON__") or rawget(_G, "EnemiesG")
+    local enemiesManager = enemiesViaG or singletonViaG or enemiesG
 
     if enemiesManager and enemiesManager.listeEnemies then
         _logf("Ennemis trouvés via %s: %d ennemis",
-            enemiesManager == rawget(_G, "Enemies") and "Enemies" or
-            enemiesManager == rawget(_G, "__ENEMY_SINGLETON__") and "__ENEMY_SINGLETON__" or "EnemiesG",
+            enemiesManager == enemiesViaG and "Enemies" or
+            enemiesManager == singletonViaG and "__ENEMY_SINGLETON__" or "EnemiesG",
             #enemiesManager.listeEnemies)
         return enemiesManager.listeEnemies
     end
@@ -462,7 +518,16 @@ function CardTargetSelection.updateHoverDetection(dt)
         return
     end
 
-    -- NOUVEAU: Ne pas détecter les ennemis tant que l'animation de la carte n'est pas terminée
+    -- SIMPLE: Forcer l'animation terminée quand en mode standby
+    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+    local isInStandbyMode = CardStandbyPlay and CardStandbyPlay.hasCardInStandby and CardStandbyPlay.hasCardInStandby()
+
+    if isInStandbyMode then
+        -- Force l'animation comme terminée pour permettre la détection d'ennemis
+        CardTargetSelection.animationCompleted = true
+    end
+
+    -- Ne pas détecter les ennemis tant que l'animation de la carte n'est pas terminée
     if not CardTargetSelection.animationCompleted then
         _logf("[HOVER] Animation non terminée - pas de détection d'ennemi")
         return
@@ -541,36 +606,37 @@ end
 
 -- Gestion de l'événement clic souris pour sélection cible
 function CardTargetSelection.handleMouseClick(x, y, button)
-    print("[URGENT] handleMouseClick appelé avec:", x, y, button)
-    print("[DEBUG] isSelectingTarget:", CardTargetSelection.isSelectingTarget)
+    print("[URGENT DEBUG] handleMouseClick appelé avec:", x, y, button)
+    print("[URGENT DEBUG] isSelectingTarget:", CardTargetSelection.isSelectingTarget)
+    print("[URGENT DEBUG] animationCompleted:", CardTargetSelection.animationCompleted)
 
     if not CardTargetSelection.isSelectingTarget then
-        print("[URGENT] Pas en mode sélection!")
+        print("[URGENT DEBUG] Pas en mode sélection - retour false!")
         return false
     end
 
     -- NOUVEAU: Vérifier que l'animation de la carte est terminée
     if not CardTargetSelection.animationCompleted then
-        print("[DEBUG] Animation non terminée - clic ignoré")
+        print("[URGENT DEBUG] Animation non terminée - clic ignoré!")
         return false
     end
 
     if button ~= 1 then -- Seul clic gauche accepté
-        print("[DEBUG] Bouton ignoré:", button)
+        print("[URGENT DEBUG] Bouton ignoré:", button)
         return false
     end
 
     -- NOUVEAU: Convertir les coordonnées du clic
     local convertedX, convertedY = _convertClickCoordinates(x, y)
-    print("[DEBUG] Recherche ennemi à position convertie:", convertedX, convertedY)
+    print("[URGENT DEBUG] Recherche ennemi à position convertie:", convertedX, convertedY)
 
     -- Vérifier si un ennemi est survolé au moment du clic (utiliser les coordonnées converties)
     local targetEnemy = CardTargetSelection.findHoveredEnemyAt(convertedX, convertedY)
     if targetEnemy then
-        print("[DEBUG] Ennemi trouvé:", targetEnemy.name or "sans nom")
+        print("[URGENT DEBUG] Ennemi trouvé:", targetEnemy.name or "sans nom")
         return CardTargetSelection.selectTarget(targetEnemy)
     else
-        print("[DEBUG] Aucun ennemi trouvé - annulation")
+        print("[URGENT DEBUG] Aucun ennemi trouvé - annulation")
         return CardTargetSelection.cancelSelection()
     end
 end -- ============================================================================
@@ -696,11 +762,17 @@ end
 
 -- Exécute le jeu de la carte sur la cible sélectionnée
 function CardTargetSelection._executeCardPlay()
+    _logf("🚀 [_EXECUTECARDPLAY] Début exécution...")
+
     local card = CardTargetSelection.cardBeingPlayed
     local target = CardTargetSelection.selectedTarget
 
+    _logf("📊 Carte: %s", card and card.name or "AUCUNE")
+    _logf("📊 Cible: %s", target and target.name or "AUCUNE")
+
     if not card or not target then
         _logError("executeCardPlay: carte ou cible manquante")
+        _logError("❌ [_EXECUTECARDPLAY] ÉCHEC: Carte ou cible manquante")
         return false
     end
 
@@ -709,19 +781,67 @@ function CardTargetSelection._executeCardPlay()
     -- CRITIQUE: Assigner la cible sélectionnée à la carte avant de la jouer
     card.selectedTarget = target
     _logf("Target assignée à la carte: %s", target.name or "?")
+    _logf("🎯 [_EXECUTECARDPLAY] Target assignée à carte.selectedTarget")
 
-    -- Tenter de jouer la carte via le système existant
+    -- NOUVEAU : Confirmer le jeu de la carte via CardStandbyPlay
+    local CardStandbyPlay = _G.CardStandbyPlay
+    if CardStandbyPlay and CardStandbyPlay.hasCardInStandby() then
+        local standbyCard = CardStandbyPlay.getStandbyCard()
+        _logf("📊 [_EXECUTECARDPLAY] Carte en standby: %s", standbyCard and standbyCard.name or "AUCUNE")
+
+        if standbyCard == card then
+            _logf("Confirmation du jeu via CardStandbyPlay")
+            _logf("✅ [_EXECUTECARDPLAY] Carte correspondante en standby")
+
+            -- CORRECTION: D'abord jouer les effets de la carte, PUIS l'envoyer au cimetière
+            local Card = rawget(_G, "Card")
+            if Card and Card.Play and Card.Play.tryPlay then
+                _logf("Appel tryPlay AVANT confirmCardPlay")
+                _logf("🎮 [_EXECUTECARDPLAY] APPEL Card.Play.tryPlay...")
+                local playSuccess = Card.Play.tryPlay(card, false) -- false = coût normal
+                _logf("📊 [_EXECUTECARDPLAY] Résultat tryPlay: %s", tostring(playSuccess))
+
+                if playSuccess then
+                    _logf("tryPlay réussi - maintenant confirmer CardStandbyPlay")
+                    local success = CardStandbyPlay.confirmCardPlay()
+                    if success then
+                        _logf("Carte confirmée et envoyée au cimetière via CardStandbyPlay")
+                        card.selectedTarget = nil
+                        return true
+                    else
+                        _logError("Échec confirmation CardStandbyPlay après tryPlay réussi")
+                        card.selectedTarget = nil
+                        return false
+                    end
+                else
+                    _logError("Échec tryPlay - pas de confirmation CardStandbyPlay")
+                    card.selectedTarget = nil
+                    return false
+                end
+            else
+                _logError("Module Card.Play.tryPlay non disponible")
+                card.selectedTarget = nil
+                return false
+            end
+        else
+            _logError("Carte en standby différente de la carte à jouer")
+            card.selectedTarget = nil
+            return false
+        end
+    end
+
+    -- Fallback : ancien système en cas d'absence de CardStandbyPlay
     local Card = rawget(_G, "Card")
     if Card and Card.Play and Card.Play.tryPlay then
         local success = Card.Play.tryPlay(card, false) -- false = coût normal
 
         if success then
-            _logf("Carte jouée avec succès via Card.Play.tryPlay")
+            _logf("Carte jouée avec succès via Card.Play.tryPlay (fallback)")
             -- Nettoyer la cible assignée
             card.selectedTarget = nil
             return true
         else
-            _logError("Échec Card.Play.tryPlay")
+            _logError("Échec Card.Play.tryPlay (fallback)")
             -- Nettoyer la cible en cas d'échec
             card.selectedTarget = nil
             return false
@@ -739,7 +859,24 @@ end
 
 -- Fonction d'update principal du système de ciblage (doit être appelée chaque frame)
 function CardTargetSelection.update(dt)
-    -- Mise à jour des animations et détection de survol
+    -- SÉCURITÉ: Vérifier les ennemis seulement si on est en mode ciblage ET en standby
+    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+    local isInStandbyMode = CardStandbyPlay and CardStandbyPlay.hasCardInStandby and CardStandbyPlay.hasCardInStandby()
+
+    if CardTargetSelection.isSelectingTarget and isInStandbyMode then
+        -- DIAGNOSTIC: Vérifier périodiquement la disponibilité des ennemis seulement en standby
+        local enemies = CardTargetSelection.getEnemyList()
+        if #enemies == 0 then
+            _logf("🔍 DEBUG STANDBY: Aucun ennemi disponible pour ciblage (liste vide)")
+        else
+            _logf("🔍 DEBUG STANDBY: %d ennemis disponibles pour ciblage", #enemies)
+        end
+
+        -- Mise à jour de la détection de survol pour vérifier les ennemis en continu
+        CardTargetSelection.updateHoverDetection(dt)
+    end
+
+    -- Mise à jour des animations (toujours active)
     CardTargetSelection.updateAnimations(dt)
 end
 

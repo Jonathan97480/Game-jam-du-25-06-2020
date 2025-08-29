@@ -30,6 +30,9 @@ _G.hud = require("my-librairie/hud/hud")
 -- Card System (API façade principale)
 _G.Card = require("my-librairie/card-librairie/card")
 
+-- Card Standby Play System
+_G.CardStandbyPlay = require("my-librairie/card-librairie/cardStandbyPlay")
+
 -- Responsive Screen Manager
 _G.screen = require("my-librairie/responsive")
 

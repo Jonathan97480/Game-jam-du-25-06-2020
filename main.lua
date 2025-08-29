@@ -85,6 +85,13 @@ function love.update(dt)
   --[[  if love.keyboard.isDown('p') then
     Card.positioneHand(dt)
   end ]]
+  -- NOUVEAU : Update CardStandbyPlay
+  globalFunction.safecall(function()
+    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+    if CardStandbyPlay and CardStandbyPlay.update then
+      CardStandbyPlay.update(dt)
+    end
+  end)
 end
 
 -- DRAW
@@ -100,7 +107,13 @@ function love.draw()
   love.graphics.scale(screen.ratioScreen.width, screen.ratioScreen.height)
   scene:draw()
   Transition.draw()
-
+  -- NOUVEAU : Draw CardStandbyPlay (carte en attente de sélection)
+  globalFunction.safecall(function()
+    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+    if CardStandbyPlay and CardStandbyPlay.draw then
+      CardStandbyPlay.draw()
+    end
+  end)
   -- ✅ RENDU HUD CENTRALISÉ - Le HUD est rendu ici une seule fois pour tout le jeu
   if _G.hud and type(_G.hud.draw) == 'function' then
     _G.hud.draw()
@@ -127,6 +140,18 @@ function love.mousepressed(x, y, button)
       f:close()
     end
   end)
+
+  -- GLOBAL : Vérifier d'abord CardStandbyPlay pour gestion des annulations (commun à tout le jeu)
+  local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+  if CardStandbyPlay and CardStandbyPlay.handleClick then
+    local handled = CardStandbyPlay.handleClick(x, y, button)
+    if handled then
+      globalFunction.log.info(string.format("[main] Clic géré par CardStandbyPlay: (%d,%d) button=%d", x, y, button))
+      return -- Important : arrêter la propagation si géré
+    end
+  end
+
+  -- Propager aux scènes seulement si pas géré par CardStandbyPlay
   scene:emit("mousepressed", x, y, button)
 end
 

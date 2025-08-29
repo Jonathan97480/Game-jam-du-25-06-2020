@@ -8,6 +8,9 @@
 --   - M.draw()          : (placeholder) hook de rendu si besoin
 --   - M.drawHand()      : dessine les cartes de la main
 --
+
+-- Import du nouveau CardManager
+local CardManager = require("my-librairie/card-librairie/card_manager")
 -- Principales fonctions internes (documentées ci-dessous) :
 --   moveToGrave(card)   : gestion de l'envoi d'une carte au cimetière
 --   handleSafety(card,dt): décrémente _safetyTimer et appelle moveToGrave
@@ -41,7 +44,9 @@ local function moveToGrave(_card)
         if Common.graveyard and Common.graveyard.addCard then
             Common.graveyard:addCard(_card)
         end
-        if Common._updateHandTargets and not Common.__dragLock then Common._updateHandTargets() end
+
+        -- NOUVEAU : Utiliser CardManager pour gestion sécurisée
+        CardManager.onCardMoveToGrave(_card, "moveToGrave - anim.lua")
     end
 end
 

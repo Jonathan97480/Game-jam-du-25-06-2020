@@ -2,6 +2,10 @@ local Common         = require("my-librairie/card-librairie/core/common")
 local UX             = require("my-librairie/card-librairie/ui/ux")
 local screen         = rawget(_G, "screen") or require("my-librairie/responsive")
 local Layout         = require("my-librairie/card-librairie/ui/layout")
+
+-- Import du nouveau CardManager
+local CardManager    = require("my-librairie/card-librairie/card_manager")
+
 local okInput, input = pcall(require, "my-librairie/inputManager")
 if not okInput then input = nil end
 local okI, inputI = pcall(require, "my-librairie/inputInterface")
@@ -45,11 +49,33 @@ M._setDragState = function(card, idx)
 end
 
 function M.resetInteractions(hard)
+    -- ===== FONCTION DE RESET DES INTERACTIONS =====
+    -- Cette fonction remet toutes les cartes à leur position de base
+    -- NOUVEAU : Utilise CardManager pour contrôle centralisé
+
+    _logf("[Card.Interaction] ⚠️  APPEL resetInteractions - hard=%s", tostring(hard))
+
+    -- NOUVEAU : Utiliser CardManager pour vérification
+    if not CardManager.onResetInteractions(hard, "interaction.lua") then
+        _logf("[Card.Interaction] 🛡️  RESET BLOQUÉ par CardManager")
+        return
+    end
+
+    _logf("[Card.Interaction] 🔄 RESET EN COURS - Remise des cartes en position de base")
+
     draggedCard, draggedIndex = nil, nil
     Common.__dragLock = false
     mouseWasDown = false
     for i = 1, #Common.hand.cards do
         local _card = Common.hand.cards[i]
+        -- Protection : utiliser CardManager pour vérifier les cartes protégées
+        if CardManager.isCardPlaying(_card) then
+            _logf("[Card.Interaction] 🛡️  Protection CardManager: %s (ignore repositionnement)", _card.name or "carte")
+            goto continue
+        end
+
+        _logf("[Card.Interaction] 📍 Repositionnement carte %d: %s", i, _card.name or "sans nom")
+
         local bx = (_card.oldVector2 and _card.oldVector2.x) or (_card.target and _card.target.x) or _card.vector2.x
         local by = (_card.oldVector2 and _card.oldVector2.y) or (_card.target and _card.target.y) or _card.vector2.y
         _card._targetPos = _card._targetPos or { x = bx, y = by }
@@ -57,9 +83,11 @@ function M.resetInteractions(hard)
         _card._targetPos.x, _card._targetPos.y = bx, by
         _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
         if hard then
+            _logf("[Card.Interaction] 💥 HARD RESET carte %s: position (%d, %d)", _card.name or "carte", bx, by)
             _card.vector2.x, _card.vector2.y = bx, by
             _card.scale.x, _card.scale.y = Common.SCALE_BASE, Common.SCALE_BASE
         end
+        ::continue::
     end
 end
 
@@ -114,8 +142,18 @@ function M.hover(dt)
     end
 
     if tour ~= 'player' then
-        if draggedCard or Common.__dragLock then
+        -- Protection : ne pas reset si système de ciblage actif
+        local CardTargetSelection = rawget(_G, "CardTargetSelection")
+        local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+        local isTargetingActive = (CardTargetSelection and CardTargetSelection.isSelectingTarget) or
+            (CardStandbyPlay and CardStandbyPlay.hasCardInStandby and CardStandbyPlay.hasCardInStandby())
+
+        if (draggedCard or Common.__dragLock) and not isTargetingActive then
             M.resetInteractions(true)
+            _logf("[Card.Interaction] RESET INTERACTIONS - tour=%s, draggedCard=%s, dragLock=%s",
+                tostring(tour), draggedCard and draggedCard.name or "nil", tostring(Common.__dragLock))
+        elseif isTargetingActive then
+            _logf("[Card.Interaction] PROTECTION CIBLAGE ACTIF - pas de reset, tour=%s", tostring(tour))
         end
         for i = 1, #Common.hand.cards do
             local _card = Common.hand.cards[i]
@@ -178,15 +216,26 @@ function M.hover(dt)
 
     for i = 1, #Common.hand.cards do
         local _card = Common.hand.cards[i]
+        -- ===== BOUCLE PRINCIPALE DE GESTION DES CARTES =====
+        -- Cette boucle détermine la position et échelle cible de chaque carte
+        -- ATTENTION: Peut causer le retour des cartes en main si mal géré
+
         local bx = (_card.oldVector2 and _card.oldVector2.x) or (_card.target and _card.target.x) or _card.vector2.x
         local by = (_card.oldVector2 and _card.oldVector2.y) or (_card.target and _card.target.y) or _card.vector2.y
         _card._targetPos = _card._targetPos or { x = bx, y = by }
         _card._targetScale = _card._targetScale or { x = Common.SCALE_BASE, y = Common.SCALE_BASE }
 
         if _card._playing or _card.locked or _card.anim then
+            -- 🔒 CARTES PROTÉGÉES (en cours de jeu, verrouillées ou en animation)
+            -- Ces cartes gardent leur position actuelle
             _card._targetPos.x, _card._targetPos.y = _card.vector2.x, _card.vector2.y
             _card._targetScale.x, _card._targetScale.y = _card.scale.x, _card.scale.y
+            if _card._playing then
+                _logf("[Card.Interaction] 🔒 Carte protégée (en jeu): %s", _card.name or "carte")
+            end
         elseif _card == draggedCard then
+            -- 🎯 CARTE EN COURS DE DRAG
+            _logf("[Card.Interaction] 🎯 Carte draggée: %s", _card.name or "carte")
             _card.scale.x, _card.scale.y = 1.05, 1.05
             local ex, ey = _getCursor()
             ex = ex - (_card._grabDX or _card.width / 2)
@@ -196,18 +245,29 @@ function M.hover(dt)
             _card._targetScale.x, _card._targetScale.y = _card.scale.x, _card.scale.y
 
             if not isDown then
+                -- ⚠️  SECTION CRITIQUE: CARTE RELÂCHÉE ⚠️
+                -- C'est ici que se décide si la carte est jouée ou remise en main
+                _logf("[Card.Interaction] ⚠️  CARTE RELÂCHÉE: %s", _card.name or "carte")
+
                 draggedCard, draggedIndex = nil, nil
                 Common.__dragLock = false
                 local mx, my = _getCursor()
                 local dropY = my
                 local playLine = rawget(_G, "CARD_PLAY_LINE_Y") or 400
                 local inZone = (dropY <= playLine)
+
+                _logf("[Card.Interaction] 🎯 ZONE DE JEU: dropY=%d, playLine=%d, inZone=%s",
+                    dropY, playLine, tostring(inZone))
+
                 if DEBUG then
                     _logf("[Card.Interaction] dropY=%s playLine=%s inZone=%s", tostring(dropY),
                         tostring(playLine), tostring(inZone))
                 end
                 if inZone then
                     -- ===== NOUVEAU SYSTÈME DE CIBLAGE MANUEL =====
+                    -- Si la carte est dans la zone de jeu, on tente de l'activer
+                    _logf("[Card.Interaction] ✅ CARTE EN ZONE DE JEU - Tentative d'activation")
+
                     local CardTargetSelection = rawget(_G, "CardTargetSelection")
 
                     -- Récupération des ennemis (plusieurs patterns possibles)
@@ -259,15 +319,35 @@ function M.hover(dt)
                         _logf(
                             "[interaction.lua] ✅ CONDITIONS REMPLIES - Démarrage sélection cible pour: %s - Ennemis vivants: %d",
                             _card.name or "carte", aliveEnemies)
+
+                        -- NOUVEAU : Mettre la carte en standby AVANT la sélection
+                        local CardStandbyPlay = _G.CardStandbyPlay
+                        if CardStandbyPlay then
+                            -- Trouver l'index de la carte dans la main
+                            local cardIndex = 1
+                            for i, handCard in ipairs(Common.hand.cards) do
+                                if handCard == _card then
+                                    cardIndex = i
+                                    break
+                                end
+                            end
+
+                            local standbySuccess = CardStandbyPlay.putCardInStandby(_card, cardIndex)
+                            _logf("[DEBUG] Carte mise en standby: %s", tostring(standbySuccess))
+                        end
+
                         local success = CardTargetSelection.startTargetSelection(_card)
                         _logf("[DEBUG] startTargetSelection retourné: %s", tostring(success))
                         if success then
-                            -- La carte va être animée vers la position de sélection
-                            -- Le jeu effectif se fera après sélection de la cible
-                            print("[DEBUG] ✅ CIBLAGE ACTIVÉ - sortie early")
-                            return -- Sortir early, pas de repositionnement
+                            -- La carte est maintenant en standby et le ciblage est actif
+                            print("[DEBUG] ✅ CIBLAGE ACTIVÉ - carte en standby")
+                            return -- Sortir early, carte gérée par le système standby
                         else
                             print("[interaction.lua] ❌ Échec démarrage sélection cible")
+                            -- En cas d'échec, remettre la carte en main si elle était en standby
+                            if CardStandbyPlay and CardStandbyPlay.hasCardInStandby() then
+                                CardStandbyPlay.returnCardToHand()
+                            end
                             -- Fallback sur ancien système en cas d'échec
                             local Card = rawget(_G, "Card")
                             local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)
@@ -291,16 +371,22 @@ function M.hover(dt)
                     end
                     -- ===== FIN NOUVEAU SYSTÈME DE CIBLAGE =====
                 else
+                    -- ❌ CARTE HORS ZONE DE JEU - RETOUR EN MAIN
+                    _logf("[Card.Interaction] ❌ CARTE HORS ZONE - Retour en main: %s", _card.name or "carte")
                     _card._targetPos.x, _card._targetPos.y = bx, by
                     _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
                 end
             end
         else
+            -- 🏠 CARTES NORMALES (ni draggées, ni actives)
             if active and _card == active then
+                -- 👆 CARTE SURVOLÉE (hover effect)
                 _card._targetPos.x = bx
                 _card._targetPos.y = by - 100
                 _card._targetScale.x, _card._targetScale.y = 0.95, 0.95
                 if isDown and not mouseWasDown and not draggedCard then
+                    -- 🎯 DÉBUT DU DRAG
+                    _logf("[Card.Interaction] 🎯 DÉBUT DRAG carte: %s", _card.name or "carte")
                     draggedCard, draggedIndex = _card, i
                     Common.__dragLock = true
                     local gx, gy = _getCursor()
@@ -313,19 +399,29 @@ function M.hover(dt)
                     end
                 end
             else
+                -- 🏠 CARTE EN POSITION DE BASE
                 _card._targetPos.x, _card._targetPos.y = bx, by
                 _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
             end
         end
 
+        -- ⚠️  ANIMATION LERP - PEUT CAUSER LE RETOUR DES CARTES ⚠️
+        -- Cette section anime les cartes vers leur position cible
         if _card ~= draggedCard and not _card._playing and not _card.locked and not _card.anim then
-            _lerpTable(_card.vector2, _card._targetPos, 10)
-            _lerpTable(_card.scale, _card._targetScale, 12)
+            if _card._playing then
+                _logf("[Card.Interaction] 🚫 LERP BLOQUÉ pour carte en jeu: %s", _card.name or "carte")
+            else
+                -- Animation normale vers position cible
+                _lerpTable(_card.vector2, _card._targetPos, 10)
+                _lerpTable(_card.scale, _card._targetScale, 12)
+            end
         end
     end
 
     mouseWasDown = isDown
-    if DEBUG and not isDown and draggedCard == nil then _logf("[Card.Interaction] mouse up, no draggedCard") end
+    if DEBUG and not isDown and draggedCard == nil then
+        _logf("[Card.Interaction] 🔄 CYCLE TERMINÉ - mouse up, no draggedCard")
+    end
 end
 
 return M

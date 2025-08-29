@@ -506,6 +506,8 @@ function gameplay:update(dt)
             function() return Card and Card.action and Card.action.update and Card.action.update(dt) end)
         safecall("Card.update", function() return Card and Card.update and Card.update(dt) end)
 
+
+
         -- Ennemi mort durant le tour joueur → demander transition/récompense
         if Enemies and Enemies.curentEnemy and Enemies.curentEnemy.state then
             local e = Enemies.curentEnemy.state
@@ -553,6 +555,8 @@ function gameplay.draw()
     safecall("Hero.draw", function() return Hero and Hero.draw and Hero.draw() end)
     safecall("Enemies.draw", function() return Enemies and Enemies.draw and Enemies.draw() end)
     safecall("Card.drawHand", function() return Card and Card.drawHand and Card.drawHand() end)
+
+
 
     safecall("AI.draw", function() return AI and AI.draw and AI.draw() end)
     -- Ensure per-scene HUD is drawn (background + elements). Use protected calls so missing HUD
@@ -611,6 +615,8 @@ end
 
 -- ===== GESTION DES ÉVÉNEMENTS SOURIS POUR LE CIBLAGE =====
 function gameplay.mousepressed(self, x, y, button)
+    -- REMARQUE : CardStandbyPlay est maintenant géré dans main.lua (système global)
+
     -- Déléguer au système de ciblage de cartes
     local CardTargetSelection = rawget(_G, "CardTargetSelection")
     logf("[gameplay] mousepressed: CardTargetSelection=%s, handleMouseClick=%s",
@@ -627,7 +633,7 @@ function gameplay.mousepressed(self, x, y, button)
         end
     end
 
-    -- Pas géré par le système de ciblage
+    -- Pas géré par les systèmes
     return false
 end
 
