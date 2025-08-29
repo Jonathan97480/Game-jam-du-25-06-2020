@@ -10,7 +10,7 @@ end
 local actorMgr                = _G.actorManager or _safeRequire("my-librairie/actorManager")
 local Card                    = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
 local Hero                    = _G.Hero or rawget(_G, "Hero")
-local Enemies                 = _G.Enemies or rawget(_G, "Enemies")
+local EnemiesManager          = _G.Enemies or rawget(_G, "Enemies")
 local globalFunction          = _G.globalFunction or rawget(_G, 'globalFunction')
 
 local Transition              = _safeRequire("my-librairie/transition/templateCombatTransition")
@@ -18,6 +18,7 @@ local Transition              = _safeRequire("my-librairie/transition/templateCo
 local timerMaxTurnChanged     = 1
 local timerDrawTurned         = 0
 local lastTurnTransitionState = ''
+local currentEnemy            = {}
 
 local AI                      = {
   state               = "idle",
@@ -127,11 +128,100 @@ local function delta(b, a)
 end
 
 -- ---------- HELPERS ----------
-local function ensureAIContainers()
+local function ensureAIContainers(enemy)
   Card = Card or rawget(_G, "Card") or rawget(_G, "card")
   if not Card then return nil end
-  Card.deckAi = Card.getDeckByName("EnemyDeck").cards
-  return Card.deckAi
+  Card.deckAi = nil
+  Card.deckAi = Card.getDeckByName(enemy.nameDeck)
+  return Card.deckAi.cards
+end
+
+-- Récupère l'ennemi courant depuis le Template Combat (plus fiable)
+local function getCurrentEnemy()
+  -- Priorité au système de transition moderne
+  if EnemiesManager and EnemiesManager.curentEnemy then
+    return EnemiesManager.curentEnemy
+  end
+  -- Fallback vers variable locale
+  return currentEnemy
+end
+
+-- Détecte tous les alliés vivants pour ciblage intelligent
+local function getAllAllies(sourceEnemy)
+  local allies = {}
+  if not EnemiesManager or not EnemiesManager.listeEnemies then
+    return allies
+  end
+
+  for _, enemy in ipairs(EnemiesManager.listeEnemies) do
+    if enemy ~= sourceEnemy and enemy.state and not enemy.state.dead and (enemy.state.life or 0) > 0 then
+      table.insert(allies, enemy)
+    end
+  end
+
+  -- Ajouter l'ennemi courant s'il est différent de la source et vivant
+  local current = EnemiesManager.curentEnemy
+  if current and current ~= sourceEnemy and current.state and not current.state.dead and (current.state.life or 0) > 0 then
+    local alreadyExists = false
+    for _, ally in ipairs(allies) do
+      if ally == current then
+        alreadyExists = true; break
+      end
+    end
+    if not alreadyExists then
+      table.insert(allies, current)
+    end
+  end
+
+  return allies
+end
+
+-- Trouve le meilleur allié pour une carte de soin
+local function findBestHealTarget(sourceEnemy, allies)
+  if not allies or #allies == 0 then return nil end
+
+  local bestAlly = nil
+  local lowestHealthRatio = 1.0
+
+  for _, ally in ipairs(allies) do
+    if ally.state then
+      local maxLife = tonumber(ally.state.maxLife) or 1
+      local life = tonumber(ally.state.life) or 0
+      local ratio = life / maxLife
+
+      -- Priorité aux alliés blessés mais pas morts
+      if ratio < lowestHealthRatio and ratio > 0 then
+        lowestHealthRatio = ratio
+        bestAlly = ally
+      end
+    end
+  end
+
+  logf("[AI] Meilleure cible soin: %s (vie: %.1f%%)",
+    bestAlly and bestAlly.name or "aucune", lowestHealthRatio * 100)
+  return bestAlly
+end
+
+-- Trouve le meilleur allié pour une carte de bouclier
+local function findBestShieldTarget(sourceEnemy, allies)
+  if not allies or #allies == 0 then return nil end
+
+  local bestAlly = nil
+  local lowestShield = math.huge
+
+  for _, ally in ipairs(allies) do
+    if ally.state then
+      local shield = tonumber(ally.state.shield) or 0
+      if shield < lowestShield then
+        lowestShield = shield
+        bestAlly = ally
+      end
+    end
+  end
+
+  logf("[AI] Meilleure cible bouclier: %s (bouclier: %d)",
+    bestAlly and bestAlly.name or "aucune", lowestShield == math.huge and 0 or lowestShield)
+  return bestAlly
 end
 local function lifeRatio(actor)
   if not actor or not actor.state then return 1 end
@@ -182,6 +272,7 @@ local function drawTourCh(state, dt)
     })
   end
 end
+
 
 
 -- ---------- EFFETS (fallback) ----------
@@ -271,26 +362,31 @@ end
 
 local function chooseDeterministic(deck, powerNow)
   if not deck or #deck == 0 then return nil, nil end
-  Hero             = Hero or rawget(_G, "Hero")
-  Enemies          = Enemies or rawget(_G, "Enemies")
+  Hero = Hero or rawget(_G, "Hero")
+  if not Enemies then
+    EnemiesManager = EnemiesManager or rawget(_G, "Enemies")
+  end
   local heroActor  = Hero and Hero.actor
-  local enemyActor = Enemies and Enemies.curentEnemy
+  --************************************************************************--
+  --GET CURRENT ENEMY - Modernisé pour utiliser le système centralisé
+  local enemyActor = getCurrentEnemy()
+
+  --*************************************************************************--
 
   logf("[AI] status  enemy: %s", globalFunction.tstr(snap(enemyActor)))
   logf("[AI] status  hero : %s", globalFunction.tstr(snap(heroActor)))
 
+  -- Détection des alliés pour ciblage intelligent
+  local allies = getAllAllies(enemyActor)
+  logf("[AI] alliés disponibles: %d", #allies)
+
   local playable = {}
   for i, c in ipairs(deck) do
-    local cost = tonumber(c.cost or c.PowerBlow or c.power or 1) or 1
-    if cost <= (enemyActor and (enemyActor.state and enemyActor.state.power or 0) or 0) then
-      local t   = cardType(c)
-      local eff = getEffects(c)
-      logf("[AI] card[%d]: name=%s type=%s cost=%d  eff.hero=%s eff.enemy=%s", i, tostring(c.name), t, cost,
-        globalFunction.tstr(eff.hero), globalFunction.tstr(eff.enemy))
-      playable[#playable + 1] = { i = i, c = c, t = t }
-    else
-      logf("[AI] card[%d] INJOUABLE (cost=%d): %s", i, cost, tostring(c.name))
-    end
+    local t   = cardType(c)
+    local eff = getEffects(c)
+    logf("[AI] card[%d]: name=%s type=%s  eff.hero=%s eff.enemy=%s", i, tostring(c.name), t,
+      globalFunction.tstr(eff.hero), globalFunction.tstr(eff.enemy))
+    playable[#playable + 1] = { i = i, c = c, t = t, eff = eff }
   end
   if #playable == 0 then
     logf("[AI] aucune carte jouable → fin de tour")
@@ -304,16 +400,45 @@ local function chooseDeterministic(deck, powerNow)
   local hHP = lifeRatio(heroActor)
   local eSH = getShield(enemyActor)
 
+  -- Logique de priorité améliorée avec prise en compte des alliés
   if eHP <= 0.35 and #g.heal > 0 then
-    logf("[AI] priorité: HEAL"); return g.heal[1].i, g.heal[1].c
-  end
-  if eSH <= 2 and #g.shield > 0 then
-    logf("[AI] priorité: SHIELD"); return g.shield[1].i, g.shield[1].c
-  end
-  if hHP <= 0.40 and #g.attack > 0 then
-    logf("[AI] priorité: ATTACK"); return g.attack[1].i, g.attack[1].c
+    logf("[AI] priorité: HEAL (ennemi critique: %.1f%%)", eHP * 100)
+    return g.heal[1].i, g.heal[1].c
   end
 
+  -- Si on a des alliés blessés et des cartes de soin, priorité au soin d'allié
+  if #allies > 0 and #g.heal > 0 then
+    for _, ally in ipairs(allies) do
+      local allyHP = lifeRatio(ally)
+      if allyHP <= 0.5 then
+        logf("[AI] priorité: HEAL allié blessé '%s' (vie: %.1f%%)", ally.name or "?", allyHP * 100)
+        return g.heal[1].i, g.heal[1].c
+      end
+    end
+  end
+
+  if eSH <= 2 and #g.shield > 0 then
+    logf("[AI] priorité: SHIELD (bouclier faible: %d)", eSH)
+    return g.shield[1].i, g.shield[1].c
+  end
+
+  -- Si on a des alliés vulnérables et des cartes de bouclier
+  if #allies > 0 and #g.shield > 0 then
+    for _, ally in ipairs(allies) do
+      local allyShield = getShield(ally)
+      if allyShield <= 1 then
+        logf("[AI] priorité: SHIELD allié vulnérable '%s' (bouclier: %d)", ally.name or "?", allyShield)
+        return g.shield[1].i, g.shield[1].c
+      end
+    end
+  end
+
+  if hHP <= 0.40 and #g.attack > 0 then
+    logf("[AI] priorité: ATTACK (héros affaibli: %.1f%%)", hHP * 100)
+    return g.attack[1].i, g.attack[1].c
+  end
+
+  -- Priorités par défaut
   if #g.attack > 0 then
     logf("[AI] défaut -> ATTACK"); return g.attack[1].i, g.attack[1].c
   end
@@ -332,8 +457,125 @@ local function chooseDeterministic(deck, powerNow)
   return nil, nil
 end
 
--- ---------- APPELS AU PIPELINE CARD.* ----------
-local function callCardSystem(c, enemyActor, heroActor)
+-- ---------- CIBLAGE INTELLIGENT ----------
+local function selectTargetForCard(card, sourceEnemy, heroActor)
+  local eff = getEffects(card)
+  local e = eff.enemy or {} -- Effets sur l'ennemi (celui qui joue la carte)
+  local allies = getAllAllies(sourceEnemy)
+
+  -- Cartes de soin : priorité aux alliés blessés
+  if e.heal and e.heal > 0 and #allies > 0 then
+    local healTarget = findBestHealTarget(sourceEnemy, allies)
+    if healTarget then
+      logf("[AI] Ciblage intelligent: carte soin '%s' → allié '%s'",
+        card.name or "?", healTarget.name or "?")
+      return healTarget
+    end
+  end
+
+  -- Cartes de bouclier : priorité aux alliés vulnérables
+  if e.shield and e.shield > 0 and #allies > 0 then
+    local shieldTarget = findBestShieldTarget(sourceEnemy, allies)
+    if shieldTarget then
+      logf("[AI] Ciblage intelligent: carte bouclier '%s' → allié '%s'",
+        card.name or "?", shieldTarget.name or "?")
+      return shieldTarget
+    end
+  end
+
+  -- Cartes d'épines : priorité aux alliés offensifs
+  if e.epine and e.epine > 0 and #allies > 0 then
+    -- Choisir l'allié avec le plus d'attaque
+    local bestAlly = allies[1]
+    for _, ally in ipairs(allies) do
+      if ally.state and ally.state.attack and bestAlly.state and bestAlly.state.attack then
+        if ally.state.attack > bestAlly.state.attack then
+          bestAlly = ally
+        end
+      end
+    end
+    if bestAlly then
+      logf("[AI] Ciblage intelligent: carte épines '%s' → allié offensif '%s'",
+        card.name or "?", bestAlly.name or "?")
+      return bestAlly
+    end
+  end
+
+  -- Fallback : cible par défaut (héros pour attaque, soi-même pour support)
+  local h = eff.hero or {}
+  if h.attack and h.attack > 0 then
+    logf("[AI] Ciblage par défaut: carte attaque '%s' → héros", card.name or "?")
+    return heroActor
+  else
+    logf("[AI] Ciblage par défaut: carte support '%s' → soi-même", card.name or "?")
+    return sourceEnemy
+  end
+end
+
+-- ---------- APPELS AU PIPELINE CARD.* MODERNISÉ ----------
+local function modernCardSystem(c, enemyActor, heroActor)
+  Card = Card or rawget(_G, "Card") or rawget(_G, "card")
+  if not Card then
+    logf("[AI] MODERN-SYS: Card=nil -> impossible de jouer")
+    return false, "no_card_module"
+  end
+
+  -- Sélection intelligente de la cible
+  local targetActor = selectTargetForCard(c, enemyActor, heroActor)
+
+  local beforeE, beforeH = snap(enemyActor), snap(heroActor)
+  local beforeT = targetActor and snap(targetActor) or nil
+
+  -- Tentative API moderne unifiée
+  if Card.tryPlay and type(Card.tryPlay) == "function" then
+    logf("[AI] MODERN-SYS: tentative Card.tryPlay moderne")
+
+    -- Configuration de la carte pour l'ennemi
+    local originalActorTag = c.actorTag
+    c.actorTag = "Enemy" -- Force le tag ennemi pour cette carte
+
+    local ok = pcall(function()
+      return Card.tryPlay(c, false) -- false = coût normal
+    end)
+
+    -- Restauration du tag original
+    c.actorTag = originalActorTag
+
+    if ok then
+      local afterE, afterH = snap(enemyActor), snap(heroActor)
+      local afterT = targetActor and snap(targetActor) or nil
+      logf("[AI] MODERN-SYS OK: Card.tryPlay | enemy %s | hero %s | target %s",
+        delta(beforeE, afterE), delta(beforeH, afterH),
+        afterT and delta(beforeT, afterT) or "N/A")
+      return true, "Card.tryPlay"
+    else
+      logf("[AI] MODERN-SYS FAIL: Card.tryPlay")
+    end
+  end
+
+  -- Fallback vers Common.playCard si disponible
+  local Common = rawget(_G, "Common") or (Card and Card.Common)
+  if Common and Common.playCard and type(Common.playCard) == "function" then
+    logf("[AI] MODERN-SYS: tentative Common.playCard fallback")
+    local ok = pcall(Common.playCard, c, enemyActor, targetActor or heroActor)
+    if ok then
+      local afterE, afterH = snap(enemyActor), snap(heroActor)
+      local afterT = targetActor and snap(targetActor) or nil
+      logf("[AI] MODERN-SYS OK: Common.playCard | enemy %s | hero %s | target %s",
+        delta(beforeE, afterE), delta(beforeH, afterH),
+        afterT and delta(beforeT, afterT) or "N/A")
+      return true, "Common.playCard"
+    else
+      logf("[AI] MODERN-SYS FAIL: Common.playCard")
+    end
+  end
+
+  logf("[AI] MODERN-SYS: aucune API moderne disponible → fallback legacy")
+  return false, "no_modern_api"
+end
+
+-- Legacy system (conservé comme fallback ultime)
+local function callCardSystemLegacy(c, enemyActor, heroActor)
   Card = Card or rawget(_G, "Card") or rawget(_G, "card")
   if not Card then
     logf("[AI] CARD-SYS: Card=nil -> impossible d’afficher/jouer via UI")
@@ -343,38 +585,49 @@ local function callCardSystem(c, enemyActor, heroActor)
   local beforeE, beforeH = snap(enemyActor), snap(heroActor)
   local okAny, tagName = false, ""
 
+  -- Tentatives legacy réduites (seulement les APIs qui existent vraiment)
   local tries = {
     { "Card.tryPlay(card,'Enemy',true)",            Card.tryPlay,                             c, "Enemy",                       true },
     { "Card.tryPlay(card,{tag='Enemy',free=true})", Card.tryPlay,                             c, { tag = "Enemy", free = true } },
-    { "Card.play(card,'Enemy',true)",               Card.play,                                c, "Enemy",                       true },
-    { "Card.playEnemy(card)",                       Card.playEnemy,                           c },
-    { "Card.playIA(card)",                          Card.playIA,                              c },
-    { "Card.aiPlay(card)",                          Card.aiPlay,                              c },
     { "Card.revealEnemyCard(card)",                 Card.revealEnemyCard or Card.revealEnemy, c }, -- visuel-only fallback
   }
 
   for _, t in ipairs(tries) do
     local label, fn = t[1], t[2]
     if type(fn) == "function" then
-      logf("[AI] CARD-SYS TRY -> %s", label)
+      logf("[AI] LEGACY-SYS TRY -> %s", label)
       local ok = pcall(fn, t[3], t[4], t[5])
       local afterE, afterH = snap(enemyActor), snap(heroActor)
       if ok then
-        logf("[AI] CARD-SYS OK  -> %s | enemy %s | hero %s", label, delta(beforeE, afterE), delta(beforeH, afterH))
+        logf("[AI] LEGACY-SYS OK  -> %s | enemy %s | hero %s", label, delta(beforeE, afterE), delta(beforeH, afterH))
         okAny, tagName = true, label
         break
       else
-        logf("[AI] CARD-SYS FAIL-> %s", label)
+        logf("[AI] LEGACY-SYS FAIL-> %s", label)
       end
     end
   end
 
   if not okAny then
-    logf("[AI] CARD-SYS: aucune API ne fonctionne (on passera par onPlay/fallback)")
-    return false, "no_card_api"
+    logf("[AI] LEGACY-SYS: aucune API legacy ne fonctionne")
+    return false, "no_legacy_api"
   end
 
   return true, tagName
+end
+
+-- Fonction unifiée qui essaie modern puis legacy
+local function callCardSystem(c, enemyActor, heroActor)
+  -- 1. Tentative moderne en priorité
+  local okModern, labelModern = modernCardSystem(c, enemyActor, heroActor)
+  if okModern then
+    return true, labelModern
+  end
+
+  -- 2. Fallback vers système legacy
+  logf("[AI] SYSTEM: API moderne échouée → tentative legacy")
+  local okLegacy, labelLegacy = callCardSystemLegacy(c, enemyActor, heroActor)
+  return okLegacy, labelLegacy
 end
 
 -- ---------- onPlay (cartes scriptées) ----------
@@ -423,13 +676,14 @@ end
 local function applyCard(c)
   if not c then return end
   Hero             = Hero or rawget(_G, "Hero")
-  Enemies          = Enemies or rawget(_G, "Enemies")
+  EnemiesManager   = EnemiesManager or rawget(_G, "EnemiesManager")
 
-  local enemyActor = Enemies and Enemies.curentEnemy
+  local enemyActor = currentEnemy
   local heroActor  = Hero and Hero.actor
 
   local cost       = tonumber(c.cost or c.PowerBlow or c.power or 1) or 1
   local eff        = getEffects(c)
+
   logf("[AI] applyCard '%s' cost=%d eff.hero=%s eff.enemy=%s", tostring(c.name), cost, globalFunction.tstr(eff.hero),
     globalFunction.tstr(eff.enemy))
 
@@ -484,8 +738,9 @@ local function applyCard(c)
 end
 
 -- ---------- API ----------
-function AI.load()
-  ensureAIContainers()
+function AI.load(_enemy)
+  ensureAIContainers(_enemy)
+  currentEnemy = _enemy
   AI.state, AI.timer, AI.currentIndex, AI.currentCard, AI.lastPlayed =
       "idle", 0, nil, nil, nil
   AI.busy, AI.running, AI._endSent, AI.enemy, AI._badDtWarned =
@@ -504,6 +759,7 @@ function AI:startTurn(enemy)
   self.busy         = true
   self.running      = true
   _notify("onTurnStart", enemy)
+  ensureAIContainers(enemy)
   logf("[AI] startTurn (power=%s)", tostring(enemy and enemy.state and enemy.state.power))
 end
 
@@ -511,8 +767,8 @@ function AI:isTurnDone() return self._endSent == true end
 
 function AI:update(dt)
   dt = normDt(dt)
-  Enemies = Enemies or rawget(_G, "Enemies")
-  local e = Enemies and Enemies.curentEnemy
+  EnemiesManager = EnemiesManager or rawget(_G, "EnemiesManager")
+  local e = currentEnemy
 
   if type(e) ~= "table" or type(e.state) ~= "table" then
     if not self._endSent and Transition and Transition.requestEndTurn then
@@ -545,17 +801,16 @@ function AI:update(dt)
     self.busy    = true
     self.running = true
   elseif self.state == "choose" then
-    local deck = ensureAIContainers()
-    if not deck or #deck == 0 then
+    if not Card or #Card.deckAi.cards == 0 then
       if not self._endSent then
         logf("[AI] deck IA vide → fin de tour")
         -- Marque et envoie immédiatement la demande de fin de tour au Transition Manager
         self._endSent = true
         if Transition and Transition.requestEndTurn then
-          log("[AI->Transition] demande fin de tour (deck vide)")
+          logf("[AI->Transition] demande fin de tour (deck vide)")
           pcall(function() Transition.requestEndTurn() end)
         else
-          log("[AI->Transition] Transition non disponible pour requestEndTurn()")
+          logf("[AI->Transition] Transition non disponible pour requestEndTurn()")
         end
         -- On passe en attente : Transition doit basculer le tour
         self.state = "waiting_end"
@@ -567,15 +822,15 @@ function AI:update(dt)
     end
 
     local powerNow = tonumber(e.state.power or 0) or 0
-    local idx, c = chooseDeterministic(deck, powerNow)
+    local idx, c = chooseDeterministic(Card.deckAi.cards, powerNow)
     if not idx or not c then
       self.state = "endturn"
       return
     end
 
     -- éviter de jouer 2x la même carte quand il y a d'autres options
-    if self.lastPlayed and c.name == self.lastPlayed and #deck > 1 then
-      for i, cc in ipairs(deck) do
+    if self.lastPlayed and c.name == self.lastPlayed and #Card.deckAi.cards > 1 then
+      for i, cc in ipairs(Card.deckAi.cards) do
         local cost = tonumber(cc.cost or cc.PowerBlow or cc.power or 1) or 1
         if i ~= idx and cost <= powerNow and cc.name ~= self.lastPlayed then
           idx, c = i, cc; break
@@ -620,7 +875,7 @@ function AI:update(dt)
       logf("[AI] POWER after cost %d -> %s", cost, delta(bE, aE))
 
       -- Retrait de la carte du deck IA si elle y est encore
-      local deck = ensureAIContainers()
+      --[[  local deck = ensureAIContainers() ]]
       if deck and idx and deck[idx] == c then
         --[[ table.remove(deck, idx) ]]
 
