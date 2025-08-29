@@ -196,17 +196,24 @@ end
 function Common._updateHandTargets()
     local n = Common.hand:size()
     for i, _card in ipairs(Common.hand.cards) do
-        local tx, ty = Common._computeSlot(i, n)
-        if not _card.target then _card.target = { x = 0, y = 0 } end
-        if not _card.scale then _card.scale = { x = SCALE_BASE, y = SCALE_BASE } end
-        if not _card.width then _card.width = CARD_W end
-        if not _card.height then _card.height = CARD_H end
-        if not _card.vector2 then _card.vector2 = { x = tx, y = ty } end
-        if not _card.oldVector2 then _card.oldVector2 = { x = tx, y = ty } end
-        if not _card._targetPos then _card._targetPos = { x = tx, y = ty } end
-        _card.target.x, _card.target.y         = tx, ty
-        _card.oldVector2.x, _card.oldVector2.y = tx, ty
-        _card._targetPos.x, _card._targetPos.y = tx, ty
+        -- 🎯 IGNORER les cartes marquées comme jouées pour éviter leur repositionnement
+        if _card._playing then
+            if DEBUG then
+                print(string.format("[Common._updateHandTargets] 🏷️ Ignorer carte jouée: %s", _card.name or "?"))
+            end
+        else
+            local tx, ty = Common._computeSlot(i, n)
+            if not _card.target then _card.target = { x = 0, y = 0 } end
+            if not _card.scale then _card.scale = { x = SCALE_BASE, y = SCALE_BASE } end
+            if not _card.width then _card.width = CARD_W end
+            if not _card.height then _card.height = CARD_H end
+            if not _card.vector2 then _card.vector2 = { x = tx, y = ty } end
+            if not _card.oldVector2 then _card.oldVector2 = { x = tx, y = ty } end
+            if not _card._targetPos then _card._targetPos = { x = tx, y = ty } end
+            _card.target.x, _card.target.y         = tx, ty
+            _card.oldVector2.x, _card.oldVector2.y = tx, ty
+            _card._targetPos.x, _card._targetPos.y = tx, ty
+        end
     end
 end
 

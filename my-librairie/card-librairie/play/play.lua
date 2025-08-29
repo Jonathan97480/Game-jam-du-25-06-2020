@@ -30,13 +30,14 @@ local function _tryPlay(_card, free)
     if _card.actorTag == 'Hero' and tour ~= 'player' then return false end
     if _card.actorTag ~= 'Hero' and tour ~= 'Enemy' then return false end
 
-    local HeroG    = getHero()
-    local EnemiesG = getEnemies()
-    local source   = (_card.actorTag == 'Hero') and (HeroG and HeroG.actor) or (EnemiesG and EnemiesG.curentEnemy)
-    
+    local HeroG               = getHero()
+    local EnemiesG            = getEnemies()
+    local source              = (_card.actorTag == 'Hero') and (HeroG and HeroG.actor) or
+    (EnemiesG and EnemiesG.curentEnemy)
+
     -- ===== NOUVEAU SYSTÈME DE CIBLAGE MANUEL =====
-    local target = nil
-    
+    local target              = nil
+
     -- Vérifier si le système de ciblage manuel est actif
     local CardTargetSelection = rawget(_G, "CardTargetSelection")
     if _card.actorTag == 'Hero' and CardTargetSelection and CardTargetSelection.selectedTarget then

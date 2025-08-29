@@ -7,6 +7,10 @@ if not okInput then input = nil end
 local okI, inputI = pcall(require, "my-librairie/inputInterface")
 if not okI then inputI = nil end
 
+-- Import du module de sélection manuelle des cibles
+local okCTS, CardTargetSelection = pcall(require, "my-librairie/card-librairie/ui/card_target_selection")
+if not okCTS then CardTargetSelection = nil end
+
 local M                         = {}
 
 local mouseWasDown              = false
@@ -205,20 +209,65 @@ function M.hover(dt)
                 if inZone then
                     -- ===== NOUVEAU SYSTÈME DE CIBLAGE MANUEL =====
                     local CardTargetSelection = rawget(_G, "CardTargetSelection")
-                    local EnemiesG = rawget(_G, "Enemies")
-                    local enemyList = (EnemiesG and EnemiesG.listeEnemies) or {}
-                    
-                    -- Vérifier si il y a plusieurs ennemis pour décider du mode de ciblage
-                    if _card.actorTag == 'Hero' and CardTargetSelection and #enemyList > 1 then
+
+                    -- Récupération des ennemis (plusieurs patterns possibles)
+                    local EnemiesG = rawget(_G, "Enemies") or rawget(_G, "__ENEMY_SINGLETON__") or rawget(_G, "EnemiesG")
+                    local enemyList = {}
+
+                    if EnemiesG and EnemiesG.listeEnemies then
+                        enemyList = EnemiesG.listeEnemies
+                    end
+
+                    -- DEBUG: Logs détaillés pour diagnostiquer
+                    _logf("[DEBUG interaction.lua] === ANALYSE CIBLAGE ===")
+                    _logf("[DEBUG] Carte actorTag: %s", tostring(_card.actorTag))
+                    _logf("[DEBUG] CardTargetSelection existe: %s", tostring(CardTargetSelection ~= nil))
+                    _logf("[DEBUG] EnemiesG existe: %s", tostring(EnemiesG ~= nil))
+                    _logf("[DEBUG] EnemiesG.listeEnemies: %s", EnemiesG and type(EnemiesG.listeEnemies) or "nil")
+                    _logf("[DEBUG] Nombre d'ennemis: %d", #enemyList)
+
+                    if EnemiesG and EnemiesG.listeEnemies then
+                        for i, enemy in ipairs(EnemiesG.listeEnemies) do
+                            local isDead = enemy.state and
+                                (enemy.state.dead or (enemy.state.life and enemy.state.life <= 0))
+                            _logf("[DEBUG] Ennemi %d: %s dead: %s life: %s", i, enemy.name or "sans nom",
+                                tostring(isDead),
+                                tostring(enemy.state and enemy.state.life))
+                        end
+                    end
+
+                    -- Vérifier si il y a plusieurs ennemis VIVANTS pour décider du mode de ciblage
+                    local aliveEnemies = 0
+                    for _, enemy in ipairs(enemyList) do
+                        if enemy.state and not enemy.state.dead and (not enemy.state.life or enemy.state.life > 0) then
+                            aliveEnemies = aliveEnemies + 1
+                        end
+                    end
+
+                    _logf("[DEBUG] Ennemis vivants: %d", aliveEnemies)
+
+                    if _card.actorTag == 'Hero' and CardTargetSelection and aliveEnemies > 1 then
+                        -- Vérifier si le système est déjà actif pour cette carte
+                        if CardTargetSelection.isSelectingTarget and
+                            CardTargetSelection.cardBeingPlayed and
+                            CardTargetSelection.cardBeingPlayed.name == _card.name then
+                            _logf("[DEBUG] Système de ciblage déjà actif pour: %s", _card.name or "carte")
+                            return -- Sortir early, système déjà en cours
+                        end
+
                         -- Mode ciblage manuel : démarrer la sélection de cible
-                        print("[interaction.lua] Démarrage sélection cible pour:", _card.name or "carte", "- Ennemis:", #enemyList)
+                        _logf(
+                            "[interaction.lua] ✅ CONDITIONS REMPLIES - Démarrage sélection cible pour: %s - Ennemis vivants: %d",
+                            _card.name or "carte", aliveEnemies)
                         local success = CardTargetSelection.startTargetSelection(_card)
+                        _logf("[DEBUG] startTargetSelection retourné: %s", tostring(success))
                         if success then
                             -- La carte va être animée vers la position de sélection
                             -- Le jeu effectif se fera après sélection de la cible
+                            print("[DEBUG] ✅ CIBLAGE ACTIVÉ - sortie early")
                             return -- Sortir early, pas de repositionnement
                         else
-                            print("[interaction.lua] Échec démarrage sélection cible")
+                            print("[interaction.lua] ❌ Échec démarrage sélection cible")
                             -- Fallback sur ancien système en cas d'échec
                             local Card = rawget(_G, "Card")
                             local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)
@@ -229,7 +278,10 @@ function M.hover(dt)
                         end
                     else
                         -- Mode traditionnel : jeu direct (1 seul ennemi ou pas de système de ciblage)
-                        print("[interaction.lua] Jeu direct de carte (", #enemyList, "ennemis )")
+                        print("[interaction.lua] ❌ CONDITIONS NON REMPLIES - Jeu direct de carte (", aliveEnemies,
+                            "ennemis vivants )")
+                        print("[DEBUG] Raison: actorTag=", _card.actorTag, "CardTargetSelection=",
+                            CardTargetSelection ~= nil, "aliveEnemies=", aliveEnemies)
                         local Card = rawget(_G, "Card")
                         local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)
                         if not ok then

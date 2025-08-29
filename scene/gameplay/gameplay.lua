@@ -477,13 +477,13 @@ end
 function gameplay:update(dt)
     if hud_gameplay and hud_gameplay.update then hud_gameplay.update(dt) end
     hud.update(dt)
-    
+
     -- Mise à jour du système de ciblage de cartes
     local CardTargetSelection = rawget(_G, "CardTargetSelection")
     if CardTargetSelection and CardTargetSelection.update then
         CardTargetSelection.update(dt)
     end
-    
+
     -- Transition manager (dot-call, dt numérique)
     if Transition == nil then Transition = getTransition() end
     if Transition then Transition:update(dt) end
@@ -613,14 +613,20 @@ end
 function gameplay.mousepressed(self, x, y, button)
     -- Déléguer au système de ciblage de cartes
     local CardTargetSelection = rawget(_G, "CardTargetSelection")
+    logf("[gameplay] mousepressed: CardTargetSelection=%s, handleMouseClick=%s",
+        tostring(CardTargetSelection),
+        tostring(CardTargetSelection and CardTargetSelection.handleMouseClick))
+
     if CardTargetSelection and CardTargetSelection.handleMouseClick then
+        logf("[gameplay] Appel handleMouseClick(%d,%d,%d)", x, y, button)
         local handled = CardTargetSelection.handleMouseClick(x, y, button)
+        logf("[gameplay] handleMouseClick retourné: %s", tostring(handled))
         if handled then
             logf("[gameplay] Clic géré par système de ciblage: (%d,%d) button=%d", x, y, button)
             return true
         end
     end
-    
+
     -- Pas géré par le système de ciblage
     return false
 end

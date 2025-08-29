@@ -54,6 +54,12 @@ _G.inputManager = okInput and inputManager or nil
 local okActor, actorManager = pcall(require, "my-librairie/actorManager")
 _G.actorManager = okActor and actorManager or nil
 
+-- Card Target Selection (système de ciblage manuel)
+-- Force rechargement en vidant le cache
+package.loaded["my-librairie/card-librairie/ui/card_target_selection"] = nil
+local okCTS, cardTargetSelection = pcall(require, "my-librairie/card-librairie/ui/card_target_selection")
+_G.CardTargetSelection = okCTS and cardTargetSelection or nil
+
 -- Global Function / My Function (utilitaires legacy)
 _G.globalFunction = safeRequireAny({
     "my-librairie/globalFunction",

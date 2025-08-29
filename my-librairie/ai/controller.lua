@@ -131,6 +131,14 @@ end
 local function detectNewCardsInDeck(deckBefore, deckAfter)
   local newCards = {}
 
+  -- Vérification de sécurité : les deux decks doivent exister
+  if not deckBefore or not deckAfter then
+    logf("[AI] Deck invalide: deckBefore=%s, deckAfter=%s",
+      deckBefore and "présent" or "nil",
+      deckAfter and "présent" or "nil")
+    return newCards
+  end
+
   -- Comparer les decks pour détecter les nouvelles cartes
   if #deckAfter > #deckBefore then
     logf("[AI] Deck agrandi: %d → %d cartes", #deckBefore, #deckAfter)
@@ -638,7 +646,10 @@ end
 local function handleChainCards(cardPlayed, deckBefore)
   if not deckBefore then return end
 
-  local newCards = detectNewCardsInDeck(deckBefore)
+  -- Obtenir le deck actuel après avoir joué la carte
+  local deckAfter = (Card and Card.deckAi and Card.deckAi.cards) or nil
+
+  local newCards = detectNewCardsInDeck(deckBefore, deckAfter)
   if #newCards > 0 then
     logf("[AI] Cartes ajoutées au deck après avoir joué '%s': %d cartes", tostring(cardPlayed.name), #newCards)
     addChainCardsWithDelay(newCards)
@@ -866,7 +877,9 @@ function AI:update(dt)
 end
 
 function AI.draw()
-  if not AI.listener or not AI.listener.draw then
+  if Transition.state == 'overlay_start' or Transition.state == 'overlay_initiative' then return end
+
+  if (not AI.listener or not AI.listener.draw) then
     logf("[AI] draw: pas de listener ou draw non implémenté")
     return
   else

@@ -172,7 +172,7 @@ function Enemies.draw()
         if isHovered then
             love.graphics.setColor(0, 1, 0, 0.2) -- Overlay vert très transparent
             love.graphics.rectangle("fill", e.vector2.x, e.vector2.y, e.width, e.height)
-            love.graphics.setColor(1, 1, 1, 1) -- Restaurer couleur
+            love.graphics.setColor(1, 1, 1, 1)   -- Restaurer couleur
         end
 
         local gf = getGlobalFunction()
