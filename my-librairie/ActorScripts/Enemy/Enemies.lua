@@ -143,6 +143,22 @@ function Enemies.draw()
         local e = Enemies.listeEnemies[i]
         if not e then return end
 
+        -- Vérifier si cet ennemi est survolé pendant la sélection de cible
+        local isHovered = false
+        local CardTargetSelection = rawget(_G, "CardTargetSelection")
+        if CardTargetSelection and CardTargetSelection.isSelectingTarget and CardTargetSelection.hoveredEnemy == e then
+            isHovered = true
+        end
+
+        -- Dessiner effet de survol (contour vert)
+        if isHovered then
+            love.graphics.setColor(0, 1, 0, 0.8) -- Vert semi-transparent
+            love.graphics.setLineWidth(4)
+            love.graphics.rectangle("line", e.vector2.x - 5, e.vector2.y - 5, e.width + 10, e.height + 10)
+            love.graphics.setColor(1, 1, 1, 1) -- Restaurer couleur blanche
+            love.graphics.setLineWidth(1)
+        end
+
         -- animation (idle par défaut)
         local animName = e.curentAnimation or "idle"
         if e.animation and e.animation[animName] then
@@ -150,6 +166,13 @@ function Enemies.draw()
             for i = 1, #animation do
                 love.graphics.draw(animation[i], e.vector2.x, e.vector2.y)
             end
+        end
+
+        -- Dessiner un overlay de selection si ennemi survolé
+        if isHovered then
+            love.graphics.setColor(0, 1, 0, 0.2) -- Overlay vert très transparent
+            love.graphics.rectangle("fill", e.vector2.x, e.vector2.y, e.width, e.height)
+            love.graphics.setColor(1, 1, 1, 1) -- Restaurer couleur
         end
 
         local gf = getGlobalFunction()

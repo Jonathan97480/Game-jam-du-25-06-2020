@@ -477,6 +477,13 @@ end
 function gameplay:update(dt)
     if hud_gameplay and hud_gameplay.update then hud_gameplay.update(dt) end
     hud.update(dt)
+    
+    -- Mise à jour du système de ciblage de cartes
+    local CardTargetSelection = rawget(_G, "CardTargetSelection")
+    if CardTargetSelection and CardTargetSelection.update then
+        CardTargetSelection.update(dt)
+    end
+    
     -- Transition manager (dot-call, dt numérique)
     if Transition == nil then Transition = getTransition() end
     if Transition then Transition:update(dt) end
@@ -600,6 +607,22 @@ function gameplay.rezetGame()
 
     Tour, lastTour, watchdogEnemyHold = "transition", "", 0
     safecall("Transition.load", function() return Transition and Transition.load and Transition:load() end)
+end
+
+-- ===== GESTION DES ÉVÉNEMENTS SOURIS POUR LE CIBLAGE =====
+function gameplay.mousepressed(self, x, y, button)
+    -- Déléguer au système de ciblage de cartes
+    local CardTargetSelection = rawget(_G, "CardTargetSelection")
+    if CardTargetSelection and CardTargetSelection.handleMouseClick then
+        local handled = CardTargetSelection.handleMouseClick(x, y, button)
+        if handled then
+            logf("[gameplay] Clic géré par système de ciblage: (%d,%d) button=%d", x, y, button)
+            return true
+        end
+    end
+    
+    -- Pas géré par le système de ciblage
+    return false
 end
 
 return gameplay

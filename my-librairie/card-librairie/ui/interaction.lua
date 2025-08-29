@@ -203,12 +203,41 @@ function M.hover(dt)
                         tostring(playLine), tostring(inZone))
                 end
                 if inZone then
-                    local Card = rawget(_G, "Card")
-                    local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)
-                    if not ok then
-                        _card._targetPos.x, _card._targetPos.y = bx, by
-                        _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
+                    -- ===== NOUVEAU SYSTÈME DE CIBLAGE MANUEL =====
+                    local CardTargetSelection = rawget(_G, "CardTargetSelection")
+                    local EnemiesG = rawget(_G, "Enemies")
+                    local enemyList = (EnemiesG and EnemiesG.listeEnemies) or {}
+                    
+                    -- Vérifier si il y a plusieurs ennemis pour décider du mode de ciblage
+                    if _card.actorTag == 'Hero' and CardTargetSelection and #enemyList > 1 then
+                        -- Mode ciblage manuel : démarrer la sélection de cible
+                        print("[interaction.lua] Démarrage sélection cible pour:", _card.name or "carte", "- Ennemis:", #enemyList)
+                        local success = CardTargetSelection.startTargetSelection(_card)
+                        if success then
+                            -- La carte va être animée vers la position de sélection
+                            -- Le jeu effectif se fera après sélection de la cible
+                            return -- Sortir early, pas de repositionnement
+                        else
+                            print("[interaction.lua] Échec démarrage sélection cible")
+                            -- Fallback sur ancien système en cas d'échec
+                            local Card = rawget(_G, "Card")
+                            local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)
+                            if not ok then
+                                _card._targetPos.x, _card._targetPos.y = bx, by
+                                _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
+                            end
+                        end
+                    else
+                        -- Mode traditionnel : jeu direct (1 seul ennemi ou pas de système de ciblage)
+                        print("[interaction.lua] Jeu direct de carte (", #enemyList, "ennemis )")
+                        local Card = rawget(_G, "Card")
+                        local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)
+                        if not ok then
+                            _card._targetPos.x, _card._targetPos.y = bx, by
+                            _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
+                        end
                     end
+                    -- ===== FIN NOUVEAU SYSTÈME DE CIBLAGE =====
                 else
                     _card._targetPos.x, _card._targetPos.y = bx, by
                     _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE

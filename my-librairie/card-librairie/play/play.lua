@@ -33,7 +33,24 @@ local function _tryPlay(_card, free)
     local HeroG    = getHero()
     local EnemiesG = getEnemies()
     local source   = (_card.actorTag == 'Hero') and (HeroG and HeroG.actor) or (EnemiesG and EnemiesG.curentEnemy)
-    local target   = (_card.actorTag == 'Hero') and (EnemiesG and EnemiesG.curentEnemy) or (HeroG and HeroG.actor)
+    
+    -- ===== NOUVEAU SYSTÈME DE CIBLAGE MANUEL =====
+    local target = nil
+    
+    -- Vérifier si le système de ciblage manuel est actif
+    local CardTargetSelection = rawget(_G, "CardTargetSelection")
+    if _card.actorTag == 'Hero' and CardTargetSelection and CardTargetSelection.selectedTarget then
+        -- Utiliser la cible sélectionnée manuellement
+        target = CardTargetSelection.selectedTarget
+        print("[play.lua] Utilisation cible manuelle:", target.name or "Ennemi")
+    else
+        -- Fallback sur l'ancien système automatique
+        target = (_card.actorTag == 'Hero') and (EnemiesG and EnemiesG.curentEnemy) or (HeroG and HeroG.actor)
+        if _card.actorTag == 'Hero' then
+            print("[play.lua] Utilisation cible automatique:", target and target.name or "Aucune")
+        end
+    end
+    -- ===== FIN NOUVEAU SYSTÈME DE CIBLAGE =====
 
     if not source then return false end
     if _card._resolving then return false end
