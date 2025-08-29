@@ -13,6 +13,9 @@ local Hero                    = _G.Hero or rawget(_G, "Hero")
 local EnemiesManager          = _G.Enemies or rawget(_G, "Enemies")
 local globalFunction          = _G.globalFunction or rawget(_G, 'globalFunction')
 
+-- Nouveau : Module de stratégie de sélection de cartes et ciblage
+local CardSelectionStrategy   = _safeRequire("my-librairie/ai/card_selection_strategy")
+
 local Transition              = _safeRequire("my-librairie/transition/templateCombatTransition")
 
 local timerMaxTurnChanged     = 1
@@ -30,7 +33,7 @@ local AI                      = {
   lastPlayed          = nil,
 
   -- NOUVEAU : Système de limite de jeu par tour
-  maxPlaysPerTurn     = 3,  -- Nombre maximum de cartes par tour (configurable)
+  maxPlaysPerTurn     = 1,  -- Nombre maximum de cartes par tour (configurable)
   playsThisTurn       = 0,  -- Compteur des cartes jouées ce tour
   chainCards          = {}, -- File des cartes en chaîne à jouer
   chainTimer          = 0,  -- Timer pour gérer les délais entre cartes
@@ -127,11 +130,11 @@ end
 -- Détecte les nouvelles cartes ajoutées au deck après avoir joué une carte
 local function detectNewCardsInDeck(deckBefore, deckAfter)
   local newCards = {}
-  
+
   -- Comparer les decks pour détecter les nouvelles cartes
   if #deckAfter > #deckBefore then
     logf("[AI] Deck agrandi: %d → %d cartes", #deckBefore, #deckAfter)
-    
+
     -- Les nouvelles cartes sont généralement ajoutées à la fin
     for i = #deckBefore + 1, #deckAfter do
       if deckAfter[i] then
@@ -140,7 +143,7 @@ local function detectNewCardsInDeck(deckBefore, deckAfter)
       end
     end
   end
-  
+
   return newCards
 end
 
@@ -149,13 +152,13 @@ local function captureDecKState()
   if not (Card and Card.deckAi and Card.deckAi.cards) then
     return {}
   end
-  
+
   -- Crée une copie de la liste des cartes (références, pas deep copy)
   local snapshot = {}
   for i, card in ipairs(Card.deckAi.cards) do
     snapshot[i] = card
   end
-  
+
   logf("[AI] Deck snapshot: %d cartes", #snapshot)
   return snapshot
 end
@@ -212,92 +215,34 @@ local function ensureAIContainers(enemy)
   return Card.deckAi.cards
 end
 
--- Récupère l'ennemi courant depuis le Template Combat (plus fiable)
+-- ============================================================================
+-- DÉLÉGATION VERS LE MODULE DE STRATÉGIE
+-- ============================================================================
+
+-- Fonctions de ciblage déléguées vers le module de stratégie
 local function getCurrentEnemy()
-  -- Priorité au système de transition moderne
+  if CardSelectionStrategy and CardSelectionStrategy.getCurrentEnemy then
+    return CardSelectionStrategy.getCurrentEnemy()
+  end
+  -- Fallback direct
   if EnemiesManager and EnemiesManager.curentEnemy then
     return EnemiesManager.curentEnemy
   end
-  -- Fallback vers variable locale
   return currentEnemy
 end
 
--- Détecte tous les alliés vivants pour ciblage intelligent
 local function getAllAllies(sourceEnemy)
-  local allies = {}
-  if not EnemiesManager or not EnemiesManager.listeEnemies then
-    return allies
+  if CardSelectionStrategy and CardSelectionStrategy.getAllAllies then
+    return CardSelectionStrategy.getAllAllies(sourceEnemy)
   end
-
-  for _, enemy in ipairs(EnemiesManager.listeEnemies) do
-    if enemy ~= sourceEnemy and enemy.state and not enemy.state.dead and (enemy.state.life or 0) > 0 then
-      table.insert(allies, enemy)
-    end
-  end
-
-  -- Ajouter l'ennemi courant s'il est différent de la source et vivant
-  local current = EnemiesManager.curentEnemy
-  if current and current ~= sourceEnemy and current.state and not current.state.dead and (current.state.life or 0) > 0 then
-    local alreadyExists = false
-    for _, ally in ipairs(allies) do
-      if ally == current then
-        alreadyExists = true; break
-      end
-    end
-    if not alreadyExists then
-      table.insert(allies, current)
-    end
-  end
-
-  return allies
+  return {}
 end
 
--- Trouve le meilleur allié pour une carte de soin
 local function findBestHealTarget(sourceEnemy, allies)
-  if not allies or #allies == 0 then return nil end
-
-  local bestAlly = nil
-  local lowestHealthRatio = 1.0
-
-  for _, ally in ipairs(allies) do
-    if ally.state then
-      local maxLife = tonumber(ally.state.maxLife) or 1
-      local life = tonumber(ally.state.life) or 0
-      local ratio = life / maxLife
-
-      -- Priorité aux alliés blessés mais pas morts
-      if ratio < lowestHealthRatio and ratio > 0 then
-        lowestHealthRatio = ratio
-        bestAlly = ally
-      end
-    end
+  if CardSelectionStrategy and CardSelectionStrategy.findBestHealTarget then
+    return CardSelectionStrategy.findBestHealTarget(sourceEnemy, allies)
   end
-
-  logf("[AI] Meilleure cible soin: %s (vie: %.1f%%)",
-    bestAlly and bestAlly.name or "aucune", lowestHealthRatio * 100)
-  return bestAlly
-end
-
--- Trouve le meilleur allié pour une carte de bouclier
-local function findBestShieldTarget(sourceEnemy, allies)
-  if not allies or #allies == 0 then return nil end
-
-  local bestAlly = nil
-  local lowestShield = math.huge
-
-  for _, ally in ipairs(allies) do
-    if ally.state then
-      local shield = tonumber(ally.state.shield) or 0
-      if shield < lowestShield then
-        lowestShield = shield
-        bestAlly = ally
-      end
-    end
-  end
-
-  logf("[AI] Meilleure cible bouclier: %s (bouclier: %d)",
-    bestAlly and bestAlly.name or "aucune", lowestShield == math.huge and 0 or lowestShield)
-  return bestAlly
+  return nil
 end
 local function lifeRatio(actor)
   if not actor or not actor.state then return 1 end
@@ -437,163 +382,29 @@ local function cardType(c)
 end
 
 local function chooseDeterministic(deck, playsRemaining)
+  -- Délégation vers le module de stratégie de sélection
+  if CardSelectionStrategy and CardSelectionStrategy.chooseDeterministic then
+    return CardSelectionStrategy.chooseDeterministic(deck, playsRemaining)
+  end
+  
+  -- Fallback simple si le module n'est pas disponible
   if not deck or #deck == 0 then return nil, nil end
-  Hero = Hero or rawget(_G, "Hero")
-  if not Enemies then
-    EnemiesManager = EnemiesManager or rawget(_G, "Enemies")
-  end
-  local heroActor  = Hero and Hero.actor
-  --************************************************************************--
-  --GET CURRENT ENEMY - Modernisé pour utiliser le système centralisé
-  local enemyActor = getCurrentEnemy()
-
-  --*************************************************************************--
-
-  logf("[AI] status  enemy: %s", globalFunction.tstr(snap(enemyActor)))
-  logf("[AI] status  hero : %s", globalFunction.tstr(snap(heroActor)))
-  logf("[AI] plays remaining this turn: %d", playsRemaining or 0)
-
-  -- Détection des alliés pour ciblage intelligent
-  local allies = getAllAllies(enemyActor)
-  logf("[AI] alliés disponibles: %d", #allies)
-
-  local playable = {}
-  for i, c in ipairs(deck) do
-    local t   = cardType(c)
-    local eff = getEffects(c)
-    logf("[AI] card[%d]: name=%s type=%s  eff.hero=%s eff.enemy=%s", i, tostring(c.name), t,
-      globalFunction.tstr(eff.hero), globalFunction.tstr(eff.enemy))
-    playable[#playable + 1] = { i = i, c = c, t = t, eff = eff }
-  end
-
-  if #playable == 0 then
-    logf("[AI] aucune carte jouable → fin de tour")
-    return nil, nil
-  end
-
-  -- Vérification de la limite de jeu par tour
-  if playsRemaining <= 0 then
-    logf("[AI] limite de cartes atteinte ce tour (%d/%d) → fin de tour", AI.playsThisTurn, AI.maxPlaysPerTurn)
-    return nil, nil
-  end
-
-  local g = { heal = {}, shield = {}, attack = {}, control = {}, other = {} }
-  for _, it in ipairs(playable) do g[it.t][#g[it.t] + 1] = it end
-
-  local eHP = lifeRatio(enemyActor)
-  local hHP = lifeRatio(heroActor)
-  local eSH = getShield(enemyActor)
-
-  -- Logique de priorité améliorée avec prise en compte des alliés
-  if eHP <= 0.35 and #g.heal > 0 then
-    logf("[AI] priorité: HEAL (ennemi critique: %.1f%%)", eHP * 100)
-    return g.heal[1].i, g.heal[1].c
-  end
-
-  -- Si on a des alliés blessés et des cartes de soin, priorité au soin d'allié
-  if #allies > 0 and #g.heal > 0 then
-    for _, ally in ipairs(allies) do
-      local allyHP = lifeRatio(ally)
-      if allyHP <= 0.5 then
-        logf("[AI] priorité: HEAL allié blessé '%s' (vie: %.1f%%)", ally.name or "?", allyHP * 100)
-        return g.heal[1].i, g.heal[1].c
-      end
-    end
-  end
-
-  if eSH <= 2 and #g.shield > 0 then
-    logf("[AI] priorité: SHIELD (bouclier faible: %d)", eSH)
-    return g.shield[1].i, g.shield[1].c
-  end
-
-  -- Si on a des alliés vulnérables et des cartes de bouclier
-  if #allies > 0 and #g.shield > 0 then
-    for _, ally in ipairs(allies) do
-      local allyShield = getShield(ally)
-      if allyShield <= 1 then
-        logf("[AI] priorité: SHIELD allié vulnérable '%s' (bouclier: %d)", ally.name or "?", allyShield)
-        return g.shield[1].i, g.shield[1].c
-      end
-    end
-  end
-
-  if hHP <= 0.40 and #g.attack > 0 then
-    logf("[AI] priorité: ATTACK (héros affaibli: %.1f%%)", hHP * 100)
-    return g.attack[1].i, g.attack[1].c
-  end
-
-  -- Priorités par défaut
-  if #g.attack > 0 then
-    logf("[AI] défaut -> ATTACK"); return g.attack[1].i, g.attack[1].c
-  end
-  if #g.shield > 0 then
-    logf("[AI] défaut -> SHIELD"); return g.shield[1].i, g.shield[1].c
-  end
-  if #g.heal > 0 then
-    logf("[AI] défaut -> HEAL"); return g.heal[1].i, g.heal[1].c
-  end
-  if #g.control > 0 then
-    logf("[AI] défaut -> CONTROL"); return g.control[1].i, g.control[1].c
-  end
-  if #g.other > 0 then
-    logf("[AI] défaut -> OTHER"); return g.other[1].i, g.other[1].c
-  end
-  return nil, nil
+  if playsRemaining <= 0 then return nil, nil end
+  
+  logf("[AI] FALLBACK: sélection première carte disponible")
+  return 1, deck[1]
 end
 
--- ---------- CIBLAGE INTELLIGENT ----------
+-- ---------- CIBLAGE INTELLIGENT (DÉLÉGUÉ) ----------
 local function selectTargetForCard(card, sourceEnemy, heroActor)
-  local eff = getEffects(card)
-  local e = eff.enemy or {} -- Effets sur l'ennemi (celui qui joue la carte)
-  local allies = getAllAllies(sourceEnemy)
-
-  -- Cartes de soin : priorité aux alliés blessés
-  if e.heal and e.heal > 0 and #allies > 0 then
-    local healTarget = findBestHealTarget(sourceEnemy, allies)
-    if healTarget then
-      logf("[AI] Ciblage intelligent: carte soin '%s' → allié '%s'",
-        card.name or "?", healTarget.name or "?")
-      return healTarget
-    end
+  -- Délégation vers le module de stratégie
+  if CardSelectionStrategy and CardSelectionStrategy.selectTargetForCard then
+    return CardSelectionStrategy.selectTargetForCard(card, sourceEnemy, heroActor)
   end
-
-  -- Cartes de bouclier : priorité aux alliés vulnérables
-  if e.shield and e.shield > 0 and #allies > 0 then
-    local shieldTarget = findBestShieldTarget(sourceEnemy, allies)
-    if shieldTarget then
-      logf("[AI] Ciblage intelligent: carte bouclier '%s' → allié '%s'",
-        card.name or "?", shieldTarget.name or "?")
-      return shieldTarget
-    end
-  end
-
-  -- Cartes d'épines : priorité aux alliés offensifs
-  if e.epine and e.epine > 0 and #allies > 0 then
-    -- Choisir l'allié avec le plus d'attaque
-    local bestAlly = allies[1]
-    for _, ally in ipairs(allies) do
-      if ally.state and ally.state.attack and bestAlly.state and bestAlly.state.attack then
-        if ally.state.attack > bestAlly.state.attack then
-          bestAlly = ally
-        end
-      end
-    end
-    if bestAlly then
-      logf("[AI] Ciblage intelligent: carte épines '%s' → allié offensif '%s'",
-        card.name or "?", bestAlly.name or "?")
-      return bestAlly
-    end
-  end
-
-  -- Fallback : cible par défaut (héros pour attaque, soi-même pour support)
-  local h = eff.hero or {}
-  if h.attack and h.attack > 0 then
-    logf("[AI] Ciblage par défaut: carte attaque '%s' → héros", card.name or "?")
-    return heroActor
-  else
-    logf("[AI] Ciblage par défaut: carte support '%s' → soi-même", card.name or "?")
-    return sourceEnemy
-  end
+  
+  -- Fallback simple
+  logf("[AI] FALLBACK: ciblage par défaut → soi-même")
+  return sourceEnemy
 end
 
 -- ---------- APPELS AU PIPELINE CARD.* MODERNISÉ ----------
@@ -772,7 +583,7 @@ local function applyCard(c)
 
   -- état avant
   local bE, bH = snap(enemyActor), snap(heroActor)
-  
+
   -- Capturer l'état du deck avant de jouer la carte
   local deckBefore = captureDecKState()
 
@@ -826,7 +637,7 @@ end
 -- Détecter les nouvelles cartes ajoutées au deck après avoir joué cette carte
 local function handleChainCards(cardPlayed, deckBefore)
   if not deckBefore then return end
-  
+
   local newCards = detectNewCardsInDeck(deckBefore)
   if #newCards > 0 then
     logf("[AI] Cartes ajoutées au deck après avoir joué '%s': %d cartes", tostring(cardPlayed.name), #newCards)
@@ -878,13 +689,13 @@ function AI:update(dt)
       -- Timer écoulé, jouer la prochaine carte en chaîne
       local nextChainCard = table.remove(AI.chainCards, 1)
       logf("[AI] Timer écoulé, jouer carte en chaîne: '%s'", nextChainCard.name or "?")
-      
+
       -- Rechercher l'index de la carte en chaîne dans le deck
       for i, deckCard in ipairs(Card.deckAi.cards) do
         if deckCard == nextChainCard then
           self.currentIndex, self.currentCard = i, deckCard
           self.state = "resolve" -- Jouer immédiatement la carte en chaîne
-          AI.chainTimer = 0 -- Reset timer
+          AI.chainTimer = 0      -- Reset timer
           logf("[AI] Jouer carte en chaîne immédiatement: index=%d", i)
           break
         end
