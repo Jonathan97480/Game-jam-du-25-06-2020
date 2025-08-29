@@ -278,11 +278,18 @@ function CombatFlow:updateEncounter(dt)
         self.enemyStarted = false
         setTour("Enemy")
         self.state = (#self.enemyOrder == 0) and "victory_check" or "enemy_turn"; self.timer = 0
+        local enemy = self.enemyOrder[self.enemyIndex]
+        if (not AI or not AI.load) then
+            AI = rawget(_G, "AI") or _safeRequire("my-librairie/ai/controller")
+        end
+        AI.load(enemy)
     elseif self.state == "enemy_turn" then
         local enemy = self.enemyOrder[self.enemyIndex]
+
         if not enemy or (enemy.state and (enemy.state.dead or (enemy.state.life or 0) <= 0)) then
             -- Ennemi invalide ou mort → suivant
             self.enemyIndex = self.enemyIndex + 1
+
             self.enemyStarted = false
             if self.enemyIndex > #self.enemyOrder then
                 -- Fin du tour de tous les ennemis → joueur

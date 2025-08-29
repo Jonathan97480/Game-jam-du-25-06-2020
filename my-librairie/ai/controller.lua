@@ -386,11 +386,11 @@ local function chooseDeterministic(deck, playsRemaining)
   if CardSelectionStrategy and CardSelectionStrategy.chooseDeterministic then
     return CardSelectionStrategy.chooseDeterministic(deck, playsRemaining)
   end
-  
+
   -- Fallback simple si le module n'est pas disponible
   if not deck or #deck == 0 then return nil, nil end
   if playsRemaining <= 0 then return nil, nil end
-  
+
   logf("[AI] FALLBACK: sélection première carte disponible")
   return 1, deck[1]
 end
@@ -401,7 +401,7 @@ local function selectTargetForCard(card, sourceEnemy, heroActor)
   if CardSelectionStrategy and CardSelectionStrategy.selectTargetForCard then
     return CardSelectionStrategy.selectTargetForCard(card, sourceEnemy, heroActor)
   end
-  
+
   -- Fallback simple
   logf("[AI] FALLBACK: ciblage par défaut → soi-même")
   return sourceEnemy

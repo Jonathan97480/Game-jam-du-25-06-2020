@@ -295,10 +295,10 @@ function gameplay.load(self, params)
         -- diagnostic: after loadCards, print deck sizes
         local gd = Card.getDeckByName and Card.getDeckByName('globalDeck')
         log("[debug] after loadCards -> globalDeck size=", gd and #gd.cards or 0)
-        log("[cards] load IA")
+        --[[   log("[cards] load IA")
         safecall("Card.loadCards(ai)", function() return Card.loadCards(CardsIA, "Enemy", "EnemyDeck") end)
         local ed = Card.getDeckByName and Card.getDeckByName('EnemyDeck')
-        log("[debug] after loadCards IA -> EnemyDeck size=", ed and #ed.cards or 0)
+        log("[debug] after loadCards IA -> EnemyDeck size=", ed and #ed.cards or 0) ]]
     end
 
     if Card and Card.shuffleDeck then
@@ -332,8 +332,7 @@ function gameplay.load(self, params)
         safecall("Transition.requestEndTurn", function() return Transition.requestEndTurn() end)
     end
 
-    -- IA / Transition manager
-    safecall("AI.load", function() return AI and AI.load and AI.load() end)
+    -- Transition manager
     safecall("Transition.load", function()
         if Transition == nil then Transition = getTransition() end
         -- diagnostic: log whether Transition was instantiated and GameFlags value

@@ -11,6 +11,7 @@ end
 
 local Common = {}
 Common.deck = Common.deck or {}
+
 function Common.createDeck(name)
     if not name or type(name) ~= "string" then return nil end
     for _, d in ipairs(Common.deck) do

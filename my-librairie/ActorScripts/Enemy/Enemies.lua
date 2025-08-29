@@ -15,33 +15,62 @@ local function getIA()
 end
 
 
+-- Création d'un ennemi avec configuration explicite
 function Enemies.create(_spawnData)
-    local args = _spawnData.enemyData or {}
-    local spawnPosition = { x = _spawnData.x or 0, y = _spawnData.y or 0 }
-    local e = actor.create(args.name or "", args.animation,
-        { x = spawnPosition.x or 0, y = spawnPosition.y or 0 })
+    -- Données de l'ennemi à partir des paramètres de spawn
+    local enemyData = _spawnData.enemyData or {}
 
-    e.lifeBarConfig = {
-        x = (e.vector2 and e.vector2.x) or 0,
-        y = (e.vector2 and e.vector2.y) - 50 or 0,
+    -- Position de spawn de l'ennemi
+    local enemySpawnPosition = {
+        x = _spawnData.x or 0,
+        y = _spawnData.y or 0
+    }
+
+    -- Création de l'entité ennemi avec les paramètres fournis
+    local enemyEntity = actor.create(
+        enemyData.name or "",
+        enemyData.animation,
+        {
+            x = enemySpawnPosition.x or 0,
+            y = enemySpawnPosition.y or 0
+        }
+    )
+
+    -- Configuration de la barre de vie de l'ennemi
+    enemyEntity.lifeBarConfig = {
+        x = (enemyEntity.vector2 and enemyEntity.vector2.x) or 0,
+        y = (enemyEntity.vector2 and enemyEntity.vector2.y) - 50 or 0,
         w = 150,
         h = 25,
         position = {
-            x = ((e.vector2 and e.vector2.x) + (e.width / 2)) - (150 / 2) or 0,
-            y = (e.vector2 and e.vector2.y) - 50 or 0
+            x = ((enemyEntity.vector2 and enemyEntity.vector2.x) + (enemyEntity.width / 2)) - (150 / 2) or 0,
+            y = (enemyEntity.vector2 and enemyEntity.vector2.y) - 50 or 0
         },
         size = {
             w = 150,
             h = 25
         }
     }
-    e.cards = args.cards or {}
-    e.type = args.type or "Empty type"
-    e.state = e.state or { life = 12, maxLife = 12 }
-    e.atk = e.numberAttack
-    local ia = getIA()
-    e.ai = ia and ia.new and ia.new(e) or nil
-    return e
+
+    -- Attributs supplémentaires de l'ennemi
+    enemyEntity.cards = enemyData.cards or {}
+    enemyEntity.nameDeck = enemyData.deckName or "Deck de l'ennemi inconnu"
+    enemyEntity.deck = Card and Card.createDeck(enemyEntity.nameDeck) or {}
+    Card.loadCards(enemyEntity.cards, enemyEntity.name, enemyEntity.nameDeck)
+
+    enemyEntity.type = enemyData.type or "Type inconnu"
+
+    -- Initialisation de l'état de vie de l'ennemi
+    enemyEntity.state = enemyEntity.state or {
+        life = 12,
+        maxLife = 12
+    }
+
+    -- Initialisation du système d'IA de l'ennemi
+    local iaSystem = getIA()
+    enemyEntity.ai = iaSystem and iaSystem.new and iaSystem.new(enemyEntity) or nil
+
+    return enemyEntity
 end
 
 rawset(_G, "__ENEMY_SINGLETON__", Enemies)
