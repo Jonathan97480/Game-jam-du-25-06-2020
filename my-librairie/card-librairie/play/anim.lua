@@ -143,46 +143,77 @@ function M.draw() end
 
 function M.drawHand()
     if not love or not love.graphics then return end
+
+    -- NOUVEAU : Dessiner d'abord la copie standby si elle existe
+    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+    if CardStandbyPlay and CardStandbyPlay.getStandbyCopy then
+        local standbyCopy = CardStandbyPlay.getStandbyCopy()
+        if standbyCopy then
+            print("DEBUG RENDU: Copie standby trouvée:", standbyCopy.name, "isVisible:", standbyCopy.isVisible)
+            if standbyCopy.isVisible ~= false then
+                print("DEBUG RENDU: Dessin copie standby à:", standbyCopy.vector2.x, standbyCopy.vector2.y)
+                M.drawSingleCard(standbyCopy)
+            end
+        else
+            print("DEBUG RENDU: Aucune copie standby")
+        end
+    end
+
+    -- Dessiner les cartes de la main (en ignorant les invisibles)
     for i = 1, #Common.hand.cards do
         local _card = Common.hand.cards[i]
-        -- compute dimensions and scales
-        local x = (_card.vector2 and _card.vector2.x) or 0
-        local y = (_card.vector2 and _card.vector2.y) or 0
-        local w = _card.width or Common.CARD_W or 280
-        local h = _card.height or Common.CARD_H or 392
-        local sx = (_card.scale and _card.scale.x) or 1
-        local sy = (_card.scale and _card.scale.y) or 1
 
-        -- anchor draw at bottom-center so scaling keeps the base fixed
-        local drawX = x + (w * 0.5)
-        local drawY = y + h
-
-        -- optional offsets to tweak card placement after changing anchor
-        -- prefer per-card override `_card.drawOffset`, else use global `Common.HAND_DRAW_OFFSET`
-        local offs = (_card.drawOffset ~= nil) and _card.drawOffset or (Common.HAND_DRAW_OFFSET or { x = 0, y = 0 })
-        local ox = offs.x or 0
-        local oy = offs.y or 0
-
-        if _card.canvas then
-            love.graphics.draw(_card.canvas, drawX + ox, drawY + oy, 0, sx, sy, w * 0.5, h)
+        -- NOUVEAU : Ignorer les cartes invisibles avec debug
+        if _card.isVisible == false then
+            print("DEBUG RENDU: Carte ignorée (invisible):", _card.name, "isVisible:", _card.isVisible)
         else
-            -- fallback simple when canvas is missing: draw a plain card rectangle, title and cost
-            local topLeftX = drawX - (w * sx) * 0.5 + ox
-            local topLeftY = drawY - (h * sy) + oy
-
-            -- background
-            love.graphics.setColor(0.18, 0.18, 0.18)
-            love.graphics.rectangle("fill", topLeftX, topLeftY, w * sx, h * sy)
-            -- title
-            love.graphics.setColor(1, 1, 1)
-            local title = tostring(_card.name or _card.cardName or "Carte")
-            love.graphics.print(title, topLeftX + 8, topLeftY + 8)
-            -- cost badge (not scaled for simplicity)
-            love.graphics.setColor(0.2, 0.5, 0.9)
-            love.graphics.circle("fill", topLeftX + 30, topLeftY + 30, 18)
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.print(tostring(_card.cost or _card.PowerBlow or 0), topLeftX + 24, topLeftY + 22)
+            print("DEBUG RENDU: Carte dessinée:", _card.name, "isVisible:", _card.isVisible)
+            M.drawSingleCard(_card)
         end
+    end
+end
+
+-- NOUVELLE FONCTION : Dessiner une seule carte (factorisation du code)
+function M.drawSingleCard(_card)
+    if not _card then return end
+
+    -- compute dimensions and scales
+    local x = (_card.vector2 and _card.vector2.x) or 0
+    local y = (_card.vector2 and _card.vector2.y) or 0
+    local w = _card.width or Common.CARD_W or 280
+    local h = _card.height or Common.CARD_H or 392
+    local sx = (_card.scale and _card.scale.x) or 1
+    local sy = (_card.scale and _card.scale.y) or 1
+
+    -- anchor draw at bottom-center so scaling keeps the base fixed
+    local drawX = x + (w * 0.5)
+    local drawY = y + h
+
+    -- optional offsets to tweak card placement after changing anchor
+    -- prefer per-card override `_card.drawOffset`, else use global `Common.HAND_DRAW_OFFSET`
+    local offs = (_card.drawOffset ~= nil) and _card.drawOffset or (Common.HAND_DRAW_OFFSET or { x = 0, y = 0 })
+    local ox = offs.x or 0
+    local oy = offs.y or 0
+
+    if _card.canvas then
+        love.graphics.draw(_card.canvas, drawX + ox, drawY + oy, 0, sx, sy, w * 0.5, h)
+    else
+        -- fallback simple when canvas is missing: draw a plain card rectangle, title and cost
+        local topLeftX = drawX - (w * sx) * 0.5 + ox
+        local topLeftY = drawY - (h * sy) + oy
+
+        -- background
+        love.graphics.setColor(0.18, 0.18, 0.18)
+        love.graphics.rectangle("fill", topLeftX, topLeftY, w * sx, h * sy)
+        -- title
+        love.graphics.setColor(1, 1, 1)
+        local title = tostring(_card.name or _card.cardName or "Carte")
+        love.graphics.print(title, topLeftX + 8, topLeftY + 8)
+        -- cost badge (not scaled for simplicity)
+        love.graphics.setColor(0.2, 0.5, 0.9)
+        love.graphics.circle("fill", topLeftX + 30, topLeftY + 30, 18)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print(tostring(_card.cost or _card.PowerBlow or 0), topLeftX + 24, topLeftY + 22)
     end
 end
 

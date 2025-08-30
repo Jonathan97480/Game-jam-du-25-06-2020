@@ -225,6 +225,11 @@ function M.hover(dt)
         _card._targetPos = _card._targetPos or { x = bx, y = by }
         _card._targetScale = _card._targetScale or { x = Common.SCALE_BASE, y = Common.SCALE_BASE }
 
+        -- Vérifier si la carte est en standby (protection contre retour automatique en main)
+        local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+        local isCardInStandby = CardStandbyPlay and CardStandbyPlay.hasCardInStandby() and
+            CardStandbyPlay.standbyCard == _card
+
         if _card._playing or _card.locked or _card.anim then
             -- 🔒 CARTES PROTÉGÉES (en cours de jeu, verrouillées ou en animation)
             -- Ces cartes gardent leur position actuelle
@@ -233,6 +238,11 @@ function M.hover(dt)
             if _card._playing then
                 _logf("[Card.Interaction] 🔒 Carte protégée (en jeu): %s", _card.name or "carte")
             end
+        elseif isCardInStandby then
+            -- 🎯 CARTE EN STANDBY - NE PAS BOUGER
+            _logf("[Card.Interaction] 🎯 Carte en standby - position figée: %s", _card.name or "carte")
+            _card._targetPos.x, _card._targetPos.y = _card.vector2.x, _card.vector2.y
+            _card._targetScale.x, _card._targetScale.y = _card.scale.x, _card.scale.y
         elseif _card == draggedCard then
             -- 🎯 CARTE EN COURS DE DRAG
             _logf("[Card.Interaction] 🎯 Carte draggée: %s", _card.name or "carte")
@@ -407,7 +417,12 @@ function M.hover(dt)
 
         -- ⚠️  ANIMATION LERP - PEUT CAUSER LE RETOUR DES CARTES ⚠️
         -- Cette section anime les cartes vers leur position cible
-        if _card ~= draggedCard and not _card._playing and not _card.locked and not _card.anim then
+        -- Vérification supplémentaire pour cartes en standby
+        local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+        local isCardInStandbyForLerp = CardStandbyPlay and CardStandbyPlay.hasCardInStandby() and
+            CardStandbyPlay.standbyCard == _card
+
+        if _card ~= draggedCard and not _card._playing and not _card.locked and not _card.anim and not isCardInStandbyForLerp then
             if _card._playing then
                 _logf("[Card.Interaction] 🚫 LERP BLOQUÉ pour carte en jeu: %s", _card.name or "carte")
             else
@@ -415,6 +430,8 @@ function M.hover(dt)
                 _lerpTable(_card.vector2, _card._targetPos, 10)
                 _lerpTable(_card.scale, _card._targetScale, 12)
             end
+        elseif isCardInStandbyForLerp then
+            _logf("[Card.Interaction] 🚫 LERP BLOQUÉ pour carte en standby: %s", _card.name or "carte")
         end
     end
 
