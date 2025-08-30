@@ -91,8 +91,7 @@ function CardStandbyPlay.putCardInStandby(card, originalHandIndex)
 
     -- 1. RENDRE LA CARTE ORIGINALE INVISIBLE dans la main
     card.isVisible = false
-    _log("info", "👻 Carte originale rendue invisible dans la main: " .. tostring(card.isVisible))
-    print("DEBUG: Carte invisible:", card.name, "isVisible:", card.isVisible)
+    _log("info", "👻 Carte originale rendue invisible dans la main")
 
     -- 2. CRÉER UNE COPIE pour le standby avec globalFunction.clone
     local gf = _G.globalFunction
@@ -100,7 +99,6 @@ function CardStandbyPlay.putCardInStandby(card, originalHandIndex)
     if gf and gf.clone then
         standbyCard = gf.clone(card)
         _log("info", "📋 Copie créée avec globalFunction.clone")
-        print("DEBUG: Copie créée avec globalFunction.clone")
     else
         -- Fallback copie manuelle
         standbyCard = {}
@@ -116,7 +114,6 @@ function CardStandbyPlay.putCardInStandby(card, originalHandIndex)
             end
         end
         _log("info", "📋 Copie créée manuellement (fallback)")
-        print("DEBUG: Copie créée manuellement")
     end
     -- La copie est visible
     standbyCard.isVisible = true
@@ -240,9 +237,8 @@ function CardStandbyPlay.handleClick(x, y, button)
         return false -- Pas en mode standby
     end
 
-    if button == 1 then                                             -- Clic gauche
+    if button == 1 then -- Clic gauche
         _log("info", "🖱️ Clic gauche détecté en mode standby")
-        print("DEBUG STANDBY: Clic gauche détecté en mode standby") -- Debug temporaire
 
         -- PREMIÈRE VÉRIFICATION: Est-ce un clic sur un ennemi ?
         local CardTargetSelection = _G.CardTargetSelection
@@ -250,12 +246,10 @@ function CardStandbyPlay.handleClick(x, y, button)
             local enemy = CardTargetSelection.findHoveredEnemyAt(x, y)
             if enemy then
                 _log("info", "🎯 ENNEMI DÉTECTÉ: " .. (enemy.name or "Inconnu") .. " - JOUER LA CARTE")
-                print("DEBUG STANDBY: ENNEMI DÉTECTÉ: " .. (enemy.name or "Inconnu") .. " - JOUER LA CARTE") -- Debug temporaire
 
                 -- IMPORTANT: Jouer la carte invisible depuis la main
                 if CardTargetSelection.handleMouseClick then
                     _log("info", "📞 Appel CardTargetSelection.handleMouseClick pour jouer la carte")
-                    print("DEBUG STANDBY: Appel CardTargetSelection.handleMouseClick pour jouer la carte") -- Debug temporaire
 
                     -- NOUVEAU : Rendre la carte invisible visible temporairement pour le jeu
                     local originalCard = CardStandbyPlay.state.cardInStandby
@@ -266,13 +260,11 @@ function CardStandbyPlay.handleClick(x, y, button)
                     local success = CardTargetSelection.handleMouseClick(x, y, button)
                     if success then
                         _log("info", "✅ Carte jouée avec succès sur ennemi")
-                        print("DEBUG STANDBY: ✅ Carte jouée avec succès sur ennemi") -- Debug temporaire
                         -- Confirmer le jeu (détruit la copie standby)
                         CardStandbyPlay.confirmCardPlay()
                         return true -- Carte jouée, événement géré
                     else
                         _log("error", "❌ Échec du jeu de carte sur ennemi")
-                        print("DEBUG STANDBY: ❌ Échec du jeu de carte sur ennemi") -- Debug temporaire
                         -- En cas d'échec, remettre invisible et remettre en main
                         if originalCard then
                             originalCard.isVisible = false
@@ -282,24 +274,20 @@ function CardStandbyPlay.handleClick(x, y, button)
                     end
                 else
                     _log("error", "❌ CardTargetSelection.handleMouseClick non disponible")
-                    print("DEBUG STANDBY: ❌ CardTargetSelection.handleMouseClick non disponible") -- Debug temporaire
                     -- Fallback: remettre en main
                     CardStandbyPlay.returnCardToHand()
                     return true
                 end
             else
-                _log("info", "🚫 Aucun ennemi détecté au clic - carte reste en standby")
-                print("DEBUG STANDBY: 🚫 Aucun ennemi détecté au clic - carte reste en standby") -- Debug temporaire
+                -- Clic hors ennemi - carte reste en standby (pas de log spam)
                 return false -- Laisser passer le clic, ne pas remettre en main
             end
         else
             _log("warn", "⚠️ CardTargetSelection non disponible pour détecter ennemi")
-            print("DEBUG STANDBY: ⚠️ CardTargetSelection non disponible pour détecter ennemi") -- Debug temporaire
-            return false -- Laisser passer le clic, ne pas remettre en main
+            return false    -- Laisser passer le clic, ne pas remettre en main
         end
     elseif button == 2 then -- Clic droit = annulation
         _log("info", "🖱️ Clic droit - ANNULATION et remise en main")
-        print("DEBUG STANDBY: 🖱️ Clic droit - ANNULATION et remise en main") -- Debug temporaire
         CardStandbyPlay.returnCardToHand()
         return true -- Événement géré
     end

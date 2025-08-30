@@ -239,8 +239,7 @@ function M.hover(dt)
                 _logf("[Card.Interaction] 🔒 Carte protégée (en jeu): %s", _card.name or "carte")
             end
         elseif isCardInStandby then
-            -- 🎯 CARTE EN STANDBY - NE PAS BOUGER
-            _logf("[Card.Interaction] 🎯 Carte en standby - position figée: %s", _card.name or "carte")
+            -- 🎯 CARTE EN STANDBY - NE PAS BOUGER (pas de log pour éviter spam)
             _card._targetPos.x, _card._targetPos.y = _card.vector2.x, _card.vector2.y
             _card._targetScale.x, _card._targetScale.y = _card.scale.x, _card.scale.y
         elseif _card == draggedCard then
@@ -431,7 +430,7 @@ function M.hover(dt)
                 _lerpTable(_card.scale, _card._targetScale, 12)
             end
         elseif isCardInStandbyForLerp then
-            _logf("[Card.Interaction] 🚫 LERP BLOQUÉ pour carte en standby: %s", _card.name or "carte")
+            -- LERP bloqué pour carte en standby (pas de log pour éviter spam)
         end
     end
 

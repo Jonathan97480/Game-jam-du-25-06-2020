@@ -148,14 +148,8 @@ function M.drawHand()
     local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
     if CardStandbyPlay and CardStandbyPlay.getStandbyCopy then
         local standbyCopy = CardStandbyPlay.getStandbyCopy()
-        if standbyCopy then
-            print("DEBUG RENDU: Copie standby trouvée:", standbyCopy.name, "isVisible:", standbyCopy.isVisible)
-            if standbyCopy.isVisible ~= false then
-                print("DEBUG RENDU: Dessin copie standby à:", standbyCopy.vector2.x, standbyCopy.vector2.y)
-                M.drawSingleCard(standbyCopy)
-            end
-        else
-            print("DEBUG RENDU: Aucune copie standby")
+        if standbyCopy and standbyCopy.isVisible ~= false then
+            M.drawSingleCard(standbyCopy)
         end
     end
 
@@ -163,11 +157,8 @@ function M.drawHand()
     for i = 1, #Common.hand.cards do
         local _card = Common.hand.cards[i]
 
-        -- NOUVEAU : Ignorer les cartes invisibles avec debug
-        if _card.isVisible == false then
-            print("DEBUG RENDU: Carte ignorée (invisible):", _card.name, "isVisible:", _card.isVisible)
-        else
-            print("DEBUG RENDU: Carte dessinée:", _card.name, "isVisible:", _card.isVisible)
+        -- NOUVEAU : Ignorer les cartes invisibles
+        if _card.isVisible ~= false then
             M.drawSingleCard(_card)
         end
     end
