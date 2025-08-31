@@ -286,3 +286,26 @@ if gf and gf.log then gf.log.info("Message") end
 - **lldebugger** : Intégré, activé via `vsc_debug` argument
 - **Scene debugging** : Logs stack dans `gameLogs/scene_list.log`
 - **HUD debugging** : Traces énergie/santé avec flag dédié
+
+## MISE À JOUR : Vision d'architecture et comportement Standby (31/08/2025)
+Cette section synthétise les décisions récentes prises lors de la refactorisation :
+
+- Standby / CardStandbyPlay :
+    - Quand le joueur joue une carte, l'originale reste dans la main en mode "invisible" et une copie visible est placée en position de standby (généralement à gauche).
+    - Le joueur sélectionne une cible en interagissant avec la copie standby ; lors de la confirmation, la copie est détruite et l'originale (invisible) est **confirmée** pour exécution (envoyée au cimetière via le système de cartes).
+    - API principale exposée : `putCardInStandby(card, index)`, `getStandbyCopy()`, `hasCardInStandby()`, `returnCardToHand()`, `confirmCardPlay()`.
+    - Le système doit coordonner `CardStandbyPlay`, `CardTargetSelection`, `CardManager` et `Card.Play.tryPlay` pour garantir absence de désynchronisation d'état.
+
+- Emplacement des modules et conventions récentes :
+    - `my-librairie/core/globals.lua` : point unique d'initialisation des globals (requêté depuis `main.lua`).
+    - `my-librairie/utils/` : bibliothèque d'utilitaires (ex : `globalFunction.lua`, `responsive.lua`).
+    - `my-librairie/tools/` : utilitaires autonomes (ex : `json.lua`).
+    - `my-librairie/entities/` : contient les scripts d'acteurs (anciennement `ActorScripts/`) — respecter le nouveau namespace lors des `require`.
+    - `inputInterface` est la source d'input canonique (remplace l'ancien `core/cursor`), `inputManager` reste optionnel.
+
+- Recommandations opérationnelles :
+    - Toujours vérifier `CardStandbyPlay.hasCardInStandby()` avant d'agir sur la standby.
+    - Lors de changements de nom/deplacement, privilégier `pcall(require, ...)` et exposer la valeur via `_G` depuis `globals.lua`.
+    - Ajouter des assertions/logs au niveau de `CardTargetSelection` et `CardStandbyPlay` pour détecter désyncs (ex : `card.selectedTarget` vs `CardTargetSelection.selectedTarget`).
+
+Cette mise à jour formalise la vision actuelle et doit être synchronisée avec le code (références dans `my-librairie/card-librairie/cardStandbyPlay.lua`, `my-librairie/card-librairie/ui/card_target_selection.lua`, et `my-librairie/core/globals.lua`).
