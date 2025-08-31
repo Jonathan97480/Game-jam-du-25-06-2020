@@ -15,7 +15,7 @@ local Hero = _safeRequire("my-librairie/ActorScripts/player/Hero")
 local Card = _safeRequire("my-librairie/card-librairie/card")
 local responsive = _safeRequire("my-librairie/responsive")
 
-local AM = _safeRequire("my-librairie/actorManager") or rawget(_G, 'actorManager')
+local AM = _safeRequire("my-librairie/managers/actorManager") or rawget(_G, 'actorManager')
 local TransitionCombat = _safeRequire("my-librairie/transitions/templateCombatTransition")
 local function countByType()
     local bag = {}

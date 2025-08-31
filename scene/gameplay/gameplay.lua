@@ -91,7 +91,7 @@ end
 --- Fait apparaître les ennemis en fonction de la configuration de scène.
 -- Utilise soit des points de spawn explicites, soit un round-robin simple.
 local function auto_spawn_enemies()
-    local AM = actor or (_G.actorManager or require("my-librairie/actorManager"))
+    local AM = actor or (_G.actorManager or require("my-librairie/managers/actorManager"))
     if not (AM and AM.clearEnemies and AM.spawnEnemy) then return end
 
     AM:clearEnemies()
@@ -138,7 +138,7 @@ local cardsPlayer    = require("ressources/cards_data_player")
 local Hero           = require("my-librairie/ActorScripts/player/Hero")
 local Enemies        = require("my-librairie/ActorScripts/Enemy/Enemies")
 local AI             = require("my-librairie/ai/controller")
-local actor          = _G.actorManager or require("my-librairie/actorManager")
+local actor          = _G.actorManager or require("my-librairie/managers/actorManager")
 local res            = require("my-librairie.resource_cache")
 
 -- Chargement optionnel d’une config scène (safe)

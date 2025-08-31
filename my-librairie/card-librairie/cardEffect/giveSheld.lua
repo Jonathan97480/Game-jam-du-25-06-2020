@@ -1,6 +1,6 @@
 -- my-librairie/card-librairie/cardEffect/giveSheld.lua
 local effect       = require("ressources/effect")
-local actorManager = require("my-librairie/actorManager")
+local actorManager = require("my-librairie/managers/actorManager")
 
 local giveSheld    = {}
 

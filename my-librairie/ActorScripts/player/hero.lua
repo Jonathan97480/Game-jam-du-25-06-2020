@@ -27,7 +27,7 @@ function debug.table(p_table)
 end
 
 -- REQUIRE
-local actor = require("my-librairie/actorManager");
+local actor = require("my-librairie/managers/actorManager");
 
 -- VARIABLE
 

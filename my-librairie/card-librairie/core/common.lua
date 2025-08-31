@@ -43,7 +43,7 @@ Common.graveyard   = Common.createDeck("graveyard")
 
 local screen       = rawget(_G, "screen") or require("my-librairie/responsive")
 local effect       = rawget(_G, "effect") or require("ressources/effect")
-local actorManager = rawget(_G, "actorManager") or require("my-librairie/actorManager")
+local actorManager = rawget(_G, "actorManager") or require("my-librairie/managers/actorManager")
 
 local DEBUG_CARD   = true
 

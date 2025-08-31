@@ -55,7 +55,7 @@ local okInput, inputManager = pcall(require, "my-librairie/inputManager")
 _G.inputManager = okInput and inputManager or nil
 
 -- Actor Manager (gestion entités de combat)
-local okActor, actorManager = pcall(require, "my-librairie/actorManager")
+local okActor, actorManager = pcall(require, "my-librairie/managers/actorManager")
 _G.actorManager = okActor and actorManager or nil
 
 -- Card Target Selection (système de ciblage manuel)
@@ -122,7 +122,7 @@ local okInput, inputManager = pcall(require, "my-librairie/inputManager")
 _G.inputManager = okInput and inputManager or nil
 
 -- Actor Manager (gestion entités de combat)
-local okActor, actorManager = pcall(require, "my-librairie/actorManager")
+local okActor, actorManager = pcall(require, "my-librairie/managers/actorManager")
 _G.actorManager = okActor and actorManager or nil
 
 -- Global Function / My Function (utilitaires legacy)

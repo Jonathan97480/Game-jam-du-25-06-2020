@@ -7,7 +7,7 @@ local function _safeRequire(name)
   return ok and mod or nil
 end
 
-local actorMgr                = _G.actorManager or _safeRequire("my-librairie/actorManager")
+local actorMgr                = _G.actorManager or _safeRequire("my-librairie/managers/actorManager")
 local Card                    = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
 local Hero                    = _G.Hero or rawget(_G, "Hero")
 local EnemiesManager          = _G.Enemies or rawget(_G, "Enemies")

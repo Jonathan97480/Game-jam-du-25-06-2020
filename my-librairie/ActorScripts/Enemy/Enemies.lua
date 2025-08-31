@@ -3,7 +3,7 @@ local Enemies = {
     curentEnemy  = nil,
     listeEnemies = {}
 }
-local actor   = actor or require("my-librairie.actorManager")
+local actor   = actor or require("my-librairie.managers.actorManager")
 
 -- Backwards-compatible Enemy factory registry (singleton)
 local Enemy   = rawget(_G, "__ENEMY_SINGLETON__") or {}
