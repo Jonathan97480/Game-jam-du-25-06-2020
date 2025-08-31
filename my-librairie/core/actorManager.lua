@@ -22,7 +22,7 @@ end
 
 function actor:clearEnemies()
     _G.globalFunction.log.info("[actorManager] Effacement de tous les Ennemis")
-    local Enemies = require("my-librairie/ActorScripts/Enemy/Enemies")
+    local Enemies = require("my-librairie.entities.enemy.enemy")
     if Enemies then
         Enemies.listeEnemies = {}
         Enemies.curentEnemy = nil
@@ -50,7 +50,7 @@ function actor:spawnEnemy(spawnPosition, poolEnemies, options)
     local shufflePool = options.shufflePool or false
 
     -- Lazy loading du module Enemies pour éviter les require circulaires
-    local Enemies = require("my-librairie/ActorScripts/Enemy/Enemies")
+    local Enemies = require("my-librairie.entities.enemy.enemy")
     if not Enemies then
         _G.globalFunction.log.error("[actorManager:spawnEnemy] Module Enemies introuvable")
         return nil

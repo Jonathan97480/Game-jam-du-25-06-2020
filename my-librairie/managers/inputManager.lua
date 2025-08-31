@@ -7,7 +7,7 @@ local lockClick = false
 
 local function _loadInterface()
     if IM then return IM end
-    local ok, mod = pcall(require, "my-librairie/inputInterface")
+    local ok, mod = pcall(require, "my-librairie/managers/inputInterface")
     if ok and type(mod) == 'table' then IM = mod end
     return IM
 end

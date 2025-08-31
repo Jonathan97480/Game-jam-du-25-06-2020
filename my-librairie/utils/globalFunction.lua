@@ -6,7 +6,7 @@ local globalFunction = {}
 
 -- Dépendances et configuration
 local res = require("my-librairie.managers.resource_cache")
-local okcfg, config = pcall(require, "my-librairie.config")
+local okcfg, config = pcall(require, "my-librairie/core/config")
 config = okcfg and config or { logs = { maxFiles = 10, maxEntries = 200, dir = "gameLogs" } }
 
 -- Assure que la table logs existe
@@ -128,11 +128,12 @@ globalFunction.mouse.hover = function(x, y, largeur, hauteur, echelle)
         echelleY = echelle
     end
     local function obtenirCurseur()
-        local okc, curseur = pcall(require, "my-librairie/cursor")
+        local okc, curseur = pcall(require, "my-librairie/utils/cursor")
         if okc and curseur and curseur.get then return curseur.get() end
         return 0, 0
     end
     local sourisX, sourisY = obtenirCurseur()
+
     return (sourisX >= x and sourisX <= x + largeur * echelleX and sourisY >= y and sourisY <= y + hauteur * echelleY)
 end
 
@@ -140,12 +141,12 @@ end
 -- @return boolean|nil : True uniquement lors de la première pression
 globalFunction.mouse.click = function()
     local enfonce = false
-    local okInp, gestionnaireEntree = pcall(require, "my-librairie/inputManager")
+    local okInp, gestionnaireEntree = pcall(require, "my-librairie/managers/inputManager")
     if okInp and gestionnaireEntree and gestionnaireEntree.state then
         local etat = gestionnaireEntree.state()
         enfonce = (etat == 'pressed' or etat == 'held')
     else
-        local okI, interface = pcall(require, "my-librairie/inputInterface")
+        local okI, interface = pcall(require, "my-librairie/managers/inputInterface")
         if okI and interface and interface.isActionDown then
             enfonce = interface.isActionDown()
         else
@@ -167,12 +168,12 @@ end
 -- @return string : État actuel
 globalFunction.mouse.state = function()
     local enfonce = false
-    local okInp, gestionnaireEntree = pcall(require, "my-librairie/inputManager")
+    local okInp, gestionnaireEntree = pcall(require, "my-librairie/managers/inputManager")
     if okInp and gestionnaireEntree and gestionnaireEntree.state then
         local etat = gestionnaireEntree.state()
         if etat == 'pressed' or etat == 'held' then enfonce = true end
     else
-        local okI, interface = pcall(require, "my-librairie/inputInterface")
+        local okI, interface = pcall(require, "my-librairie/managers/inputInterface")
         if okI and interface and interface.isActionDown then
             enfonce = interface.isActionDown()
         else
@@ -279,8 +280,12 @@ globalFunction.drawLifeBarStatus = function(acteur, couleurBarre)
         if ok and li and hi then largeurImage, hauteurImage = li, hi end
     end
     local nouvelleEchelle = { w = largeurCible / math.max(1, largeurImage), h = hauteurCible / math.max(1, hauteurImage) }
-    if image then pcall(function() love.graphics.draw(image, position.x, position.y, 0, nouvelleEchelle.w,
-                nouvelleEchelle.h) end) end
+    if image then
+        pcall(function()
+            love.graphics.draw(image, position.x, position.y, 0, nouvelleEchelle.w,
+                nouvelleEchelle.h)
+        end)
+    end
 
     love.graphics.print(vie .. '/' .. vieMax, vx + (w / 1.8), vy - 48)
 
@@ -774,7 +779,7 @@ globalFunction.safecall = function(fn, ...)
 end
 
 -- Tentative de chargement du gestionnaire d'entrée centralisé et délégation des helpers souris
-local ok, gestionnaireEntree = pcall(require, "my-librairie/inputManager")
+local ok, gestionnaireEntree = pcall(require, "my-librairie/managers/inputManager")
 if ok and type(gestionnaireEntree) == 'table' then
     globalFunction.mouse = globalFunction.mouse or {}
     globalFunction.mouse.hover = gestionnaireEntree.hover
@@ -787,11 +792,9 @@ end
 
 -- Alias globaux pour compatibilité (certains scripts utilisent "myFonction")
 rawset(_G, "globalFunction", globalFunction)
-rawset(_G, "myFunction", globalFunction)
-rawset(_G, "myFonction", globalFunction)
+
 
 -- Initialisation du log
 globalFunction.log.info("Logger initialisé")
 
 return globalFunction
-

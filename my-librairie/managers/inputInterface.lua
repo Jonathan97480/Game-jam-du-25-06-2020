@@ -143,5 +143,9 @@ function I.GetKeyPressed()
     return love.keyboard.getKeyPressed()
 end
 
+function I.GetRawMousePosition()
+    return love.mouse.getPosition()
+end
+
 I.init()
 return I

@@ -27,7 +27,7 @@ function debug.table(p_table)
 end
 
 -- REQUIRE
-local actor = require("my-librairie/core/actorManager");
+local actor = require("my-librairie.core.actorManager");
 
 -- VARIABLE
 
@@ -122,5 +122,3 @@ function hero.draw()
 end
 
 return hero;
-
-

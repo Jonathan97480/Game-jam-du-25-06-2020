@@ -1,17 +1,21 @@
--- my-librairie/ActorScripts/Enemy/Enemies.lua
+-- my-librairie/entities/enemy/enemy.lua
 local Enemies        = {
     curentEnemy  = nil,
     listeEnemies = {}
 }
-local actor          = actor or require("my-librairie.actorManager")
-local globalFunction = _G.globalFunction or require("my-librairie/utils/globalFunction")
+local actor          = actor or require("my-librairie.core.actorManager")
+local globalFunction = _G.globalFunction or require("my-librairie.utils.globalFunction")
 
 -- Backwards-compatible Enemy factory registry (singleton)
 local Enemy          = rawget(_G, "__ENEMY_SINGLETON__") or {}
+
+-- Lazy require pour casser la boucle de dépendance avec controller
 local IA             = nil
 local function getIA()
-    if IA then return IA end
-    pcall(function() IA = require("my-librairie/ActorScripts/Enemy/ia") end)
+    if not IA then
+        local ok, mod = pcall(require, "my-librairie.systems.ai.controller")
+        if ok then IA = mod end
+    end
     return IA
 end
 
@@ -82,7 +86,7 @@ local actor = nil
 
 local function getGlobalFunction()
     if globalFunction then return globalFunction end
-    pcall(function() globalFunction = require('my-librairie.globalFunction') end)
+    pcall(function() globalFunction = require('my-librairie.utils.globalFunction') end)
     return globalFunction
 end
 

@@ -1,22 +1,19 @@
 -- my-librairie/ai/controller.lua
 -- IA : logique de jeu des cartes (pipeline Card.* + fallback) + auto-câblage du télégraphe (visuel optionnel)
 
--- Chargement sécurisé pour éviter les boucles circulaires
-local function _safeRequire(name)
-  local ok, mod = pcall(require, name)
-  return ok and mod or nil
-end
 
-local actorMgr                = _G.actorManager or _safeRequire("my-librairie/core/actorManager")
+
+local actorMgr                = _G.actorManager or require("my-librairie.core.actorManager")
 local Card                    = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
 local Hero                    = _G.Hero or rawget(_G, "Hero")
 local EnemiesManager          = _G.Enemies or rawget(_G, "Enemies")
-local globalFunction          = _G.globalFunction or rawget(_G, 'globalFunction')
+local globalFunction          = _G.globalFunction or require("my-librairie.utils.globalFunction")
 
 -- Nouveau : Module de stratégie de sélection de cartes et ciblage
-local CardSelectionStrategy   = _safeRequire("my-librairie/ai/card_selection_strategy")
+local CardSelectionStrategy   = require("my-librairie.systems.ai.card_selection_strategy")
 
-local TransitionCombat        = _G.TransitionCombat or _safeRequire("my-librairie/transitions/templateCombatTransition")
+local TransitionCombat        = _G.TransitionCombat or
+    require("my-librairie.systems.transitions.templateCombatTransition")
 
 local timerMaxTurnChanged     = 1
 local timerDrawTurned         = 0
@@ -854,4 +851,3 @@ function AI.draw()
 end
 
 return AI
-

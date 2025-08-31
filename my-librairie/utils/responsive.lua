@@ -33,9 +33,9 @@ love.window.setMode(1280, 720, {
 });
 --[[ MOUSE SCALE POSITION ]]
 local function _getRawMouse()
-    local ok, cur = pcall(require, "my-librairie/cursor")
-    if ok and cur and cur.get then return cur.get() end
-    return 0, 0
+    local input = require("my-librairie/managers/inputInterface")
+    local x, y = input.GetRawMousePosition()
+    return x, y
 end
 
 local x, y = _getRawMouse()

@@ -113,8 +113,12 @@ Modules Optionnels - Chargés avec fallback
 ===================================================================== ]]
 
 -- Input Manager (unifie souris/gamepad)
-local okInput, inputManager = pcall(require, "my-librairie/inputManager")
+local okInput, inputManager = pcall(require, "my-librairie/managers/inputManager")
 _G.inputManager = okInput and inputManager or nil
+
+-- Input Interface
+local okInputInterface, inputInterface = pcall(require, "my-librairie/managers/inputInterface")
+_G.inputInterface = okInputInterface and inputInterface or nil
 
 -- Actor Manager (gestion entités de combat)
 local okActor, actorManager = pcall(require, "my-librairie/core/actorManager")

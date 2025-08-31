@@ -8,11 +8,18 @@ local function _safeRequire(name)
     return ok and mod or nil
 end
 
-local globalFunction = _G.globalFunction or require("my-librairie/utils/globalFunction")
+local globalFunction = _G.globalFunction or require("my-librairie.utils.globalFunction")
 local Card = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
 local Hero = _G.Hero or rawget(_G, "Hero")
-local EnemiesManager = require("my-librairie/ActorScripts/Enemy/Enemies")
-local TransitionCombat = _G.TransitionCombat or require("my-librairie/transitions/templateCombatTransition")
+local EnemiesManager
+local function getEnemiesManager()
+    if not EnemiesManager then
+        local ok, mod = pcall(require, "my-librairie.entities.enemy.enemy")
+        if ok then EnemiesManager = mod end
+    end
+    return EnemiesManager
+end
+local TransitionCombat = _G.TransitionCombat or require("my-librairie.transitions.templateCombatTransition")
 
 -- Module principal
 local CardSelectionStrategy = {}
@@ -64,8 +71,9 @@ end
 -- Récupère l'ennemi courant depuis le Template Combat (plus fiable)
 function CardSelectionStrategy.getCurrentEnemy()
     -- Priorité au système de transition moderne
-    if EnemiesManager and EnemiesManager.listeEnemies then
-        return EnemiesManager.listeEnemies[TransitionCombat.enemyIndex] or nil
+    local em = getEnemiesManager()
+    if em and em.listeEnemies then
+        return em.listeEnemies[TransitionCombat.enemyIndex] or nil
     end
     -- Fallback vers variable globale ou paramètre
     return nil
@@ -74,18 +82,19 @@ end
 -- Détecte tous les alliés vivants pour ciblage intelligent
 function CardSelectionStrategy.getAllAllies(sourceEnemy)
     local allies = {}
-    if not EnemiesManager or not EnemiesManager.listeEnemies then
+    local em = getEnemiesManager()
+    if not em or not em.listeEnemies then
         return allies
     end
 
-    for _, enemy in ipairs(EnemiesManager.listeEnemies) do
+    for _, enemy in ipairs(em.listeEnemies) do
         if enemy ~= sourceEnemy and enemy.state and not enemy.state.dead and (enemy.state.life or 0) > 0 then
             table.insert(allies, enemy)
         end
     end
 
     -- Ajouter l'ennemi courant s'il est différent de la source et vivant
-    local current = EnemiesManager.curentEnemy
+    local current = em.curentEnemy
     if current and current ~= sourceEnemy and current.state and not current.state.dead and (current.state.life or 0) > 0 then
         local alreadyExists = false
         for _, ally in ipairs(allies) do
@@ -169,9 +178,7 @@ function CardSelectionStrategy.chooseDeterministic(deck, playsRemaining)
     if not deck or #deck == 0 then return nil, nil end
 
     Hero = Hero or rawget(_G, "Hero")
-    if not EnemiesManager then
-        EnemiesManager = EnemiesManager or rawget(_G, "Enemies")
-    end
+    local em = getEnemiesManager()
 
     local heroActor = Hero and Hero.actor
     local enemyActor = CardSelectionStrategy.getCurrentEnemy()

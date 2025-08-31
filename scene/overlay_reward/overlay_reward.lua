@@ -1,6 +1,6 @@
 -- scene/overlay_reward.lua
 local Transition = require("my-librairie/transition/manager")
-local responsive = require("my-librairie/utils/responsive")
+local responsive = require("my-librairie/responsive")
 
 local overlay = { name = "overlay_reward" }
 

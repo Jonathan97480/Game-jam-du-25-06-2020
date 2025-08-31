@@ -6,11 +6,11 @@ if arg[#arg] == "vsc_debug" then require("lldebugger").start() end
 love.window.setTitle("Tactique Cards")
 
 -- Chargement centralisé de toutes les globales AVANT tout require de scène
-local globales = require("my-librairie/core/globals")
+local globales = require("my-librairie/globals")
 
 -- Modules locaux (non-globaux) - chargés APRÈS les globales
 local scene_menu = require("scene.menu.menu")
-local globalFunction = _G.globalFunction or require("my-librairie/utils/globalFunction")
+
 -- Calcule la distance euclidienne entre deux points
 ---
 -- Fonction utilitaire pour calculer la distance entre deux points.
@@ -47,17 +47,11 @@ function love.load()
     end)
   end)
 
-  -- Log d'initialisation avec vérification de sécurité
-  if globalFunction and globalFunction.log and globalFunction.log.info then
-    globalFunction.log.info("[main.lua] love.load() appelé - début initialisation")
-  else
-    print("[ERROR] globalFunction.log not available")
-  end
+  -- Log d'initialisation
+  globalFunction.log.info("[main.lua] love.load() appelé - début initialisation")
 
   -- Ajout de la scène menu au gestionnaire de scènes
-  if globalFunction and globalFunction.log and globalFunction.log.info then
-    globalFunction.log.info("[main.lua] Ajout de la scène menu")
-  end
+  globalFunction.log.info("[main.lua] Ajout de la scène menu")
   scene:add(scene_menu) -- Utilisation de deux-points pour la méthode
 
   -- Chargement des scènes

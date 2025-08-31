@@ -31,13 +31,13 @@ _G.hud = require("my-librairie/hud/hud")
 _G.Card = require("my-librairie/card-librairie/card")
 
 -- Card Standby Play System
-_G.CardStandbyPlay = require("my-librairie/card-librairie/states/standby")
+_G.CardStandbyPlay = require("my-librairie/card-librairie/cardStandbyPlay")
 
 -- Responsive Screen Manager
 _G.screen = require("my-librairie/responsive")
 
 -- Scene Manager
-_G.scene = require("my-librairie/core/sceneManager")
+_G.scene = require("my-librairie/sceneManager")
 
 -- Effects System
 _G.effect = require("ressources/effect")
@@ -51,11 +51,11 @@ Modules Optionnels - Chargés avec fallback
 ===================================================================== ]]
 
 -- Input Manager (unifie souris/gamepad)
-local okInput, inputManager = pcall(require, "my-librairie/managers/inputManager")
+local okInput, inputManager = pcall(require, "my-librairie/inputManager")
 _G.inputManager = okInput and inputManager or nil
 
 -- Actor Manager (gestion entités de combat)
-local okActor, actorManager = pcall(require, "my-librairie/core/actorManager")
+local okActor, actorManager = pcall(require, "my-librairie/actorManager")
 _G.actorManager = okActor and actorManager or nil
 
 -- Card Target Selection (système de ciblage manuel)
@@ -65,9 +65,13 @@ local okCTS, cardTargetSelection = pcall(require, "my-librairie/card-librairie/u
 _G.CardTargetSelection = okCTS and cardTargetSelection or nil
 
 -- Global Function / My Function (utilitaires legacy)
-_G.globalFunction = require("my-librairie/utils/globalFunction")
+_G.globalFunction = safeRequireAny({
+    "my-librairie/globalFunction",
+    "my-librairie.globalFunction"
+}) or {}
 
-
+_G.myFunction = _G.globalFunction -- Alias pour compatibilité
+_G.myFonction = _G.globalFunction -- Alias typo legacy
 
 -- NOTE: globalFunction contient de nombreux utilitaires réutilisables :
 -- - Animation: lerp(), clone()
@@ -101,7 +105,7 @@ _G.GameFlags = _G.GameFlags or {
 }
 
 -- Scene Manager
-_G.scene = require("my-librairie/core/sceneManager")
+_G.scene = require("my-librairie/sceneManager")
 
 -- Effects System
 _G.effect = require("ressources/effect")
@@ -114,12 +118,21 @@ Modules Optionnels - Chargés avec fallback
 ===================================================================== ]]
 
 -- Input Manager (unifie souris/gamepad)
-local okInput, inputManager = pcall(require, "my-librairie/managers/inputManager")
+local okInput, inputManager = pcall(require, "my-librairie/inputManager")
 _G.inputManager = okInput and inputManager or nil
 
 -- Actor Manager (gestion entités de combat)
-local okActor, actorManager = pcall(require, "my-librairie/core/actorManager")
+local okActor, actorManager = pcall(require, "my-librairie/actorManager")
 _G.actorManager = okActor and actorManager or nil
+
+-- Global Function / My Function (utilitaires legacy)
+_G.globalFunction = safeRequireAny({
+    "my-librairie/globalFunction",
+    "my-librairie.globalFunction"
+}) or {}
+
+_G.myFunction = _G.globalFunction -- Alias pour compatibilité
+_G.myFonction = _G.globalFunction -- Alias typo legacy
 
 --[[ =====================================================================
 Actors Scripts - Chargés à la demande
@@ -168,7 +181,7 @@ function globals.list()
         -- Core modules
         "json", "hud", "Card", "screen", "scene", "effect", "Transition",
         -- Optional modules
-        "inputManager", "actorManager", "globalFunction",
+        "inputManager", "actorManager", "globalFunction", "myFunction", "myFonction",
         -- Actor scripts
         "Hero", "Enemies",
         -- Configuration

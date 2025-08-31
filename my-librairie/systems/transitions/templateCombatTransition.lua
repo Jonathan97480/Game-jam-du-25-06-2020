@@ -28,8 +28,8 @@ local SceneManager = rawget(_G, "scene") or safe_require("my-librairie/core/scen
 local Card         = rawget(_G, "Card") or safe_require("my-librairie/card-librairie/card")
 local Hero         = rawget(_G, "Hero") or safe_require("my-librairie/ActorScripts/player/Hero")
 local AI           = rawget(_G, "AI") or
-    safe_require("my-librairie/ai/controller")                               -- Gestionnaire d'acteurs (ennemis vivants)
-local EnemiesMod   = safe_require("my-librairie/ActorScripts/Enemy/Enemies") -- Compat : Enemies.curentEnemy
+    safe_require("my-librairie/systems/ai/controller")                 -- Gestionnaire d'acteurs (ennemis vivants)
+local EnemiesMod   = safe_require("my-librairie/entities/enemy/enemy") -- Compat : Enemies.curentEnemy
 
 -- Persistance simple pour flags globaux (draft du premier combat)
 local GameFlags    = rawget(_G, "GameFlags") or {}
@@ -309,7 +309,7 @@ function CombatFlow:updateEncounter(dt)
 
         local enemy = self.enemyOrder[self.enemyIndex]
         if (not AI or not AI.load) then
-            AI = rawget(_G, "AI") or safe_require("my-librairie/ai/controller")
+            AI = rawget(_G, "AI") or safe_require("my-librairie/systems/ai/controller")
         end
         if AI and AI.load then pcall(function() AI.load(enemy) end) end
     elseif self.state == "enemy_turn" then
@@ -573,4 +573,3 @@ package.loaded["my-librairie/transition/manager"] = M
 rawset(_G, "Transition", M)
 
 return M
-

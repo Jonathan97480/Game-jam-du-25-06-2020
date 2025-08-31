@@ -1,5 +1,5 @@
 -- my-librairie/effect/effects.lua
-local res = require("my-librairie.managers.resource_cache")
+local res = require("my-librairie.resource_cache")
 
 
 local effects  = {}
