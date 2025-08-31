@@ -3,7 +3,7 @@
 -- organisés en couches pour un rendu ordonné.
 
 local res = require("my-librairie.managers.resource_cache")
-local responsive = require("my-librairie/responsive")
+local responsive = _G.screen or require("my-librairie/utils/responsive")
 -- optional unified input helper (mouse + joystick)
 
 -- Layered HUD Manager
@@ -33,7 +33,14 @@ hud.theme = { font_size = 20 }
 -- @param size : taille de base de la police
 -- @return : taille ajustée
 local function fixeSizeFontByResolotionGame(size)
+  --fixe is responsive.getWindow
+  if not responsive.getWindow or #responsive.getWindow == 0 then
+    local w, h = love.graphics.getDimensions()
+    responsive.getWindow = { width = w, height = h }
+  end
+
   local scale = responsive.getWindow.height / responsive.gameReso.height
+
   local fontSize = size * scale
   return fontSize
 end

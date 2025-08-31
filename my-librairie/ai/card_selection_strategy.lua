@@ -2,11 +2,6 @@
 -- Module de stratégie de sélection de cartes et de ciblage pour l'IA
 -- Sépare la logique de décision du controller principal pour une meilleure lisibilité
 
--- Chargement sécurisé pour éviter les boucles circulaires
-local function _safeRequire(name)
-    local ok, mod = pcall(require, name)
-    return ok and mod or nil
-end
 
 local globalFunction = _G.globalFunction or require("my-librairie.utils.globalFunction")
 local Card = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
@@ -100,32 +95,6 @@ function CardSelectionStrategy.getAllAllies(sourceEnemy)
 
     return allies
 end
-
--- Trouve le meilleur allié pour une carte de soin
---[[ function CardSelectionStrategy.findBestHealTarget(sourceEnemy, allies)
-    if not allies or #allies == 0 then return nil end
-
-    local bestAlly = nil
-    local lowestHealthRatio = 1.0
-
-    for _, ally in ipairs(allies) do
-        if ally.state then
-            local maxLife = tonumber(ally.state.maxLife) or 1
-            local life = tonumber(ally.state.life) or 0
-            local ratio = life / maxLife
-
-            -- Priorité aux alliés blessés mais pas morts
-            if ratio < lowestHealthRatio and ratio > 0 then
-                lowestHealthRatio = ratio
-                bestAlly = ally
-            end
-        end
-    end
-
-    logf("[AI] Meilleure cible soin: %s (vie: %.1f%%)",
-        bestAlly and bestAlly.name or "aucune", lowestHealthRatio * 100)
-    return bestAlly
-end ]]
 
 -- ============================================================================
 -- CLASSIFICATION ET ANALYSE DES CARTES

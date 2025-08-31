@@ -15,6 +15,7 @@ local globalFunction          = _G.globalFunction or rawget(_G, 'globalFunction'
 
 -- Nouveau : Module de stratégie de sélection de cartes et ciblage
 local CardSelectionStrategy   = _safeRequire("my-librairie/ai/card_selection_strategy")
+local responsive              = _G.screen or require("my-librairie/utils/responsive")
 
 local TransitionCombat        = _G.TransitionCombat or _safeRequire("my-librairie/transitions/templateCombatTransition")
 
@@ -252,7 +253,6 @@ local function drawTourCh(state, dt)
     -- Mettre à jour l'affichage du tour
     local text = lastTurnTransitionState == 'player' and "Tour du joueur" or "Tour de l'ennemi"
     --calcul de la position en x
-    local responsive = require("my-librairie/responsive")
     local _x = responsive.gameReso.width / 2 - 100
     local _y = 200
     --calcul size font parapore la résolution de l'écrant

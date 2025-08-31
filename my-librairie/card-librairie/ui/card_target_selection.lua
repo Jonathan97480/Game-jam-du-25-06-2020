@@ -567,7 +567,7 @@ end
 -- Convertit les coordonnées brutes de clic en coordonnées de jeu
 local function _convertClickCoordinates(rawX, rawY)
     -- PRIORITÉ 1: Utiliser le système responsive
-    local responsive = rawget(_G, "responsive")
+    local responsive = _G.screen or require("my-librairie/utils/responsive")
     if responsive and responsive.ratioScreen then
         local ratioX = responsive.ratioScreen.width or 1
         local ratioY = responsive.ratioScreen.height or 1

@@ -19,7 +19,7 @@ local CardManager = require("my-librairie/card-librairie/card_manager")
 --   handleSmooth(card,dt): interpolation douce vers la target si nécessaire
 
 local Common = require("my-librairie/card-librairie/core/common")
-local screen = rawget(_G, "screen") or require("my-librairie/responsive")
+local screen = rawget(_G, "screen") or require("my-librairie/utils/responsive")
 local function getCard() return rawget(_G, "Card") end
 local M = {}
 

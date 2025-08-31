@@ -1,6 +1,6 @@
 -- my-librairie/card-librairie/core/common.lua
 -- Données, utilitaires, RNG/shuffle, canvas, normalisation, tirage, Deck Global.
-local screen = rawget(_G, "screen") or require("my-librairie/responsive")
+local screen = _G.screen or require("my-librairie/utils/responsive")
 
 -- Formerly required 'applyEffect'. After refactor effects live under `effects/cardEffect_shim`.
 local ok, applyEffect = pcall(require, "my-librairie/card-librairie/effects/cardEffect_shim")
@@ -38,10 +38,10 @@ function Common.createDeck(name)
     return deck
 end
 
-Common.hand        = Common.createDeck("hand")
-Common.graveyard   = Common.createDeck("graveyard")
+Common.hand      = Common.createDeck("hand")
+Common.graveyard = Common.createDeck("graveyard")
 
-local screen       = rawget(_G, "screen") or require("my-librairie/responsive")
+
 local effect       = rawget(_G, "effect") or require("ressources/effect")
 local actorManager = rawget(_G, "actorManager") or require("my-librairie/managers/actorManager")
 

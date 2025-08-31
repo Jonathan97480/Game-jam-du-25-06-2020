@@ -1,6 +1,6 @@
 local Common         = require("my-librairie/card-librairie/core/common")
 local UX             = require("my-librairie/card-librairie/ui/ux")
-local screen         = rawget(_G, "screen") or require("my-librairie/responsive")
+local screen         = _G.screen or require("my-librairie/utils/responsive")
 local Layout         = require("my-librairie/card-librairie/ui/layout")
 
 -- Import du nouveau CardManager

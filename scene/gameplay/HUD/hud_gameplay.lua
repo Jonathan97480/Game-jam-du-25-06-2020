@@ -13,7 +13,7 @@ end
 local sceneManager = _safeRequire("my-librairie/core/sceneManager")
 local Hero = _safeRequire("my-librairie/ActorScripts/player/Hero")
 local Card = _safeRequire("my-librairie/card-librairie/card")
-local responsive = _safeRequire("my-librairie/responsive")
+local responsive = _G.screen or _safeRequire("my-librairie/utils/responsive")
 
 local AM = _safeRequire("my-librairie/managers/actorManager") or rawget(_G, 'actorManager')
 local TransitionCombat = _safeRequire("my-librairie/transitions/templateCombatTransition")

@@ -1,6 +1,6 @@
 -- my-librairie/card-librairie/ui/ux.lua
 local Common = require("my-librairie/card-librairie/core/common")
-local screen = rawget(_G, "screen") or require("my-librairie/responsive")
+local screen = _G.screen or require("my-librairie/utils/responsive")
 local function getCard() return rawget(_G, "Card") end
 local function _safeRequire(name)
     local ok, mod = pcall(require, name)
@@ -9,7 +9,7 @@ local function _safeRequire(name)
 end
 -- Resolve legacy helper: prefer globalFunction then fallback to legacy names/paths
 local myFonction = rawget(_G, "globalFunction") or rawget(_G, "myFonction") or _safeRequire("my-librairie.myFunction") or
-_safeRequire("my-librairie/myFunction") or {}
+    _safeRequire("my-librairie/myFunction") or {}
 local input = _safeRequire("my-librairie/inputManager") or (rawget(_G, "inputManager") and rawget(_G, "inputManager"))
 
 local M = {}

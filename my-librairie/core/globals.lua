@@ -22,7 +22,7 @@ Modules Core - Chargés et exposés globalement
 ===================================================================== ]]
 
 -- JSON Library
-_G.json = require("my-librairie/json")
+_G.json = require("my-librairie.utils.json")
 
 -- HUD System
 _G.hud = require("my-librairie/hud/hud")
@@ -34,7 +34,7 @@ _G.Card = require("my-librairie/card-librairie/card")
 _G.CardStandbyPlay = require("my-librairie/card-librairie/cardStandbyPlay")
 
 -- Responsive Screen Manager
-_G.screen = require("my-librairie/responsive")
+_G.screen = require("my-librairie.utils.responsive")
 
 -- Scene Manager
 _G.scene = require("my-librairie/core/sceneManager")
