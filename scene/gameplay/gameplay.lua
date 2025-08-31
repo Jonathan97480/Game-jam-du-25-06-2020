@@ -139,7 +139,7 @@ local Hero           = require("my-librairie/ActorScripts/player/Hero")
 local Enemies        = require("my-librairie/ActorScripts/Enemy/Enemies")
 local AI             = require("my-librairie/ai/controller")
 local actor          = _G.actorManager or require("my-librairie/managers/actorManager")
-local res            = require("my-librairie.resource_cache")
+local res            = require("my-librairie.managers.resource_cache")
 
 -- Chargement optionnel d’une config scène (safe)
 local SceneConfig    = nil

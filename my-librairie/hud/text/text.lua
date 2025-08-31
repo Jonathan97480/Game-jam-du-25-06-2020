@@ -34,7 +34,7 @@ function Text.new(position, text, fontSize, color)
     function textObj.draw()
         local r, g, b, a = draw.getColor()
         draw.setColor(textObj.color[1] or 1, textObj.color[2] or 1, textObj.color[3] or 1, textObj.color[4] or 1)
-        local f = require("my-librairie.resource_cache").font(textObj.fontSize)
+        local f = require("my-librairie.managers.resource_cache").font(textObj.fontSize)
         if love and love.graphics and love.graphics.setFont then love.graphics.setFont(f) end
         draw.print(textObj.text, textObj.x, textObj.y)
         draw.setColor(r, g, b, a)

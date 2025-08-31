@@ -5,7 +5,7 @@
 local globalFunction = {}
 
 -- Dépendances et configuration
-local res = require("my-librairie.resource_cache")
+local res = require("my-librairie.managers.resource_cache")
 local okcfg, config = pcall(require, "my-librairie.config")
 config = okcfg and config or { logs = { maxFiles = 10, maxEntries = 200, dir = "gameLogs" } }
 
@@ -279,8 +279,12 @@ globalFunction.drawLifeBarStatus = function(acteur, couleurBarre)
         if ok and li and hi then largeurImage, hauteurImage = li, hi end
     end
     local nouvelleEchelle = { w = largeurCible / math.max(1, largeurImage), h = hauteurCible / math.max(1, hauteurImage) }
-    if image then pcall(function() love.graphics.draw(image, position.x, position.y, 0, nouvelleEchelle.w,
-                nouvelleEchelle.h) end) end
+    if image then
+        pcall(function()
+            love.graphics.draw(image, position.x, position.y, 0, nouvelleEchelle.w,
+                nouvelleEchelle.h)
+        end)
+    end
 
     love.graphics.print(vie .. '/' .. vieMax, vx + (w / 1.8), vy - 48)
 

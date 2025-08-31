@@ -46,6 +46,9 @@ _G.effect = require("ressources/effect")
 _G.Transition = require("my-librairie.transitions.transitionManager")
 _G.TransitionCombat = require("my-librairie/transitions/templateCombatTransition")
 
+-- GlobalFunction (fonctions utilitaires et logging)
+_G.globalFunction = require("my-librairie/globalFunction")
+
 --[[ =====================================================================
 Modules Optionnels - Chargés avec fallback
 ===================================================================== ]]
