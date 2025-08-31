@@ -6,7 +6,7 @@ local globalFunction = {}
 
 -- Dépendances et configuration
 local res = require("my-librairie.managers.resource_cache")
-local okcfg, config = pcall(require, "my-librairie/core/config")
+local okcfg, config = pcall(require, "my-librairie.config")
 config = okcfg and config or { logs = { maxFiles = 10, maxEntries = 200, dir = "gameLogs" } }
 
 -- Assure que la table logs existe
@@ -128,12 +128,11 @@ globalFunction.mouse.hover = function(x, y, largeur, hauteur, echelle)
         echelleY = echelle
     end
     local function obtenirCurseur()
-        local okc, curseur = pcall(require, "my-librairie/utils/cursor")
+        local okc, curseur = pcall(require, "my-librairie/inputInterface")
         if okc and curseur and curseur.get then return curseur.get() end
         return 0, 0
     end
     local sourisX, sourisY = obtenirCurseur()
-
     return (sourisX >= x and sourisX <= x + largeur * echelleX and sourisY >= y and sourisY <= y + hauteur * echelleY)
 end
 
@@ -141,12 +140,12 @@ end
 -- @return boolean|nil : True uniquement lors de la première pression
 globalFunction.mouse.click = function()
     local enfonce = false
-    local okInp, gestionnaireEntree = pcall(require, "my-librairie/managers/inputManager")
+    local okInp, gestionnaireEntree = pcall(require, "my-librairie/inputManager")
     if okInp and gestionnaireEntree and gestionnaireEntree.state then
         local etat = gestionnaireEntree.state()
         enfonce = (etat == 'pressed' or etat == 'held')
     else
-        local okI, interface = pcall(require, "my-librairie/managers/inputInterface")
+        local okI, interface = pcall(require, "my-librairie/inputInterface")
         if okI and interface and interface.isActionDown then
             enfonce = interface.isActionDown()
         else
@@ -168,12 +167,12 @@ end
 -- @return string : État actuel
 globalFunction.mouse.state = function()
     local enfonce = false
-    local okInp, gestionnaireEntree = pcall(require, "my-librairie/managers/inputManager")
+    local okInp, gestionnaireEntree = pcall(require, "my-librairie/inputManager")
     if okInp and gestionnaireEntree and gestionnaireEntree.state then
         local etat = gestionnaireEntree.state()
         if etat == 'pressed' or etat == 'held' then enfonce = true end
     else
-        local okI, interface = pcall(require, "my-librairie/managers/inputInterface")
+        local okI, interface = pcall(require, "my-librairie/inputInterface")
         if okI and interface and interface.isActionDown then
             enfonce = interface.isActionDown()
         else
@@ -779,7 +778,7 @@ globalFunction.safecall = function(fn, ...)
 end
 
 -- Tentative de chargement du gestionnaire d'entrée centralisé et délégation des helpers souris
-local ok, gestionnaireEntree = pcall(require, "my-librairie/managers/inputManager")
+local ok, gestionnaireEntree = pcall(require, "my-librairie/inputManager")
 if ok and type(gestionnaireEntree) == 'table' then
     globalFunction.mouse = globalFunction.mouse or {}
     globalFunction.mouse.hover = gestionnaireEntree.hover
@@ -792,7 +791,8 @@ end
 
 -- Alias globaux pour compatibilité (certains scripts utilisent "myFonction")
 rawset(_G, "globalFunction", globalFunction)
-
+rawset(_G, "myFunction", globalFunction)
+rawset(_G, "myFonction", globalFunction)
 
 -- Initialisation du log
 globalFunction.log.info("Logger initialisé")

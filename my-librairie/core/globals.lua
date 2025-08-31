@@ -1,4 +1,4 @@
--- my-librairie/core/globals.lua
+-- my-librairie/globals.lua
 -- Centralisation de toutes les variables globales du projet
 -- Ce fichier doit être requis depuis main.lua AVANT tout autre module
 
@@ -22,19 +22,19 @@ Modules Core - Chargés et exposés globalement
 ===================================================================== ]]
 
 -- JSON Library
-_G.json = require("my-librairie/utils/json")
+_G.json = require("my-librairie/json")
 
 -- HUD System
-_G.hud = require("my-librairie/systems/hud/hud")
+_G.hud = require("my-librairie/hud/hud")
 
 -- Card System (API façade principale)
-_G.Card = require("my-librairie/systems/card-librairie/card")
+_G.Card = require("my-librairie/card-librairie/card")
 
 -- Card Standby Play System
-_G.CardStandbyPlay = require("my-librairie/systems/card-librairie/states/standby")
+_G.CardStandbyPlay = require("my-librairie/card-librairie/cardStandbyPlay")
 
 -- Responsive Screen Manager
-_G.screen = require("my-librairie/utils/responsive")
+_G.screen = require("my-librairie/responsive")
 
 -- Scene Manager
 _G.scene = require("my-librairie/core/sceneManager")
@@ -43,38 +43,36 @@ _G.scene = require("my-librairie/core/sceneManager")
 _G.effect = require("ressources/effect")
 
 -- Transition Manager
-_G.Transition = require("my-librairie.systems.transitions.transitionManager")
-_G.TransitionCombat = require("my-librairie/systems/transitions/templateCombatTransition")
+_G.Transition = require("my-librairie.transitions.transitionManager")
+_G.TransitionCombat = require("my-librairie/transitions/templateCombatTransition")
+
+-- GlobalFunction (fonctions utilitaires et logging)
+_G.globalFunction = require("my-librairie/utils/globalFunction")
+-- Le module `core/cursor` a été supprimé : utiliser `inputInterface` comme source unique d'input
+local okInputIface, inputInterface = pcall(require, "my-librairie/inputInterface")
+_G.cursor = okInputIface and inputInterface or nil
+print("[globals] _G.cursor set to inputInterface?", okInputIface)
+
 
 --[[ =====================================================================
 Modules Optionnels - Chargés avec fallback
 ===================================================================== ]]
 
 -- Input Manager (unifie souris/gamepad)
-local okInput, inputManager = pcall(require, "my-librairie/managers/inputManager")
+local okInput, inputManager = pcall(require, "my-librairie/inputManager")
 _G.inputManager = okInput and inputManager or nil
 
 -- Actor Manager (gestion entités de combat)
-local okActor, actorManager = pcall(require, "my-librairie/core/actorManager")
+local okActor, actorManager = pcall(require, "my-librairie/managers/actorManager")
 _G.actorManager = okActor and actorManager or nil
 
 -- Card Target Selection (système de ciblage manuel)
 -- Force rechargement en vidant le cache
-package.loaded["my-librairie/systems/card-librairie/ui/card_target_selection"] = nil
-local okCTS, cardTargetSelection = pcall(require, "my-librairie/systems/card-librairie/ui/card_target_selection")
+package.loaded["my-librairie/card-librairie/ui/card_target_selection"] = nil
+local okCTS, cardTargetSelection = pcall(require, "my-librairie/card-librairie/ui/card_target_selection")
 _G.CardTargetSelection = okCTS and cardTargetSelection or nil
 
 
-_G.globalFunction = require("my-librairie/utils/globalFunction") or {}
-
-
--- NOTE: globalFunction contient de nombreux utilitaires réutilisables :
--- - Animation: lerp(), clone()
--- - Input: mouse.hover(), mouse.click(), endTurnHotkeys()
--- - Logging: log.info/warn/error(), drawLogs(), log.toggle()
--- - Rendu: drawLifeBarStatus()
--- - Utils: safecall(), tstr()
--- Consultez my-librairie/globalFunction.lua pour la liste complète
 
 --[[ =====================================================================
 Actors Scripts - Chargés à la demande
@@ -113,18 +111,12 @@ Modules Optionnels - Chargés avec fallback
 ===================================================================== ]]
 
 -- Input Manager (unifie souris/gamepad)
-local okInput, inputManager = pcall(require, "my-librairie/managers/inputManager")
+local okInput, inputManager = pcall(require, "my-librairie/inputManager")
 _G.inputManager = okInput and inputManager or nil
 
--- Input Interface
-local okInputInterface, inputInterface = pcall(require, "my-librairie/managers/inputInterface")
-_G.inputInterface = okInputInterface and inputInterface or nil
-
 -- Actor Manager (gestion entités de combat)
-local okActor, actorManager = pcall(require, "my-librairie/core/actorManager")
+local okActor, actorManager = pcall(require, "my-librairie/managers/actorManager")
 _G.actorManager = okActor and actorManager or nil
-
-
 
 
 --[[ =====================================================================

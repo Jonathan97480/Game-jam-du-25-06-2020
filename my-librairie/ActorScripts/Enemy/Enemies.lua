@@ -81,7 +81,7 @@ local actor = nil
 local globalFunction = nil
 local function getGlobalFunction()
     if globalFunction then return globalFunction end
-    pcall(function() globalFunction = require('my-librairie.globalFunction') end)
+    pcall(function() globalFunction = require('my-librairie.utils.globalFunction') end)
     return globalFunction
 end
 

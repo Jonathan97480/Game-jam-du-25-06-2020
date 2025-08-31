@@ -1,4 +1,4 @@
--- Central cursor helper
+--[[ -- Central cursor helper
 local M = {}
 
 function M.get()
@@ -20,3 +20,4 @@ function M.get()
 end
 
 return M
+ ]]

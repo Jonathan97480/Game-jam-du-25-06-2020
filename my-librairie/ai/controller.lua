@@ -54,7 +54,10 @@ local AI                      = {
 
 local function logf(fmt, ...)
   if AI.DEBUG then
-    if globalFunction == nil then globalFunction = rawget(_G, 'globalFunction') or require("my-librairie/globalFunction") end
+    if globalFunction == nil then
+      globalFunction = rawget(_G, 'globalFunction') or
+          require("my-librairie.utils.globalFunction")
+    end
     local args = { ... }
     local message
     if #args > 0 then

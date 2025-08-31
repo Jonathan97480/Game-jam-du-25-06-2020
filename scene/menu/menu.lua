@@ -274,7 +274,7 @@ function menu.hover()
             end
         end
     end
-
+    print(mx, my)
     for _, value in pairs(menu.button) do
         local inside = (mx >= value.vector2.x) and (mx <= value.vector2.x + value.width) and (my >= value.vector2.y) and
             (my <= value.vector2.y + value.height)
