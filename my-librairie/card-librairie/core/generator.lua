@@ -6,6 +6,25 @@ local dprint = Common.dprint
 
 local M = {}
 
+-- Retourne true si la table (ou sous-table) contient une VALEUR NUMÉRIQUE non nulle
+local function containsNonZeroNumeric(obj)
+    local t = type(obj)
+    if t == "number" then
+        return obj ~= 0
+    end
+    if t ~= "table" then
+        return false
+    end
+    for k, v in pairs(obj) do
+        if type(v) == "number" then
+            if v ~= 0 then return true end
+        elseif type(v) == "table" then
+            if containsNonZeroNumeric(v) then return true end
+        end
+    end
+    return false
+end
+
 function M.loadCards(cardsRessources, actortag, deckName)
     local deck
     if deckName == nil then deckName = "globalDeck" end
@@ -88,8 +107,8 @@ function M.loadCards(cardsRessources, actortag, deckName)
             local tf = card.TextFormatting
             if not tf then
                 local msg = ("[card.loadCards] ERREUR: TextFormatting manquant pour la carte '%s' dans le deck '%s'")
-                :format(
-                    tostring(card.name or "<unknown>"), tostring(deckName))
+                    :format(
+                        tostring(card.name or "<unknown>"), tostring(deckName))
                 if Common and Common.dprint then
                     Common.dprint(msg)
                 else
@@ -100,8 +119,8 @@ function M.loadCards(cardsRessources, actortag, deckName)
             local tfcard = tf.card
             if not tfcard then
                 local msg = ("[card.loadCards] ERREUR: TextFormatting.card manquant pour la carte '%s' dans le deck '%s'")
-                :format(
-                    tostring(card.name or "<unknown>"), tostring(deckName))
+                    :format(
+                        tostring(card.name or "<unknown>"), tostring(deckName))
                 if Common and Common.dprint then
                     Common.dprint(msg)
                 else
@@ -115,6 +134,15 @@ function M.loadCards(cardsRessources, actortag, deckName)
             card._grabDY = 0
             card._isGrabbed = false
             card.locked = false
+            -- Détecte si la carte est self-only : l'arbre Effect.target ne contient AUCUNE valeur numérique non nulle
+            if card.self_only == nil then
+                local hasNonZero = false
+                if card.Effect and card.Effect.target then
+                    hasNonZero = containsNonZeroNumeric(card.Effect.target)
+                end
+                card.self_only = not hasNonZero
+            end
+
             deck:addCard(card)
             if Common and Common.dprint then
                 Common.dprint(("[card.loadCards] carte ajoutée au deck '%s' : %s"):format(
