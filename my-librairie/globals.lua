@@ -43,7 +43,8 @@ _G.scene = require("my-librairie/sceneManager")
 _G.effect = require("ressources/effect")
 
 -- Transition Manager
-_G.Transition = require("my-librairie.transitionManager")
+_G.Transition = require("my-librairie.transitions.transitionManager")
+_G.TransitionCombat = require("my-librairie/transitions/templateCombatTransition")
 
 --[[ =====================================================================
 Modules Optionnels - Chargés avec fallback
@@ -109,8 +110,8 @@ _G.scene = require("my-librairie/sceneManager")
 -- Effects System
 _G.effect = require("ressources/effect")
 
--- Transition Manager
-_G.Transition = require("my-librairie.transitionManager")
+--[[ -- Transition Manager
+_G.Transition = require("my-librairie.transitionManager") ]]
 
 --[[ =====================================================================
 Modules Optionnels - Chargés avec fallback

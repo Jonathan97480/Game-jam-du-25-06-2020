@@ -11,7 +11,7 @@ end
 -- Load modules safely
 local hud = _safeRequire("my-librairie/hud/hud") or _G.hud
 local responsive = _safeRequire("my-librairie/responsive") or _G.screen
-local Transition = _safeRequire("my-librairie/transition/templateCombatTransition")
+local TransitionCombat = _safeRequire("my-librairie/transitions/templateCombatTransition")
 local Card = _G.Card or _safeRequire("my-librairie/card-librairie/card")
 
 -- Debug: Check if HUD is loaded
@@ -157,8 +157,8 @@ function hud_overlay_start.load()
         cornerRadius = 10,                  -- Coins arrondis
         onClick = function()
             print("DEBUG: Continue button clicked!")
-            if Transition and Transition.continueFromStartOverlay then
-                Transition:continueFromStartOverlay()
+            if TransitionCombat and TransitionCombat.continueFromStartOverlay then
+                TransitionCombat:continueFromStartOverlay()
             else
                 print("ERROR: Transition.continueFromStartOverlay not available")
             end

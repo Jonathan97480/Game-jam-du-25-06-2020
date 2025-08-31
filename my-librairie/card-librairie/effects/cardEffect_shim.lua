@@ -148,12 +148,13 @@ function Effect.applyCardEffect(card, source, target)
     if type(source) ~= "table" then return end
     if type(target) ~= "table" then return end
 
-    if not (card and card.Effect) then return end
+    if not (card and (card.Effect or card.effect)) then return end
     if not (source and target) then return end
 
-    local effect = card.Effect
-    local actorEffects = effect.Actor or {}
-    local enemyEffects = effect.Enemy or {}
+    local effect = card.Effect or card.effect or {}
+    -- Support legacy (Actor/Enemy) and modern (source/target, caster/lanceur)
+    local actorEffects = effect.Actor or effect.actor or effect.source or effect.Source or effect.caster or effect.Caster or effect.lanceur or {}
+    local enemyEffects = effect.Enemy or effect.enemy or effect.target or effect.Target or effect.cible or {}
 
     -- Déterminer qui applique les effets basé sur les tags
     local sourceIsHero = (source.tag == "Hero" or source.tag == "hero")
@@ -181,8 +182,50 @@ function Effect.applyCardEffect(card, source, target)
     end
 end
 
-function Effect._applyEffectSet(source, actorEffects, source)
+-- Apply a set of effects to a target using the dispatch table
+function Effect._applyEffectSet(target, effects, source)
+    if type(effects) ~= 'table' or not target then return end
 
+    -- helper to pick first existing key among aliases
+    local function pick(tbl, ...)
+        for i = 1, select('#', ...) do
+            local k = select(i, ...)
+            if tbl[k] ~= nil then return tbl[k] end
+        end
+        return nil
+    end
+
+    local heal       = tonumber(pick(effects, 'heal', 'Heal')) or 0
+    local attack     = tonumber(pick(effects, 'attack', 'Attack', 'degats', 'damage')) or 0
+    local shield     = tonumber(pick(effects, 'shield', 'Shield')) or 0
+    local epine      = tonumber(pick(effects, 'epine', 'Epine', 'thorns')) or 0
+    local atkRed     = tonumber(pick(effects, 'attack_reduction', 'AttackReduction')) or 0
+    local shieldPass = tonumber(pick(effects, 'shield_pass', 'shieldpass', 'ShieldPass')) or 0
+    local chanceSkip = tonumber(pick(effects, 'chance_passed_tour', 'chancePassedTour', 'skip')) or 0
+    local energyInc  = tonumber(pick(effects, 'energy_cost_increase', 'energyCostIncrease')) or 0
+    local energyDec  = tonumber(pick(effects, 'energy_cost_decrease', 'energyCostDecrease')) or 0
+
+    local bleeding   = pick(effects, 'bleeding', 'saignement')
+    local forceAug   = pick(effects, 'force_augmented', 'forceAugmented')
+
+    if heal > 0 then Effect.dispatchEffect(target, 'heal', heal, source) end
+    if shield > 0 then Effect.dispatchEffect(target, 'shield', shield, source) end
+    if epine > 0 then Effect.dispatchEffect(target, 'epine', epine, source) end
+    if atkRed > 0 then Effect.dispatchEffect(target, 'attack_reduction', atkRed, source) end
+    if shieldPass > 0 then Effect.dispatchEffect(target, 'shield_pass', shieldPass, source) end
+    if chanceSkip > 0 then Effect.dispatchEffect(target, 'chance_passed_tour', chanceSkip, source) end
+    if energyInc > 0 then Effect.dispatchEffect(target, 'energy_cost_increase', energyInc, source) end
+    if energyDec > 0 then Effect.dispatchEffect(target, 'energy_cost_decrease', energyDec, source) end
+
+    if type(bleeding) == 'table' then Effect.dispatchEffect(target, 'bleeding', bleeding, source) end
+    if type(forceAug) == 'table' then Effect.dispatchEffect(target, 'force_augmented', forceAug, source) end
+
+    if attack > 0 then
+        local bonus     = (type(calculateAttackBonus) == 'function') and calculateAttackBonus(source) or 0
+        local reduction = (type(calculateAttackReduction) == 'function') and calculateAttackReduction(target) or 0
+        local finalDmg  = math.max(0, math.floor(attack + bonus - reduction))
+        Effect.dispatchEffect(target, 'damage', finalDmg, source)
+    end
 end
 
 function Effect.dispatchEffect(target, kind, value, source)

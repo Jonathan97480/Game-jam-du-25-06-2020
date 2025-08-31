@@ -15,5 +15,6 @@
         "html",
         "scss",
         "xml"
-    ]
+    ],
+    "chatgpt.openOnStartup": false
 }

@@ -9,21 +9,21 @@ local function _safeRequire(name)
 end
 
 -- Dépendances
-local Transition     = _safeRequire("my-librairie/transition/templateCombatTransition")
-local inputInterface = _safeRequire("my-librairie/inputInterface")
-local InitiativeHUD  = _safeRequire("scene/overlay_initiative/HUD/initiative_overlay_hud")
+local TransitionCombat = _safeRequire("my-librairie/transitions/templateCombatTransition")
+local inputInterface   = _safeRequire("my-librairie/inputInterface")
+local InitiativeHUD    = _safeRequire("scene/overlay_initiative/HUD/initiative_overlay_hud")
 
 -- Variables de logique métier
 local W, H
-local timer          = 0
-local hold           = 10    -- secondes avant auto-continue
-local who            = "?"   -- qui commence le combat
-local spacePressed   = false -- a-t-on pressé espace ?
-local spaceTimer     = 0     -- temps depuis que espace a été pressé
-local globalFunction = _G.globalFunction
+local timer            = 0
+local hold             = 10    -- secondes avant auto-continue
+local who              = "?"   -- qui commence le combat
+local spacePressed     = false -- a-t-on pressé espace ?
+local spaceTimer       = 0     -- temps depuis que espace a été pressé
+local globalFunction   = _G.globalFunction
 
 -- Instance graphique
-local hudRenderer    = nil
+local hudRenderer      = nil
 
 -- ============================
 -- LOGIQUE D'INITIALISATION
@@ -70,8 +70,8 @@ end
 
 function overlay.determineWhoStarts(self)
     -- LOGIQUE : déterminer qui commence le combat
-    if Transition and Transition.getInitiative then
-        local initiative = Transition.getInitiative()
+    if TransitionCombat and TransitionCombat.getInitiative then
+        local initiative = TransitionCombat.getInitiative()
         return (initiative == "Enemy") and "L'ennemi commence !" or "Vous commencez !"
     elseif _G.Tour == "Enemy" then
         return "L'ennemi commence !"
@@ -183,9 +183,9 @@ function overlay.closeOverlay(self)
 
     -- CORRECTIF: Utiliser la fonction du templateCombatTransition au lieu de faire pop() directement
     -- Cela évite le conflit où les deux systèmes font pop() en même temps
-    if Transition and Transition.confirmInitiativeOverlay then
+    if TransitionCombat and TransitionCombat.confirmInitiativeOverlay then
         globalFunction.log.info("[overlay_initiative] Notification au Transition system via confirmInitiativeOverlay()")
-        Transition.confirmInitiativeOverlay()
+        TransitionCombat.confirmInitiativeOverlay()
     elseif _G.scene and _G.scene.pop then
         -- Fallback si Transition pas disponible
         globalFunction.log.warn("[overlay_initiative] Fallback: Transition non disponible, pop() direct")

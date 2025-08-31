@@ -26,16 +26,6 @@ local M = {}
 function M.cardToGraveyard(c)
     local cardRemoved = false
 
-    -- PRIORITÉ 1: Vérifier si la carte est en standby
-    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
-    if CardStandbyPlay and CardStandbyPlay.hasCardInStandby() then
-        local standbyCard = CardStandbyPlay.getStandbyCard()
-        if standbyCard == c then
-            _log("📍 Carte trouvée en STANDBY - retrait du standby au lieu de la main")
-            -- La carte sera retirée du standby par CardStandbyPlay.confirmCardPlay()
-            cardRemoved = true
-        end
-    end
 
     -- PRIORITÉ 2: Si pas en standby, chercher dans la main
     if not cardRemoved then
@@ -211,17 +201,8 @@ function M.action.play()
     M.action.current = nil
 end
 
-local function _coerce_dt(a, b)
-    if type(a) == "number" and b == nil then return a end
-    if type(a) == "table" and type(b) == "number" then return b end
-    if type(a) == "table" and type(a.dt) == "number" then return a.dt end
-    if type(a) == "table" and type(a[1]) == "number" then return a[1] end
-    if love and love.timer and love.timer.getDelta then return love.timer.getDelta() end
-    return 0.016
-end
-
-function M.action.update(a, b)
-    local dt = _coerce_dt(a, b)
+function M.action.update(dt)
+    local dt = globalFunction.clampDt(dt)
     if Anim and type(Anim.update) == "function" then return Anim.update(dt) end
 end
 

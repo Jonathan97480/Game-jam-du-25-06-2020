@@ -16,7 +16,7 @@ local globalFunction          = _G.globalFunction or rawget(_G, 'globalFunction'
 -- Nouveau : Module de stratégie de sélection de cartes et ciblage
 local CardSelectionStrategy   = _safeRequire("my-librairie/ai/card_selection_strategy")
 
-local Transition              = _safeRequire("my-librairie/transition/templateCombatTransition")
+local TransitionCombat        = _G.TransitionCombat or _safeRequire("my-librairie/transitions/templateCombatTransition")
 
 local timerMaxTurnChanged     = 1
 local timerDrawTurned         = 0
@@ -183,11 +183,7 @@ local function addChainCardsWithDelay(cards)
   end
 end
 
--- Vérifie s'il reste de la place pour jouer plus de cartes ce tour
-local function canPlayMoreCards()
-  local totalPlanned = AI.playsThisTurn + #AI.chainCards
-  return totalPlanned < AI.maxPlaysPerTurn
-end
+
 
 -- Réinitialise le compteur pour un nouveau tour
 local function resetTurnCounter()
@@ -227,42 +223,6 @@ end
 -- DÉLÉGATION VERS LE MODULE DE STRATÉGIE
 -- ============================================================================
 
--- Fonctions de ciblage déléguées vers le module de stratégie
-local function getCurrentEnemy()
-  if CardSelectionStrategy and CardSelectionStrategy.getCurrentEnemy then
-    return CardSelectionStrategy.getCurrentEnemy()
-  end
-  -- Fallback direct
-  if EnemiesManager and EnemiesManager.curentEnemy then
-    return EnemiesManager.curentEnemy
-  end
-  return currentEnemy
-end
-
-local function getAllAllies(sourceEnemy)
-  if CardSelectionStrategy and CardSelectionStrategy.getAllAllies then
-    return CardSelectionStrategy.getAllAllies(sourceEnemy)
-  end
-  return {}
-end
-
-local function findBestHealTarget(sourceEnemy, allies)
-  if CardSelectionStrategy and CardSelectionStrategy.findBestHealTarget then
-    return CardSelectionStrategy.findBestHealTarget(sourceEnemy, allies)
-  end
-  return nil
-end
-local function lifeRatio(actor)
-  if not actor or not actor.state then return 1 end
-  local max = tonumber(actor.state.maxLife) or 1
-  if max <= 0 then max = 1 end
-  local cur = tonumber(actor.state.life) or 0
-  return cur / max
-end
-local function getShield(actor)
-  if not actor or not actor.state then return 0 end
-  return tonumber(actor.state.shield) or 0
-end
 local function normDt(dt)
   if type(dt) == "number" then return dt end
   if type(dt) == "table" then
@@ -379,7 +339,7 @@ local function applyGeneric(heroActor, enemyActor, eff)
 end
 
 -- ---------- CHOIX ----------
-local function cardType(c)
+--[[ local function cardType(c)
   local eff = getEffects(c)
   local h, e = eff.hero or {}, eff.enemy or {}
   if (e.heal and e.heal > 0) then return "heal" end
@@ -387,7 +347,7 @@ local function cardType(c)
   if (h.attack and h.attack > 0) then return "attack" end
   if (h.skip and h.skip > 0) then return "control" end
   return "other"
-end
+end ]]
 
 local function chooseDeterministic(deck, playsRemaining)
   -- Délégation vers le module de stratégie de sélection
@@ -715,9 +675,9 @@ function AI:update(dt)
   end
 
   if type(e) ~= "table" or type(e.state) ~= "table" then
-    if not self._endSent and Transition and Transition.requestEndTurn then
+    if not self._endSent and TransitionCombat and TransitionCombat.requestEndTurn then
       logf("[AI] pas d'ennemi valide → fin de tour")
-      Transition.requestEndTurn()
+      TransitionCombat.requestEndTurn()
       self._endSent = true
     end
     self.busy, self.running = false, false
@@ -725,9 +685,9 @@ function AI:update(dt)
     return
   end
 
-  Transition = Transition or rawget(_G, "Transition")
-  if Transition and (Transition.state == "victory_check" or Transition.state == "reward_choice"
-        or Transition.state == "advance_enemy" or Transition.state == "game_over") then
+  TransitionCombat = TransitionCombat or rawget(_G, "TransitionCombat")
+  if TransitionCombat and (TransitionCombat.state == "victory_check" or TransitionCombat.state == "reward_choice"
+        or TransitionCombat.state == "advance_enemy" or TransitionCombat.state == "game_over") then
     AI.listener.clear();
     return
   end
@@ -750,9 +710,9 @@ function AI:update(dt)
         logf("[AI] deck IA vide → fin de tour")
         -- Marque et envoie immédiatement la demande de fin de tour au Transition Manager
         self._endSent = true
-        if Transition and Transition.requestEndTurn then
+        if TransitionCombat and TransitionCombat.requestEndTurn then
           logf("[AI->Transition] demande fin de tour (deck vide)")
-          pcall(function() Transition.requestEndTurn() end)
+          pcall(function() TransitionCombat.requestEndTurn() end)
         else
           logf("[AI->Transition] Transition non disponible pour requestEndTurn()")
         end
@@ -863,8 +823,8 @@ function AI:update(dt)
   elseif self.state == "endturn" then
     if not self._endSent then
       self._endSent = true
-      logf("[AI] fin de tour -> Transition.requestEndTurn()")
-      if Transition and Transition.requestEndTurn then Transition.requestEndTurn() end
+      logf("[AI] fin de tour -> TransitionCombat.requestEndTurn()")
+      if TransitionCombat and TransitionCombat.requestEndTurn then TransitionCombat.requestEndTurn() end
       _notify("onTurnEnd")
       -- Évite le spam : on attend que Transition bascule le tour
       self.state = "waiting_end"
@@ -877,7 +837,8 @@ function AI:update(dt)
 end
 
 function AI.draw()
-  if Transition.state == 'overlay_start' or Transition.state == 'overlay_initiative' then return end
+  TransitionCombat = TransitionCombat or rawget(_G, "TransitionCombat")
+  if TransitionCombat.state == 'overlay_start' or TransitionCombat.state == 'overlay_initiative' then return end
 
   if (not AI.listener or not AI.listener.draw) then
     logf("[AI] draw: pas de listener ou draw non implémenté")
