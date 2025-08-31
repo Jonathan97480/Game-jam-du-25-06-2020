@@ -1,4 +1,4 @@
--- my-librairie/card-librairie/cardEffect/heal.lua
+-- my-librairie/card-librairie/effects/heal.lua
 local effect       = require("ressources/effect")
 local actorManager = require("my-librairie/actorManager")
 

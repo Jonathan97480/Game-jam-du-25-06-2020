@@ -1,4 +1,4 @@
--- my-librairie/card-librairie/play/anim.lua
+-- my-librairie/card-librairie/render/anim.lua
 -- Module d'animations pour les cartes en main
 --
 -- Ce module centralise les petits moteurs d'animation utilisés par la main

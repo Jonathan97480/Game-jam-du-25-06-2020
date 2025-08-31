@@ -31,7 +31,7 @@ _G.hud = require("my-librairie/hud/hud")
 _G.Card = require("my-librairie/card-librairie/card")
 
 -- Card Standby Play System
-_G.CardStandbyPlay = require("my-librairie/card-librairie/cardStandbyPlay")
+_G.CardStandbyPlay = require("my-librairie/card-librairie/states/standby")
 
 -- Responsive Screen Manager
 _G.screen = require("my-librairie/responsive")

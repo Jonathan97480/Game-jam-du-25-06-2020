@@ -1,10 +1,10 @@
--- my-librairie/card-librairie/play/play.lua
+-- my-librairie/card-librairie/render/play.lua
 local Common      = require("my-librairie/card-librairie/core/common")
 local Layout      = require("my-librairie/card-librairie/ui/layout")
-local Anim        = require("my-librairie/card-librairie/play/anim")
+local Anim        = require("my-librairie/card-librairie/render/anim")
 
 -- Import du nouveau CardManager
-local CardManager = require("my-librairie/card-librairie/card_manager")
+local CardManager = require("my-librairie/card-librairie/states/manager")
 
 -- Fonction de log pour le système
 local function _log(message)

@@ -5,9 +5,9 @@ local Common                      = require("my-librairie/card-librairie/core/co
 local Generator                   = require("my-librairie/card-librairie/core/generator")
 local UX                          = require("my-librairie/card-librairie/ui/ux")
 local Interaction                 = require("my-librairie/card-librairie/ui/interaction")
-local Play                        = require("my-librairie/card-librairie/play/play")
+local Play                        = require("my-librairie/card-librairie/render/play")
 local Layout                      = require("my-librairie/card-librairie/ui/layout")
-local Anim                        = require("my-librairie/card-librairie/play/anim")
+local Anim                        = require("my-librairie/card-librairie/render/anim")
 
 local Card                        = {}
 -- Assure l’existence d’une main IA

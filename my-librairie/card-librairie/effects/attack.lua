@@ -1,4 +1,4 @@
--- my-librairie/card-librairie/cardEffect/attack.lua
+-- my-librairie/card-librairie/effects/attack.lua
 local effect       = require("ressources/effect")
 local actorManager = require("my-librairie/actorManager")
 
