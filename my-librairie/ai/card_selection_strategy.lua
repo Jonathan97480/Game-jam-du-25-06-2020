@@ -5,8 +5,8 @@
 
 local globalFunction = _G.globalFunction or require("my-librairie.utils.globalFunction")
 local Card = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
-local Hero = _G.Hero or rawget(_G, "Hero")
-local EnemiesManager = require("my-librairie/ActorScripts/Enemy/Enemies")
+local Hero = _G.Hero or require("my-librairie.entities.player.Hero")
+local EnemiesManager = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
 local TransitionCombat = _G.TransitionCombat or require("my-librairie/transitions/templateCombatTransition")
 
 -- Module principal

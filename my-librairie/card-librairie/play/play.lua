@@ -17,8 +17,8 @@ local function _log(message)
 end
 
 local function getHud() return rawget(_G, "hud") end
-local function getHero() return rawget(_G, "Hero") end
-local function getEnemies() return rawget(_G, "Enemies") end
+local function getHero() return _G.Hero end
+local function getEnemies() return _G.Enemies end
 local function getTour() return rawget(_G, "Tour") end
 
 local M = {}

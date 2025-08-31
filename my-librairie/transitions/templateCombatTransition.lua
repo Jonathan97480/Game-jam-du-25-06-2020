@@ -26,10 +26,10 @@ end
 ----------------------------------------------------------------------
 local SceneManager = rawget(_G, "scene") or safe_require("my-librairie/core/sceneManager")
 local Card         = rawget(_G, "Card") or safe_require("my-librairie/card-librairie/card")
-local Hero         = rawget(_G, "Hero") or safe_require("my-librairie/ActorScripts/player/Hero")
+local Hero         = rawget(_G, "Hero") or safe_require("my-librairie/entities/player/Hero")
 local AI           = rawget(_G, "AI") or
-    safe_require("my-librairie/ai/controller")                               -- Gestionnaire d'acteurs (ennemis vivants)
-local EnemiesMod   = safe_require("my-librairie/ActorScripts/Enemy/Enemies") -- Compat : Enemies.curentEnemy
+    safe_require("my-librairie/ai/controller") -- Gestionnaire d'acteurs (ennemis vivants)
+local EnemiesMod   = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
 
 -- Persistance simple pour flags globaux (draft du premier combat)
 local GameFlags    = rawget(_G, "GameFlags") or {}

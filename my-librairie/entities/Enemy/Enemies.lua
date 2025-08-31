@@ -1,21 +1,16 @@
--- my-librairie/entities/enemy/enemy.lua
-local Enemies        = {
+-- my-librairie/ActorScripts/Enemy/Enemies.lua
+local Enemies = {
     curentEnemy  = nil,
     listeEnemies = {}
 }
-local actor          = actor or require("my-librairie.core.actorManager")
-local globalFunction = _G.globalFunction or require("my-librairie.utils.globalFunction")
+local actor   = _G.actorManager or require("my-librairie/actorManager")
 
 -- Backwards-compatible Enemy factory registry (singleton)
-local Enemy          = rawget(_G, "__ENEMY_SINGLETON__") or {}
-
--- Lazy require pour casser la boucle de dépendance avec controller
-local IA             = nil
+local Enemy   = rawget(_G, "__ENEMY_SINGLETON__") or {}
+local IA      = nil
 local function getIA()
-    if not IA then
-        local ok, mod = pcall(require, "my-librairie.systems.ai.controller")
-        if ok then IA = mod end
-    end
+    if IA then return IA end
+    pcall(function() IA = require("my-librairie/entities/Enemy/ia") end)
     return IA
 end
 
@@ -42,14 +37,19 @@ function Enemies.create(_spawnData)
     )
 
     -- Configuration de la barre de vie de l'ennemi
+    local lifeBarX = ((enemyEntity.vector2 and enemyEntity.vector2.x) or 0)
+    local lifeBarY = ((enemyEntity.vector2 and enemyEntity.vector2.y) or 0) - 50
+    local lifeBarCenterX = ((enemyEntity.vector2 and enemyEntity.vector2.x) or 0) + ((enemyEntity.width or 0) / 2)
+    local lifeBarPositionX = lifeBarCenterX - (150 / 2)
+
     enemyEntity.lifeBarConfig = {
-        x = (enemyEntity.vector2 and enemyEntity.vector2.x) or 0,
-        y = (enemyEntity.vector2 and enemyEntity.vector2.y) - 50 or 0,
+        x = lifeBarX,
+        y = lifeBarY,
         w = 150,
         h = 25,
         position = {
-            x = ((enemyEntity.vector2 and enemyEntity.vector2.x) + (enemyEntity.width / 2)) - (150 / 2) or 0,
-            y = (enemyEntity.vector2 and enemyEntity.vector2.y) - 50 or 0
+            x = lifeBarPositionX,
+            y = lifeBarY
         },
         size = {
             w = 150,
@@ -83,10 +83,10 @@ rawset(_G, "__ENEMY_SINGLETON__", Enemies)
 -- actorManager is resolved lazily inside load() to avoid circular require
 local actor = nil
 
-
+local globalFunction = nil
 local function getGlobalFunction()
     if globalFunction then return globalFunction end
-    pcall(function() globalFunction = require('my-librairie.utils.globalFunction') end)
+    pcall(function() globalFunction = _G.globalFunction or require('my-librairie.utils.globalFunction') end)
     return globalFunction
 end
 

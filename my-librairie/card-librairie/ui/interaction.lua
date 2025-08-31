@@ -288,7 +288,7 @@ function M.hover(dt)
                     local CardTargetSelection = rawget(_G, "CardTargetSelection")
 
                     -- Récupération des ennemis (plusieurs patterns possibles)
-                    local EnemiesG = rawget(_G, "Enemies") or rawget(_G, "__ENEMY_SINGLETON__") or rawget(_G, "EnemiesG")
+                    local EnemiesG = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
                     local enemyList = {}
 
                     if EnemiesG and EnemiesG.listeEnemies then

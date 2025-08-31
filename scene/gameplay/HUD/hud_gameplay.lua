@@ -11,7 +11,7 @@ end
 
 -- Prefer explicit requires instead of globals
 local sceneManager = _safeRequire("my-librairie/core/sceneManager")
-local Hero = _safeRequire("my-librairie/ActorScripts/player/Hero")
+local Hero = _G.Hero or _safeRequire("my-librairie/entities/player/Hero")
 local Card = _safeRequire("my-librairie/card-librairie/card")
 local responsive = _G.screen or _safeRequire("my-librairie/utils/responsive")
 
@@ -40,7 +40,9 @@ end
 local function safeEndTurn()
     print("fin de tour demander")
     -- Prefer the Transition manager first (central end-turn flow)
-    if type(TransitionCombat.requestEndTurn) == 'function' then
+
+
+    if TransitionCombat and type(TransitionCombat.requestEndTurn) == 'function' then
         pcall(function()
             local f = io.open("gameLogs/hud_clicks.log", "a")
             if f then
@@ -95,7 +97,7 @@ function hud_gameplay.load()
     local pw = (responsive and responsive.gameReso and responsive.gameReso.width) or 1920
     local ph = (responsive and responsive.gameReso and responsive.gameReso.height) or 1080
     -- prepare dynamic values for initial labels
-    local H = Hero or _safeRequire("my-librairie/ActorScripts/player/Hero")
+    local H = Hero or _safeRequire("my-librairie/entities/player/Hero")
     local val = (H and H.actor and H.actor.state and H.actor.state.power) or 0
     local CardLocal = Card or _safeRequire("my-librairie/card-librairie/card")
     local deckCount = tostring(#(CardLocal and CardLocal.deck or {}))
@@ -161,7 +163,7 @@ function hud_gameplay.load()
 end
 
 function hud_gameplay.update(dt)
-    local H = Hero or _safeRequire("my-librairie/ActorScripts/player/Hero")
+    local H = Hero or _safeRequire("my-librairie/entities/player/Hero")
     local val = (H and H.actor and H.actor.state and H.actor.state.power) or 0
     hud.setText('energy_text', tostring(val))
     local CardLocal = Card or _safeRequire("my-librairie/card-librairie/card")

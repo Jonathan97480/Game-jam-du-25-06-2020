@@ -5,6 +5,16 @@
 local hud_gameplay = require("scene.gameplay.HUD.hud_gameplay")
 
 ----------------------------------------------------------------------
+-- Autres dépendances de gameplay
+----------------------------------------------------------------------
+local cardsPlayer  = require("ressources/cards_data_player")
+local Hero         = _G.Hero or require("my-librairie/entities/player/Hero")
+local Enemies      = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
+local AI           = require("my-librairie/ai/controller")
+local actor        = _G.actorManager or require("my-librairie/managers/actorManager")
+local res          = require("my-librairie.managers.resource_cache")
+
+----------------------------------------------------------------------
 -- Diagnostics initiaux (permet de distinguer un require qui échoue d’un crash plus tard)
 ----------------------------------------------------------------------
 pcall(function()
@@ -91,10 +101,9 @@ end
 --- Fait apparaître les ennemis en fonction de la configuration de scène.
 -- Utilise soit des points de spawn explicites, soit un round-robin simple.
 local function auto_spawn_enemies()
-    local AM = actor or (_G.actorManager or require("my-librairie/managers/actorManager"))
-    if not (AM and AM.clearEnemies and AM.spawnEnemy) then return end
+    if not (actor and actor.clearEnemies and actor.spawnEnemy) then return end
 
-    AM:clearEnemies()
+    actor:clearEnemies()
 
     local cfg = (params and params.config) or gameplay.config or SceneConfig or {}
     local enemy_cfg = cfg.enemies or {}
@@ -103,7 +112,7 @@ local function auto_spawn_enemies()
     if enemy_cfg.spawns and type(enemy_cfg.spawns) == 'table' and #enemy_cfg.spawns > 0 then
         for _, spawn in ipairs(enemy_cfg.spawns) do
             if spawn and spawn.type then
-                pcall(function() AM:spawnEnemy(spawn, enemy_cfg.poolEnemies, enemy_cfg.options) end)
+                pcall(function() actor:spawnEnemy(spawn, enemy_cfg.poolEnemies, enemy_cfg.options) end)
             end
         end
         return
@@ -117,7 +126,7 @@ local function auto_spawn_enemies()
             local t = pool[((i - 1) % #pool) + 1]
             local x = 520 + (i - 1) * 64
             local y = 360
-            pcall(function() AM:spawnEnemy(t, { x = x, y = y }) end)
+            pcall(function() actor:spawnEnemy(t, { x = x, y = y }) end)
         end
     end
 end
@@ -125,24 +134,16 @@ end
 ----------------------------------------------------------------------
 -- États globaux (pilote de tour via Transition Manager)
 ----------------------------------------------------------------------
---- @field Tour string Tour courant ("player" | "Enemy" | "transition")
+
 Tour                 = Tour or "transition"
 local last_tour      = ""
 local watchdog_enemy = 0
 local WATCHDOG_LIMIT = 2.0
 
-----------------------------------------------------------------------
--- Autres dépendances de gameplay
-----------------------------------------------------------------------
-local cardsPlayer    = require("ressources/cards_data_player")
-local Hero           = require("my-librairie/ActorScripts/player/Hero")
-local Enemies        = require("my-librairie/ActorScripts/Enemy/Enemies")
-local AI             = require("my-librairie/ai/controller")
-local actor          = _G.actorManager or require("my-librairie/managers/actorManager")
-local res            = require("my-librairie.managers.resource_cache")
+
 
 -- Chargement optionnel d’une config scène (safe)
-local SceneConfig    = nil
+local SceneConfig = nil
 do
     local ok, cfg = pcall(require, 'scene.gameplay.config')
     if ok and type(cfg) == 'table' then

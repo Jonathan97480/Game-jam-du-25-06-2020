@@ -4,18 +4,6 @@
 
 local globals = {}
 
---[[ =====================================================================
-Configuration et helpers
-===================================================================== ]]
-
--- Helper pour charger de manière sécurisée
-local function safeRequireAny(list)
-    for _, name in ipairs(list) do
-        local ok, mod = pcall(require, name)
-        if ok and mod then return mod end
-    end
-    return nil
-end
 
 --[[ =====================================================================
 Modules Core - Chargés et exposés globalement
@@ -79,12 +67,10 @@ Actors Scripts - Chargés à la demande
 ===================================================================== ]]
 
 -- Hero (joueur)
-local okHero, Hero = pcall(require, "my-librairie/ActorScripts/player/Hero")
-_G.Hero = okHero and Hero or nil
+_G.Hero = require("my-librairie.entities.player.hero")
 
 -- Enemies (ennemis)
-local okEnemies, Enemies = pcall(require, "my-librairie/ActorScripts/Enemy/Enemies")
-_G.Enemies = okEnemies and Enemies or nil
+_G.Enemies = require("my-librairie.entities.Enemy.Enemies")
 
 --[[ =====================================================================
 Configuration Flags & Constants
@@ -119,17 +105,7 @@ local okActor, actorManager = pcall(require, "my-librairie/managers/actorManager
 _G.actorManager = okActor and actorManager or nil
 
 
---[[ =====================================================================
-Actors Scripts - Chargés à la demande
-===================================================================== ]]
 
--- Hero (joueur)
-local okHero, Hero = pcall(require, "my-librairie/ActorScripts/player/Hero")
-_G.Hero = okHero and Hero or nil
-
--- Enemies (ennemis)
-local okEnemies, Enemies = pcall(require, "my-librairie/ActorScripts/Enemy/Enemies")
-_G.Enemies = okEnemies and Enemies or nil
 
 --[[ =====================================================================
 Configuration Flags & Constants

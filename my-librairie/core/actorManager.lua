@@ -13,7 +13,7 @@ local EnemiesMod = nil
 -- init actor manager runtime fields
 function actor:init()
     _G.globalFunction.log.info("[actorManager] Initialisation du module Enemy")
-    local Enemy = require("my-librairie/ActorScripts/Enemy/Enemy")
+    local Enemy = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
     if Enemy then
         Enemy.listeEnemies = {}
         Enemy.curentEnemy = nil
@@ -22,7 +22,7 @@ end
 
 function actor:clearEnemies()
     _G.globalFunction.log.info("[actorManager] Effacement de tous les Ennemis")
-    local Enemies = require("my-librairie.entities.enemy.enemy")
+    local Enemies = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
     if Enemies then
         Enemies.listeEnemies = {}
         Enemies.curentEnemy = nil

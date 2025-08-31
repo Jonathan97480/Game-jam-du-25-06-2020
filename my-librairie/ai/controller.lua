@@ -9,8 +9,8 @@ end
 
 local actorMgr                = _G.actorManager or _safeRequire("my-librairie/managers/actorManager")
 local Card                    = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
-local Hero                    = _G.Hero or rawget(_G, "Hero")
-local EnemiesManager          = _G.Enemies or rawget(_G, "Enemies")
+local Hero                    = _G.Hero or require("my-librairie.entities.player.Hero")
+local EnemiesManager          = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
 local globalFunction          = _G.globalFunction or rawget(_G, 'globalFunction')
 
 -- Nouveau : Module de stratégie de sélection de cartes et ciblage

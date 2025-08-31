@@ -11,7 +11,7 @@ local function _safeRequire(name)
 end
 
 -- Dependencies
-local globalFunction = _G.globalFunction or rawget(_G, 'globalFunction')
+local globalFunction = _G.globalFunction or require("my-librairie.utils.globalFunction")
 
 -- Import du nouveau CardManager
 local CardManager = _safeRequire("my-librairie/card-librairie/card_manager")
@@ -92,7 +92,7 @@ end
 
 local function _getCursor()
     -- PRIORITÉ 1: Utiliser le système responsive pour les coordonnées converties
-    local responsive = rawget(_G, "responsive")
+    local responsive = _G.screen or require("my-librairie.utils.responsive")
     if responsive and responsive.mouse then
         return responsive.mouse.X, responsive.mouse.Y
     end
@@ -384,37 +384,29 @@ end
 -- ============================================================================
 
 -- Obtient la liste des ennemis actuelle (compatible EnemiesG et Enemies)
+-- Récupère la liste des ennemis à cibler, compatible avec plusieurs architectures d'ennemis
 function CardTargetSelection.getEnemyList()
-    -- Diagnostic détaillé des gestionnaires d'ennemis disponibles
-    local enemiesViaG = rawget(_G, "Enemies")
-    local singletonViaG = rawget(_G, "__ENEMY_SINGLETON__")
-    local enemiesG = rawget(_G, "EnemiesG")
+    -- Diagnostic : tente de récupérer le gestionnaire d'ennemis global
+    local enemiesManager = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
 
-    _logf("🔍 DEBUG getEnemyList - Gestionnaires disponibles:")
-    _logf("  - _G.Enemies: %s", enemiesViaG and "présent" or "nil")
-    if enemiesViaG then
-        _logf("    - .listeEnemies: %s (%d éléments)",
-            enemiesViaG.listeEnemies and "présent" or "nil",
-            enemiesViaG.listeEnemies and #enemiesViaG.listeEnemies or 0)
-        _logf("    - .curentEnemy: %s", enemiesViaG.curentEnemy and "présent" or "nil")
+    -- Affiche des informations de debug sur le gestionnaire trouvé
+    if CardTargetSelection.DEBUG then
+        _logf("🔍 [getEnemyList] Gestionnaire trouvé : %s", enemiesManager and tostring(enemiesManager) or "nil")
+        if enemiesManager and enemiesManager.listeEnemies then
+            _logf("    .listeEnemies présent (%d ennemis)", #enemiesManager.listeEnemies)
+        else
+            _logf("    .listeEnemies absent ou vide")
+        end
     end
-    _logf("  - _G.__ENEMY_SINGLETON__: %s", singletonViaG and "présent" or "nil")
-    _logf("  - _G.EnemiesG: %s", enemiesG and "présent" or "nil")
 
-    -- Tenter d'accéder aux différents patterns de stockage des ennemis
-    local enemiesManager = enemiesViaG or singletonViaG or enemiesG
-
-    if enemiesManager and enemiesManager.listeEnemies then
-        _logf("Ennemis trouvés via %s: %d ennemis",
-            enemiesManager == enemiesViaG and "Enemies" or
-            enemiesManager == singletonViaG and "__ENEMY_SINGLETON__" or "EnemiesG",
-            #enemiesManager.listeEnemies)
+    -- Retourne la liste des ennemis si disponible, sinon une table vide
+    if enemiesManager and type(enemiesManager.listeEnemies) == "table" then
         return enemiesManager.listeEnemies
     end
 
-    _logError("Aucun gestionnaire d'ennemis trouvé (Enemies/__ENEMY_SINGLETON__/EnemiesG)")
+    _logError("Aucun gestionnaire d'ennemis valide trouvé (Enemies/EnemiesG/__ENEMY_SINGLETON__)")
     return {}
-end -- Détecte si la souris survole un ennemi spécifique
+end
 
 function CardTargetSelection.detectEnemyHover(enemy, mouseX, mouseY)
     if not enemy then
@@ -422,15 +414,6 @@ function CardTargetSelection.detectEnemyHover(enemy, mouseX, mouseY)
         return false
     end
 
-    -- Debug: explorer toutes les propriétés de l'ennemi
-    --[[  _logf("[ENEMY DEBUG] Ennemi '%s' - structure:", enemy.name or "sans nom")
-    _logf("[ENEMY DEBUG]   vector2: %s", enemy.vector2 and "table" or "nil") ]]
-    --[[    if enemy.vector2 then
-        _logf("[ENEMY DEBUG]   vector2.x: %s", tostring(enemy.vector2.x))
-        _logf("[ENEMY DEBUG]   vector2.y: %s", tostring(enemy.vector2.y))
-    end
-    _logf("[ENEMY DEBUG]   width: %s", tostring(enemy.width))
-    _logf("[ENEMY DEBUG]   height: %s", tostring(enemy.height))]]
 
     _logf("[ENEMY DEBUG]   x: %s", tostring(enemy.x))
     _logf("[ENEMY DEBUG]   y: %s", tostring(enemy.y))
@@ -519,7 +502,7 @@ function CardTargetSelection.updateHoverDetection(dt)
     end
 
     -- SIMPLE: Forcer l'animation terminée quand en mode standby
-    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
+    local CardStandbyPlay = _G.CardStandbyPlay or require("my-librairie.card-librairie.cardStandbyPlay")
     local isInStandbyMode = CardStandbyPlay and CardStandbyPlay.hasCardInStandby and CardStandbyPlay.hasCardInStandby()
 
     if isInStandbyMode then
@@ -567,7 +550,7 @@ end
 -- Convertit les coordonnées brutes de clic en coordonnées de jeu
 local function _convertClickCoordinates(rawX, rawY)
     -- PRIORITÉ 1: Utiliser le système responsive
-    local responsive = _G.screen or require("my-librairie/utils/responsive")
+    local responsive = _G.screen or require("my-librairie.utils.responsive")
     if responsive and responsive.ratioScreen then
         local ratioX = responsive.ratioScreen.width or 1
         local ratioY = responsive.ratioScreen.height or 1

@@ -27,7 +27,7 @@ function debug.table(p_table)
 end
 
 -- REQUIRE
-local actor = require("my-librairie.core.actorManager");
+local actor = _G.actorManager or require("my-librairie/managers/actorManager");
 
 -- VARIABLE
 
@@ -58,7 +58,7 @@ function hero.load()
     w = 150,
     h = 25,
     position = {
-      x = ((hero.actor.vector2 and hero.actor.vector2.x + 35) + (hero.actor.width / 2)) - (150 / 2) or 0,
+      x = (((hero.actor.vector2 and hero.actor.vector2.x + 35) + (hero.actor.width / 2)) - (150 / 2)) or 0,
       y = (hero.actor.vector2 and hero.actor.vector2.y) - 50 or 0
     },
     size = {
