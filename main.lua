@@ -10,7 +10,7 @@ local globales = require("my-librairie/core/globals")
 
 -- Modules locaux (non-globaux) - chargés APRÈS les globales
 local scene_menu = require("scene.menu.menu")
-
+local globalFunction = _G.globalFunction or require("my-librairie/utils/globalFunction")
 -- Calcule la distance euclidienne entre deux points
 ---
 -- Fonction utilitaire pour calculer la distance entre deux points.
@@ -47,11 +47,17 @@ function love.load()
     end)
   end)
 
-  -- Log d'initialisation
-  globalFunction.log.info("[main.lua] love.load() appelé - début initialisation")
+  -- Log d'initialisation avec vérification de sécurité
+  if globalFunction and globalFunction.log and globalFunction.log.info then
+    globalFunction.log.info("[main.lua] love.load() appelé - début initialisation")
+  else
+    print("[ERROR] globalFunction.log not available")
+  end
 
   -- Ajout de la scène menu au gestionnaire de scènes
-  globalFunction.log.info("[main.lua] Ajout de la scène menu")
+  if globalFunction and globalFunction.log and globalFunction.log.info then
+    globalFunction.log.info("[main.lua] Ajout de la scène menu")
+  end
   scene:add(scene_menu) -- Utilisation de deux-points pour la méthode
 
   -- Chargement des scènes

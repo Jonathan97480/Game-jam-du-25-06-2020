@@ -1,13 +1,14 @@
 -- my-librairie/ActorScripts/Enemy/Enemies.lua
-local Enemies = {
+local Enemies        = {
     curentEnemy  = nil,
     listeEnemies = {}
 }
-local actor   = actor or require("my-librairie.actorManager")
+local actor          = actor or require("my-librairie.actorManager")
+local globalFunction = _G.globalFunction or require("my-librairie/utils/globalFunction")
 
 -- Backwards-compatible Enemy factory registry (singleton)
-local Enemy   = rawget(_G, "__ENEMY_SINGLETON__") or {}
-local IA      = nil
+local Enemy          = rawget(_G, "__ENEMY_SINGLETON__") or {}
+local IA             = nil
 local function getIA()
     if IA then return IA end
     pcall(function() IA = require("my-librairie/ActorScripts/Enemy/ia") end)
@@ -78,7 +79,7 @@ rawset(_G, "__ENEMY_SINGLETON__", Enemies)
 -- actorManager is resolved lazily inside load() to avoid circular require
 local actor = nil
 
-local globalFunction = nil
+
 local function getGlobalFunction()
     if globalFunction then return globalFunction end
     pcall(function() globalFunction = require('my-librairie.globalFunction') end)

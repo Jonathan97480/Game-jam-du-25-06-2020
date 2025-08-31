@@ -1,12 +1,12 @@
--- my-librairie/card-librairie/core/common.lua
+-- my-librairie/systems/card-librairie/core/common.lua
 -- Données, utilitaires, RNG/shuffle, canvas, normalisation, tirage, Deck Global.
-local screen = rawget(_G, "screen") or require("my-librairie/responsive")
+local screen = rawget(_G, "screen") or require("my-librairie/utils/responsive")
 
 -- Formerly required 'applyEffect'. After refactor effects live under `effects/cardEffect_shim`.
-local ok, applyEffect = pcall(require, "my-librairie/card-librairie/effects/cardEffect_shim")
+local ok, applyEffect = pcall(require, "my-librairie/systems/card-librairie/effects/cardEffect_shim")
 if not ok then
     -- fallback: try legacy path to keep backward compatibility
-    local status, mod = pcall(require, "my-librairie/card-librairie/applyEffect")
+    local status, mod = pcall(require, "my-librairie/systems/card-librairie/applyEffect")
     applyEffect = status and mod or nil
 end
 
@@ -41,9 +41,9 @@ end
 Common.hand        = Common.createDeck("hand")
 Common.graveyard   = Common.createDeck("graveyard")
 
-local screen       = rawget(_G, "screen") or require("my-librairie/responsive")
+local screen       = rawget(_G, "screen") or require("my-librairie/utils/responsive")
 local effect       = rawget(_G, "effect") or require("ressources/effect")
-local actorManager = rawget(_G, "actorManager") or require("my-librairie/actorManager")
+local actorManager = rawget(_G, "actorManager") or require("my-librairie/core/actorManager")
 
 local DEBUG_CARD   = true
 

@@ -10,7 +10,7 @@ end
 
 -- Load modules safely
 local hud = _safeRequire("my-librairie/hud/hud") or _G.hud
-local responsive = _safeRequire("my-librairie/responsive") or _G.screen
+local responsive = _safeRequire("my-librairie/utils/responsive") or _G.screen
 local TransitionCombat = _safeRequire("my-librairie/transitions/templateCombatTransition")
 local Card = _G.Card or _safeRequire("my-librairie/card-librairie/card")
 

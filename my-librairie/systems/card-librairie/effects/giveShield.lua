@@ -1,6 +1,6 @@
--- my-librairie/card-librairie/effects/giveShield.lua
+-- my-librairie/systems/card-librairie/effects/giveShield.lua
 local effect       = require("ressources/effect")
-local actorManager = require("my-librairie/actorManager")
+local actorManager = require("my-librairie/core/actorManager")
 
 local giveSheld    = {}
 
@@ -37,3 +37,5 @@ function giveSheld.applique(p_card, p_actor, p_value)
 end
 
 return giveSheld
+
+

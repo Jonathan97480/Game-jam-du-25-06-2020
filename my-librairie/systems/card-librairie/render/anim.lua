@@ -1,4 +1,4 @@
--- my-librairie/card-librairie/render/anim.lua
+-- my-librairie/systems/card-librairie/render/anim.lua
 -- Module d'animations pour les cartes en main
 --
 -- Ce module centralise les petits moteurs d'animation utilisés par la main
@@ -10,7 +10,7 @@
 --
 
 -- Import du nouveau CardManager
-local CardManager = require("my-librairie/card-librairie/card_manager")
+local CardManager = require("my-librairie/systems/card-librairie/states/manager")
 -- Principales fonctions internes (documentées ci-dessous) :
 --   moveToGrave(card)   : gestion de l'envoi d'une carte au cimetière
 --   handleSafety(card,dt): décrémente _safetyTimer et appelle moveToGrave
@@ -18,8 +18,8 @@ local CardManager = require("my-librairie/card-librairie/card_manager")
 --   handleAnim(card,dt) : animation type DEAL (sx->tx avec easing + hop)
 --   handleSmooth(card,dt): interpolation douce vers la target si nécessaire
 
-local Common = require("my-librairie/card-librairie/core/common")
-local screen = rawget(_G, "screen") or require("my-librairie/responsive")
+local Common = require("my-librairie/systems/card-librairie/core/common")
+local screen = rawget(_G, "screen") or require("my-librairie/utils/responsive")
 local function getCard() return rawget(_G, "Card") end
 local M = {}
 
@@ -209,3 +209,4 @@ function M.drawSingleCard(_card)
 end
 
 return M
+

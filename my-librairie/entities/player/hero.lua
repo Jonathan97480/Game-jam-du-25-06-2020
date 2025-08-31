@@ -1,6 +1,6 @@
 local hero = {};
 
-local res = require("my-librairie.resource_cache")
+local res = require("my-librairie.managers.resource_cache")
 local shield = res.image('img/Actor/hero/Hub-Shield2.png')
 local debug = {}
 local backGround = res.image("img/BackGround/zonedeConbat-1.png")
@@ -27,7 +27,7 @@ function debug.table(p_table)
 end
 
 -- REQUIRE
-local actor = require("my-librairie/actorManager");
+local actor = require("my-librairie/core/actorManager");
 
 -- VARIABLE
 
@@ -122,3 +122,5 @@ function hero.draw()
 end
 
 return hero;
+
+

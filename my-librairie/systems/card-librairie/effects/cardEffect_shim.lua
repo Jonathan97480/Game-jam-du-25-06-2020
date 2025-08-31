@@ -325,3 +325,4 @@ function Effect.processTurnBasedEffects(target)
 end
 
 return Effect
+

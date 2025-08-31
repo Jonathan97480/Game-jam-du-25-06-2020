@@ -1,13 +1,13 @@
--- my-librairie/card-librairie/card.lua
+-- my-librairie/systems/card-librairie/card.lua
 -- Façade : regroupe les sous-modules et expose une API compatible.
 
-local Common                      = require("my-librairie/card-librairie/core/common")
-local Generator                   = require("my-librairie/card-librairie/core/generator")
-local UX                          = require("my-librairie/card-librairie/ui/ux")
-local Interaction                 = require("my-librairie/card-librairie/ui/interaction")
-local Play                        = require("my-librairie/card-librairie/render/play")
-local Layout                      = require("my-librairie/card-librairie/ui/layout")
-local Anim                        = require("my-librairie/card-librairie/render/anim")
+local Common                      = require("my-librairie/systems/card-librairie/core/common")
+local Generator                   = require("my-librairie/systems/card-librairie/core/generator")
+local UX                          = require("my-librairie/systems/card-librairie/ui/ux")
+local Interaction                 = require("my-librairie/systems/card-librairie/ui/interaction")
+local Play                        = require("my-librairie/systems/card-librairie/render/play")
+local Layout                      = require("my-librairie/systems/card-librairie/ui/layout")
+local Anim                        = require("my-librairie/systems/card-librairie/render/anim")
 
 local Card                        = {}
 -- Assure l’existence d’une main IA
@@ -84,3 +84,4 @@ rawset(_G, "card", Card)
 rawset(_G, "Card", Card)
 
 return Card
+

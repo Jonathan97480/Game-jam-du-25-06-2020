@@ -29,7 +29,7 @@ end
 local Common = nil
 local function _getCommon()
     if not Common then
-        Common = _safeRequire("my-librairie/card-librairie/core/common")
+        Common = _safeRequire("my-librairie/systems/card-librairie/core/common")
     end
     return Common
 end
@@ -339,3 +339,4 @@ end
 CardManager.init()
 
 return CardManager
+

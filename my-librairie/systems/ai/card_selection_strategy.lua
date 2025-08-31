@@ -8,7 +8,7 @@ local function _safeRequire(name)
     return ok and mod or nil
 end
 
-local globalFunction = _G.globalFunction or require("my-librairie/globalFunction")
+local globalFunction = _G.globalFunction or require("my-librairie/utils/globalFunction")
 local Card = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
 local Hero = _G.Hero or rawget(_G, "Hero")
 local EnemiesManager = require("my-librairie/ActorScripts/Enemy/Enemies")

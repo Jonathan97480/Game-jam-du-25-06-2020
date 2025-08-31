@@ -1,10 +1,10 @@
--- my-librairie/card-librairie/render/play.lua
-local Common      = require("my-librairie/card-librairie/core/common")
-local Layout      = require("my-librairie/card-librairie/ui/layout")
-local Anim        = require("my-librairie/card-librairie/render/anim")
+-- my-librairie/systems/card-librairie/render/play.lua
+local Common      = require("my-librairie/systems/card-librairie/core/common")
+local Layout      = require("my-librairie/systems/card-librairie/ui/layout")
+local Anim        = require("my-librairie/systems/card-librairie/render/anim")
 
 -- Import du nouveau CardManager
-local CardManager = require("my-librairie/card-librairie/states/manager")
+local CardManager = require("my-librairie/systems/card-librairie/states/manager")
 
 -- Fonction de log pour le système
 local function _log(message)
@@ -270,3 +270,4 @@ function M.clearHandEnemy(opts)
 end
 
 return M
+

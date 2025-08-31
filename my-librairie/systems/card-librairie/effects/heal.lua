@@ -1,6 +1,6 @@
--- my-librairie/card-librairie/effects/heal.lua
+-- my-librairie/systems/card-librairie/effects/heal.lua
 local effect       = require("ressources/effect")
-local actorManager = require("my-librairie/actorManager")
+local actorManager = require("my-librairie/core/actorManager")
 
 local heal         = {}
 
@@ -49,3 +49,5 @@ function heal.give(p_card, p_actor, heal_value)
 end
 
 return heal
+
+

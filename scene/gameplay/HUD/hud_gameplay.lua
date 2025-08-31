@@ -10,12 +10,12 @@ end
 -- debug: removed early dump (moved after panel creation so we capture created elements)
 
 -- Prefer explicit requires instead of globals
-local sceneManager = _safeRequire("my-librairie/sceneManager")
+local sceneManager = _safeRequire("my-librairie/core/sceneManager")
 local Hero = _safeRequire("my-librairie/ActorScripts/player/Hero")
 local Card = _safeRequire("my-librairie/card-librairie/card")
-local responsive = _safeRequire("my-librairie/responsive")
+local responsive = _safeRequire("my-librairie/utils/responsive")
 
-local AM = _safeRequire("my-librairie/actorManager") or rawget(_G, 'actorManager')
+local AM = _safeRequire("my-librairie/core/actorManager") or rawget(_G, 'actorManager')
 local TransitionCombat = _safeRequire("my-librairie/transitions/templateCombatTransition")
 local function countByType()
     local bag = {}
@@ -85,7 +85,8 @@ end
 
 function hud_gameplay.load()
     -- prefer an explicit, safe require for the global helpers instead of reading _G
-    local _globalFunction = _safeRequire("my-librairie.globalFunction") or _safeRequire("my-librairie/globalFunction")
+    local _globalFunction = _safeRequire("my-librairie.utils.globalFunction") or
+    _safeRequire("my-librairie/utils/globalFunction")
     if _globalFunction and _globalFunction.log and _globalFunction.log.info then
         _globalFunction.log.info("[hud_gameplay] load called")
     else
@@ -170,3 +171,5 @@ function hud_gameplay.update(dt)
 end
 
 return hud_gameplay
+
+

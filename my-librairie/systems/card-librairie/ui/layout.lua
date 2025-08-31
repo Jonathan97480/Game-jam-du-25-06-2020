@@ -1,5 +1,5 @@
--- my-librairie/card-librairie/ui/layout.lua
-local Common = require("my-librairie/card-librairie/core/common")
+-- my-librairie/systems/card-librairie/ui/layout.lua
+local Common = require("my-librairie/systems/card-librairie/core/common")
 local M = {}
 
 local function getCard()
@@ -67,3 +67,4 @@ function M.moveAll(from, dest)
 end
 
 return M
+

@@ -5,7 +5,7 @@
 local globalFunction = {}
 
 -- Dépendances et configuration
-local res = require("my-librairie.resource_cache")
+local res = require("my-librairie.managers.resource_cache")
 local okcfg, config = pcall(require, "my-librairie.config")
 config = okcfg and config or { logs = { maxFiles = 10, maxEntries = 200, dir = "gameLogs" } }
 
@@ -794,3 +794,4 @@ rawset(_G, "myFonction", globalFunction)
 globalFunction.log.info("Logger initialisé")
 
 return globalFunction
+

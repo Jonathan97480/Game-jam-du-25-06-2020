@@ -1,6 +1,6 @@
--- my-librairie/card-librairie/effects/giveEpine.lua
+-- my-librairie/systems/card-librairie/effects/giveEpine.lua
 local effect       = require("ressources/effect")
-local actorManager = require("my-librairie/actorManager")
+local actorManager = require("my-librairie/core/actorManager")
 
 local giveEpine    = {}
 
@@ -35,3 +35,5 @@ function giveEpine.applique(p_card, p_actor, p_value)
 end
 
 return giveEpine
+
+

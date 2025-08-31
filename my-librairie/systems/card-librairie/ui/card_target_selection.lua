@@ -1,4 +1,4 @@
--- my-librairie/card-librairie/ui/card_target_selection.lua
+-- my-librairie/systems/card-librairie/ui/card_target_selection.lua
 -- Module de gestion de sélection de cibles pour le système de ciblage multi-ennemis
 -- Permet au joueur de sélectionner manuellement l'ennemi cible lors du jeu d'une carte
 
@@ -14,7 +14,7 @@ end
 local globalFunction = _G.globalFunction or rawget(_G, 'globalFunction')
 
 -- Import du nouveau CardManager
-local CardManager = _safeRequire("my-librairie/card-librairie/card_manager")
+local CardManager = _safeRequire("my-librairie/systems/card-librairie/states/manager")
 
 -- Module principal
 local CardTargetSelection = {}
@@ -141,7 +141,7 @@ local function _setDragLock(state)
     end
 
     -- Essaie directement via require si disponible
-    local ok, Common = pcall(require, "my-librairie/card-librairie/core/common")
+    local ok, Common = pcall(require, "my-librairie/systems/card-librairie/core/common")
     if ok and Common then
         Common.__dragLock = state
         _logf("🔒 DragLock %s via require Common", state and "activé" or "désactivé")
@@ -893,3 +893,5 @@ CardTargetSelection.init()
 _logf("Module CardTargetSelection chargé et exposé globalement")
 
 return CardTargetSelection
+
+

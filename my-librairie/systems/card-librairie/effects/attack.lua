@@ -1,6 +1,6 @@
--- my-librairie/card-librairie/effects/attack.lua
+-- my-librairie/systems/card-librairie/effects/attack.lua
 local effect       = require("ressources/effect")
-local actorManager = require("my-librairie/actorManager")
+local actorManager = require("my-librairie/core/actorManager")
 
 local attack       = {}
 
@@ -37,3 +37,5 @@ function attack.applique(card, attacker, target, value)
 end
 
 return attack
+
+

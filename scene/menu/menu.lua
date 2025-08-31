@@ -42,7 +42,7 @@ menu.transition   = {
     end,
 }
 
-local res         = require("my-librairie.resource_cache")
+local res         = require("my-librairie.managers.resource_cache")
 
 --[[ Arrière-plan & titre ]]
 menu.illustration.background = {
@@ -286,3 +286,4 @@ function menu.hover()
 end
 
 return menu
+

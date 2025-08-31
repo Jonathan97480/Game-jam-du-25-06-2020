@@ -1,4 +1,4 @@
--- my-librairie/sceneManager.lua
+-- my-librairie/core/sceneManager.lua
 
 local scene = {}
 
@@ -538,3 +538,4 @@ end
 scene:init()
 
 return scene
+

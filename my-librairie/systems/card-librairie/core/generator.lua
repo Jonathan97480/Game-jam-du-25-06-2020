@@ -1,7 +1,7 @@
--- my-librairie/card-librairie/core/generator.lua
+-- my-librairie/systems/card-librairie/core/generator.lua
 -- Copié de card-librairie/generator.lua, require vers core/common
 
-local Common = require("my-librairie/card-librairie/core/common")
+local Common = require("my-librairie/systems/card-librairie/core/common")
 local dprint = Common.dprint
 
 local M = {}
@@ -134,3 +134,4 @@ function M.loadCards(cardsRessources, actortag, deckName)
 end
 
 return M
+

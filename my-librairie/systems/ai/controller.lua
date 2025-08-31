@@ -7,7 +7,7 @@ local function _safeRequire(name)
   return ok and mod or nil
 end
 
-local actorMgr                = _G.actorManager or _safeRequire("my-librairie/actorManager")
+local actorMgr                = _G.actorManager or _safeRequire("my-librairie/core/actorManager")
 local Card                    = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
 local Hero                    = _G.Hero or rawget(_G, "Hero")
 local EnemiesManager          = _G.Enemies or rawget(_G, "Enemies")
@@ -54,7 +54,10 @@ local AI                      = {
 
 local function logf(fmt, ...)
   if AI.DEBUG then
-    if globalFunction == nil then globalFunction = rawget(_G, 'globalFunction') or require("my-librairie/globalFunction") end
+    if globalFunction == nil then
+      globalFunction = rawget(_G, 'globalFunction') or
+          require("my-librairie/utils/globalFunction")
+    end
     local args = { ... }
     local message
     if #args > 0 then
@@ -249,7 +252,7 @@ local function drawTourCh(state, dt)
     -- Mettre à jour l'affichage du tour
     local text = lastTurnTransitionState == 'player' and "Tour du joueur" or "Tour de l'ennemi"
     --calcul de la position en x
-    local responsive = require("my-librairie/responsive")
+    local responsive = require("my-librairie/utils/responsive")
     local _x = responsive.gameReso.width / 2 - 100
     local _y = 200
     --calcul size font parapore la résolution de l'écrant
@@ -851,3 +854,4 @@ function AI.draw()
 end
 
 return AI
+

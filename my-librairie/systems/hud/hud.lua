@@ -2,8 +2,8 @@
 -- Ce module gère l'interface utilisateur avec des éléments comme des icônes, labels, boutons et barres,
 -- organisés en couches pour un rendu ordonné.
 
-local res = require("my-librairie.resource_cache")
-local responsive = require("my-librairie/responsive")
+local res = require("my-librairie.managers.resource_cache")
+local responsive = require("my-librairie/utils/responsive")
 -- optional unified input helper (mouse + joystick)
 
 -- Layered HUD Manager

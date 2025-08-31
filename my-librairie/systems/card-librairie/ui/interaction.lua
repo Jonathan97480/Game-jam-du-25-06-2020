@@ -1,10 +1,10 @@
-local Common         = require("my-librairie/card-librairie/core/common")
-local UX             = require("my-librairie/card-librairie/ui/ux")
-local screen         = rawget(_G, "screen") or require("my-librairie/responsive")
-local Layout         = require("my-librairie/card-librairie/ui/layout")
+local Common         = require("my-librairie/systems/card-librairie/core/common")
+local UX             = require("my-librairie/systems/card-librairie/ui/ux")
+local screen         = rawget(_G, "screen") or require("my-librairie/utils/responsive")
+local Layout         = require("my-librairie/systems/card-librairie/ui/layout")
 
 -- Import du nouveau CardManager
-local CardManager    = require("my-librairie/card-librairie/card_manager")
+local CardManager    = require("my-librairie/systems/card-librairie/states/manager")
 
 local okInput, input = pcall(require, "my-librairie/inputManager")
 if not okInput then input = nil end
@@ -12,7 +12,7 @@ local okI, inputI = pcall(require, "my-librairie/inputInterface")
 if not okI then inputI = nil end
 
 -- Import du module de sélection manuelle des cibles
-local okCTS, CardTargetSelection = pcall(require, "my-librairie/card-librairie/ui/card_target_selection")
+local okCTS, CardTargetSelection = pcall(require, "my-librairie/systems/card-librairie/ui/card_target_selection")
 if not okCTS then CardTargetSelection = nil end
 
 local M                         = {}

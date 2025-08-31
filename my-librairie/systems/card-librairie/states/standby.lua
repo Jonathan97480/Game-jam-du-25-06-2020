@@ -16,7 +16,7 @@ local _safeRequire = function(name)
 end
 
 local gf = _G.globalFunction
-local responsive = _safeRequire("my-librairie/responsive")
+local responsive = _safeRequire("my-librairie/utils/responsive")
 
 -- État du système (NOUVEAU : avec copie)
 CardStandbyPlay.state = {
@@ -199,7 +199,7 @@ function CardStandbyPlay.disableHandManagement()
     _log("info", "🚫 GESTION MAIN DÉSACTIVÉE")
 
     -- Notifier les autres systèmes si nécessaire
-    local interaction = _safeRequire("my-librairie/card-librairie/interaction")
+    local interaction = _safeRequire("my-librairie/systems/card-librairie/interaction")
     if interaction and interaction.disableDrag then
         interaction.disableDrag("CardStandbyPlay actif")
     end
@@ -211,7 +211,7 @@ function CardStandbyPlay.enableHandManagement()
     _log("info", "✅ GESTION MAIN RÉACTIVÉE")
 
     -- Notifier les autres systèmes si nécessaire
-    local interaction = _safeRequire("my-librairie/card-librairie/interaction")
+    local interaction = _safeRequire("my-librairie/systems/card-librairie/interaction")
     if interaction and interaction.enableDrag then
         interaction.enableDrag("CardStandbyPlay terminé")
     end
@@ -327,7 +327,7 @@ function CardStandbyPlay.draw()
         love.graphics.setColor(1, 1, 1, 0.8)
 
         -- Dessiner la carte (utiliser le système de rendu existant)
-        local cardRender = _safeRequire("my-librairie/card-librairie/render")
+        local cardRender = _safeRequire("my-librairie/systems/card-librairie/render")
         if cardRender and cardRender.drawCard then
             cardRender.drawCard(card)
         end

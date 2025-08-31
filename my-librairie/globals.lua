@@ -1,4 +1,4 @@
--- my-librairie/core/globals.lua
+-- my-librairie/globals.lua
 -- Centralisation de toutes les variables globales du projet
 -- Ce fichier doit être requis depuis main.lua AVANT tout autre module
 
@@ -22,19 +22,19 @@ Modules Core - Chargés et exposés globalement
 ===================================================================== ]]
 
 -- JSON Library
-_G.json = require("my-librairie/utils/json")
+_G.json = require("my-librairie/json")
 
 -- HUD System
-_G.hud = require("my-librairie/systems/hud/hud")
+_G.hud = require("my-librairie/hud/hud")
 
 -- Card System (API façade principale)
-_G.Card = require("my-librairie/systems/card-librairie/card")
+_G.Card = require("my-librairie/card-librairie/card")
 
 -- Card Standby Play System
-_G.CardStandbyPlay = require("my-librairie/systems/card-librairie/states/standby")
+_G.CardStandbyPlay = require("my-librairie/card-librairie/states/standby")
 
 -- Responsive Screen Manager
-_G.screen = require("my-librairie/utils/responsive")
+_G.screen = require("my-librairie/responsive")
 
 -- Scene Manager
 _G.scene = require("my-librairie/core/sceneManager")
@@ -43,8 +43,8 @@ _G.scene = require("my-librairie/core/sceneManager")
 _G.effect = require("ressources/effect")
 
 -- Transition Manager
-_G.Transition = require("my-librairie.systems.transitions.transitionManager")
-_G.TransitionCombat = require("my-librairie/systems/transitions/templateCombatTransition")
+_G.Transition = require("my-librairie.transitions.transitionManager")
+_G.TransitionCombat = require("my-librairie/transitions/templateCombatTransition")
 
 --[[ =====================================================================
 Modules Optionnels - Chargés avec fallback
@@ -60,12 +60,13 @@ _G.actorManager = okActor and actorManager or nil
 
 -- Card Target Selection (système de ciblage manuel)
 -- Force rechargement en vidant le cache
-package.loaded["my-librairie/systems/card-librairie/ui/card_target_selection"] = nil
-local okCTS, cardTargetSelection = pcall(require, "my-librairie/systems/card-librairie/ui/card_target_selection")
+package.loaded["my-librairie/card-librairie/ui/card_target_selection"] = nil
+local okCTS, cardTargetSelection = pcall(require, "my-librairie/card-librairie/ui/card_target_selection")
 _G.CardTargetSelection = okCTS and cardTargetSelection or nil
 
+-- Global Function / My Function (utilitaires legacy)
+_G.globalFunction = require("my-librairie/utils/globalFunction")
 
-_G.globalFunction = require("my-librairie/utils/globalFunction") or {}
 
 
 -- NOTE: globalFunction contient de nombreux utilitaires réutilisables :
@@ -113,15 +114,12 @@ Modules Optionnels - Chargés avec fallback
 ===================================================================== ]]
 
 -- Input Manager (unifie souris/gamepad)
-local okInput, inputManager = pcall(require, "my-librairie/inputManager")
+local okInput, inputManager = pcall(require, "my-librairie/managers/inputManager")
 _G.inputManager = okInput and inputManager or nil
 
 -- Actor Manager (gestion entités de combat)
 local okActor, actorManager = pcall(require, "my-librairie/core/actorManager")
 _G.actorManager = okActor and actorManager or nil
-
-
-
 
 --[[ =====================================================================
 Actors Scripts - Chargés à la demande
