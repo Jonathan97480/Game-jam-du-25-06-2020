@@ -6,7 +6,7 @@ if arg[#arg] == "vsc_debug" then require("lldebugger").start() end
 love.window.setTitle("Tactique Cards")
 
 -- Chargement centralisé de toutes les globales AVANT tout require de scène
-local globales = require("my-librairie/globals")
+local globales = require("my-librairie/core/globals")
 
 -- Modules locaux (non-globaux) - chargés APRÈS les globales
 local scene_menu = require("scene.menu.menu")
