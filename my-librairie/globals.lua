@@ -48,6 +48,11 @@ _G.TransitionCombat = require("my-librairie/transitions/templateCombatTransition
 
 -- GlobalFunction (fonctions utilitaires et logging)
 _G.globalFunction = require("my-librairie/globalFunction")
+-- Le module `core/cursor` a été supprimé : utiliser `inputInterface` comme source unique d'input
+local okInputIface, inputInterface = pcall(require, "my-librairie/inputInterface")
+_G.cursor = okInputIface and inputInterface or nil
+print("[globals] _G.cursor set to inputInterface?", okInputIface)
+
 
 --[[ =====================================================================
 Modules Optionnels - Chargés avec fallback

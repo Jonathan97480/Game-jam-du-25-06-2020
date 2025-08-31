@@ -83,7 +83,7 @@ function M:draw()
                 -- fonction pour dessiner les cartes
 
                 function()
-                    local okc, cursor = pcall(require, "my-librairie/cursor")
+                    local okc, cursor = pcall(require, "my-librairie/inputInterface")
                     local mouseX, mouseY = 0, 0
                     if okc and cursor and cursor.get then mouseX, mouseY = cursor.get() end
                     for i = 1, #self._cardSaved do

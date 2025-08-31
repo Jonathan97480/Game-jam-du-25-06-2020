@@ -16,7 +16,7 @@ end
 
 function overlay.update(self, dt)
     local mx, my = 0, 0
-    local okc, cursor = pcall(require, "my-librairie/cursor")
+    local okc, cursor = pcall(require, "my-librairie/inputInterface")
     if okc and cursor and cursor.get then mx, my = cursor.get() end
     hot = 0
     local w, h = love.graphics.getWidth(), love.graphics.getHeight()

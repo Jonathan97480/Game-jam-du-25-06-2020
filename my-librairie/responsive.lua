@@ -33,8 +33,8 @@ love.window.setMode(1280, 720, {
 });
 --[[ MOUSE SCALE POSITION ]]
 local function _getRawMouse()
-    local ok, cur = pcall(require, "my-librairie/cursor")
-    if ok and cur and cur.get then return cur.get() end
+    local x, y = love.mouse.getPosition()
+    if x and y then return x, y end
     return 0, 0
 end
 

@@ -83,9 +83,13 @@ function M:draw()
                 -- fonction pour dessiner les cartes
 
                 function()
-                    local okc, cursor = pcall(require, "my-librairie/cursor")
+                    -- Prefer inputInterface as single source of cursor data
+                    local okc, inputIface = pcall(require, "my-librairie/inputInterface")
                     local mouseX, mouseY = 0, 0
-                    if okc and cursor and cursor.get then mouseX, mouseY = cursor.get() end
+                    if okc and type(inputIface) == "table" and type(inputIface.getCursor) == "function" then
+                        local cur = inputIface.getCursor()
+                        mouseX, mouseY = cur.x or 0, cur.y or 0
+                    end
                     for i = 1, #self._cardSaved do
                         local cardX = 50 + panelInformation.position.x
                         local cardY = 120 + (i - 1) * 240 + panelInformation.position.y

@@ -14,7 +14,7 @@ end
 function overlay.update(self, dt)
     hovered = 0
     local mx, my = 0, 0
-    local okc, cursor = pcall(require, "my-librairie/cursor")
+    local okc, cursor = pcall(require, "my-librairie/inputInterface")
     if okc and cursor and cursor.get then
         mx, my = cursor.get()
     else

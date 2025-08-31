@@ -94,7 +94,7 @@ end
 -- Fonction locale pour obtenir la position du curseur
 -- @return : x, y du curseur
 local function _getCursor()
-  local ok, cur = pcall(require, "my-librairie/cursor")
+  local ok, cur = pcall(require, "my-librairie/inputInterface")
   if ok and cur and cur.get then return cur.get() end
   return 0, 0
 end

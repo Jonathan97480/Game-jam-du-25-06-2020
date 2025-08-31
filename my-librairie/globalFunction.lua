@@ -128,7 +128,7 @@ globalFunction.mouse.hover = function(x, y, largeur, hauteur, echelle)
         echelleY = echelle
     end
     local function obtenirCurseur()
-        local okc, curseur = pcall(require, "my-librairie/cursor")
+        local okc, curseur = pcall(require, "my-librairie/inputInterface")
         if okc and curseur and curseur.get then return curseur.get() end
         return 0, 0
     end

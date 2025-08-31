@@ -232,9 +232,29 @@ function menu.hover()
     local mx, my = 0, 0
 
     -- Récupération de la position de la souris
-    local okc, cursor = pcall(require, "my-librairie/cursor")
-    if okc and cursor and cursor.get then
-        mx, my = cursor.get()
+    -- Priorité à inputInterface (module centralisé pour l'input)
+    local okI, iface = pcall(require, "my-librairie/inputInterface")
+    if okI and iface and iface.getCursor then
+        local c = iface.getCursor()
+        mx, my = (c and c.x) or 0, (c and c.y) or 0
+    else
+        -- fallback to _G.cursor if present (compatibilité)
+        if _G.cursor and type(_G.cursor) == "table" and type(_G.cursor.get) == "function" then
+            local x, y = _G.cursor.get()
+            mx, my = x, y
+        else
+            -- try globalFunction.mouse.hover as a last resort
+            if gf and gf.mouse and gf.mouse.hover then
+                local hx, hy = gf.mouse.hover()
+                if type(hx) == 'number' and type(hy) == 'number' then
+                    mx, my = hx, hy
+                else
+                    mx, my = 0, 0
+                end
+            else
+                mx, my = 0, 0
+            end
+        end
     end
 
     -- Détection du clic avec globalFunction en priorité

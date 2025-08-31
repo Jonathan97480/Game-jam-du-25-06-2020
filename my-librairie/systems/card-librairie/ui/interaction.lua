@@ -29,7 +29,7 @@ local function _lerpTable(vec2, target, speed)
 end
 
 local function _getCursor()
-    local ok, cur = pcall(require, "my-librairie/cursor")
+    local ok, cur = pcall(require, "my-librairie/inputInterface")
     if ok and cur and cur.get then return cur.get() end
     return 0, 0
 end

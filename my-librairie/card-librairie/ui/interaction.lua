@@ -29,8 +29,16 @@ local function _lerpTable(vec2, target, speed)
 end
 
 local function _getCursor()
-    local ok, cur = pcall(require, "my-librairie/cursor")
-    if ok and cur and cur.get then return cur.get() end
+    local ok, inputIface = pcall(require, "my-librairie/inputInterface")
+    if ok and type(inputIface) == "table" and type(inputIface.getCursor) == "function" then
+        local c = inputIface.getCursor()
+        return c.x or 0, c.y or 0
+    end
+    local gcur = rawget(_G, "cursor")
+    if type(gcur) == "table" and type(gcur.get) == "function" then
+        local cx, cy = gcur.get()
+        return cx or 0, cy or 0
+    end
     return 0, 0
 end
 

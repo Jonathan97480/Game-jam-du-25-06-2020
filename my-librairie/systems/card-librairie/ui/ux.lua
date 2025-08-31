@@ -9,13 +9,13 @@ local function _safeRequire(name)
 end
 -- Resolve legacy helper: prefer globalFunction then fallback to legacy names/paths
 local myFonction = rawget(_G, "globalFunction") or rawget(_G, "myFonction") or _safeRequire("my-librairie.myFunction") or
-_safeRequire("my-librairie/myFunction") or {}
+    _safeRequire("my-librairie/myFunction") or {}
 local input = _safeRequire("my-librairie/inputManager") or (rawget(_G, "inputManager") and rawget(_G, "inputManager"))
 
 local M = {}
 
 local function _mousePos()
-    local ok, cur = pcall(require, "my-librairie/cursor")
+    local ok, cur = pcall(require, "my-librairie/inputInterface")
     if ok and cur and cur.get then return cur.get() end
     return 0, 0
 end

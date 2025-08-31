@@ -8,14 +8,24 @@ local function _safeRequire(name)
     return nil
 end
 -- Resolve legacy helper: prefer globalFunction then fallback to legacy names/paths
-local myFonction = rawget(_G, "globalFunction") or rawget(_G, "myFonction") or _safeRequire("my-librairie.myFunction") or _safeRequire("my-librairie/myFunction") or {}
+local myFonction = rawget(_G, "globalFunction") or rawget(_G, "myFonction") or _safeRequire("my-librairie.myFunction") or
+_safeRequire("my-librairie/myFunction") or {}
 local input = _safeRequire("my-librairie/inputManager") or (rawget(_G, "inputManager") and rawget(_G, "inputManager"))
 
 local M = {}
 
 local function _mousePos()
-    local ok, cur = pcall(require, "my-librairie/cursor")
-    if ok and cur and cur.get then return cur.get() end
+    local ok, inputIface = pcall(require, "my-librairie/inputInterface")
+    if ok and type(inputIface) == "table" and type(inputIface.getCursor) == "function" then
+        local c = inputIface.getCursor()
+        return c.x or 0, c.y or 0
+    end
+    -- fallback to global cursor if present (back-compat)
+    local gcur = rawget(_G, "cursor")
+    if type(gcur) == "table" and type(gcur.get) == "function" then
+        local cx, cy = gcur.get()
+        return cx or 0, cy or 0
+    end
     return 0, 0
 end
 
