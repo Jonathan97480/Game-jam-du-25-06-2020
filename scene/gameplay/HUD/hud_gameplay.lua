@@ -10,7 +10,7 @@ end
 -- debug: removed early dump (moved after panel creation so we capture created elements)
 
 -- Prefer explicit requires instead of globals
-local sceneManager = _safeRequire("my-librairie/sceneManager")
+local sceneManager = _safeRequire("my-librairie/core/sceneManager")
 local Hero = _safeRequire("my-librairie/ActorScripts/player/Hero")
 local Card = _safeRequire("my-librairie/card-librairie/card")
 local responsive = _safeRequire("my-librairie/responsive")

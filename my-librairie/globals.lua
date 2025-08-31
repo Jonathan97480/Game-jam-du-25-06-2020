@@ -37,7 +37,7 @@ _G.CardStandbyPlay = require("my-librairie/card-librairie/cardStandbyPlay")
 _G.screen = require("my-librairie/responsive")
 
 -- Scene Manager
-_G.scene = require("my-librairie/sceneManager")
+_G.scene = require("my-librairie/core/sceneManager")
 
 -- Effects System
 _G.effect = require("ressources/effect")
@@ -105,7 +105,7 @@ _G.GameFlags = _G.GameFlags or {
 }
 
 -- Scene Manager
-_G.scene = require("my-librairie/sceneManager")
+_G.scene = require("my-librairie/core/sceneManager")
 
 -- Effects System
 _G.effect = require("ressources/effect")

@@ -24,7 +24,7 @@ end
 ----------------------------------------------------------------------
 -- Dépendances globales (tolère l'absence, via safe_require)
 ----------------------------------------------------------------------
-local SceneManager = rawget(_G, "scene") or safe_require("my-librairie/sceneManager")
+local SceneManager = rawget(_G, "scene") or safe_require("my-librairie/core/sceneManager")
 local Card         = rawget(_G, "Card") or safe_require("my-librairie/card-librairie/card")
 local Hero         = rawget(_G, "Hero") or safe_require("my-librairie/ActorScripts/player/Hero")
 local AI           = rawget(_G, "AI") or

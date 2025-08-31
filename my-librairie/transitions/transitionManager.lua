@@ -2,7 +2,7 @@ local Transition = {}
 local state = "IDLE"
 local t = { time = 0, dur = 0, dir = "out" }
 local ctx, opts, currentScript
-local sceneManager = require("my-librairie/sceneManager")
+local sceneManager = require("my-librairie/core/sceneManager")
 local function ease(x) return x * x * (3 - 2 * x) end
 local DefaultScript = {
     durationOut = 0.35,
