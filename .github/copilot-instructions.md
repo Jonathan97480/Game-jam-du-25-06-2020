@@ -1,13 +1,51 @@
 # Copilot Instructions – Jeu de Cartes Tactique LÖVE2D
 
-## Architecture du Projet
-Ce projet LÖVE2D suit une architecture modulaire avec séparation claire des responsabilités :
+## Architecture du Projet MISE À JOUR (31/08/2025)
+Ce projet LÖVE2D suit une architecture modulaire nettoyée avec séparation claire des responsabilités :
 
 - **`main.lua`** : Point d'entrée, initialise les modules globaux et gère le débogage
 - **`my-librairie/`** : Core du framework, contient tous les managers et systèmes
 - **`scene/`** : Scènes du jeu (menu, gameplay, overlays) avec lifecycle standard
 - **`ressources/`** : Données de configuration (cartes, effets, IA)
 - **`test/`** : Tests unitaires avec mocks LÖVE2D intégrés
+
+### Structure my-librairie/ Réorganisée :
+```
+my-librairie/
+├── actorManager.lua              # Gestion entités de combat
+├── globalFunction.lua            # Utilitaires globaux centralisés
+├── globals.lua                   # Système de globales centralisé
+├── sceneManager.lua              # Navigation avec pile de scènes
+├── responsive.lua                # Adaptation écrans
+├── inputManager.lua              # Input unifié souris/gamepad
+├── ActorScripts/                 # Scripts d'entités (Hero/, Enemy/)
+├── ai/                          # IA controller et stratégies
+│   ├── controller.lua           # Contrôleur IA principal
+│   └── card_selection_strategy.lua
+├── card-librairie/              # Système de cartes complet
+│   ├── cardStandbyPlay.lua      # Système standby copie/invisible
+│   ├── card.lua                 # API unifiée cartes
+│   ├── core/                    # Modules de base
+│   ├── effects/                 # Effets de cartes
+│   ├── play/                    # Animations et rendu
+│   └── ui/                      # Interface utilisateur
+├── hud/                         # Système HUD modulaire
+│   ├── hud.lua                  # Gestionnaire principal 5 couches
+│   ├── button/                  # Composants boutons
+│   ├── panel/                   # Composants panels
+│   └── text/                    # Composants texte
+└── transitions/                 # Système de transitions (NOUVEAU)
+    ├── transitionManager.lua    # Gestionnaire principal
+    ├── templateCombatTransition.lua
+    └── focus.lua
+```
+
+### Fichiers Supprimés (Ne plus créer) :
+❌ **my-librairie/transitionManager.lua** → Déplacé vers `transitions/`
+❌ **test_*.lua** → Fichiers tests temporaires
+❌ **overlay_initiative_*.lua** → Versions dupliquées
+❌ **controller_modern.lua** → Version obsolète
+❌ **card-libraarie/** → Typo dans nom (double 'a')
 
 ## Patterns de Code Critiques
 
@@ -43,11 +81,18 @@ Le système SceneManager (`my-librairie/sceneManager.lua`) gère la navigation a
 - **Modes** : `stackMode=false` (broadcast) / `stackMode=true` (top-only)
 - **Events** : Dispatch automatique des événements LÖVE2D vers les scènes
 
-### 3. Système de Cartes Façade
+### 3. Système de Cartes Façade & Standby
 `Card` expose une API unifiée qui délègue aux sous-modules :
 - `Card.hand`, `Card.deck`, `Card.graveyard` : états principaux
 - Génération : `Card.loadCards()`
 - Tirage : `Card.tirage(n)`
+
+**CardStandbyPlay** (`card-librairie/cardStandbyPlay.lua`) : Système révolutionnaire copie/invisible
+- **Pattern copie/invisible** : Carte originale reste en main (invisible), copie affichée en position standby
+- **Protection anti-repositionnement** : Évite les conflits avec le système LERP de `interaction.lua`
+- **API** : `putCardInStandby()`, `getStandbyCopy()`, `cancelStandby()`, `playStandbyCard()`
+- **Intégration** : Se coordonne avec `CardTargetSelection` pour ciblage ennemi
+- **Rendu** : `anim.lua` filtre les cartes invisibles et affiche les copies standby
 
 ### 4. HUD Système Modulaire & Responsive
 Le système HUD (`my-librairie/hud/`) offre une architecture en couches avec composants réutilisables.
@@ -174,8 +219,12 @@ lua test/nom_du_test.lua
    - **Smart Clearing** : HUD vidé automatiquement quand la pile de scènes devient vide
    - **Error Prevention** : Protection contre conflits de rendu multi-scènes
    - **Overlays Support** : Gestion intelligente des overlays sans duplication HUD
-6. **Responsive Global** : `my-librairie/responsive.lua` pour adaptation écrans
-7. **Input Unifié** : `inputManager.lua` unifie souris/gamepad
+6. **Transitions System** : `my-librairie/transitions/` pour effets visuels
+   - **TransitionManager** : Gestionnaire principal des transitions entre scènes
+   - **Combat Transitions** : Templates spécialisés pour combats
+   - **Focus Effects** : Effets de mise en avant et zoom
+7. **Responsive Global** : `my-librairie/responsive.lua` pour adaptation écrans
+8. **Input Unifié** : `inputManager.lua` unifie souris/gamepad
 
 ## Utilitaires GlobalFunction (Éviter les Duplications)
 
