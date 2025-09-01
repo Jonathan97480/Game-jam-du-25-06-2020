@@ -475,18 +475,41 @@ end
 -- Met à jour le HUD
 -- @param dt : delta time
 function hud.update(dt)
-  -- Debug: Log les éléments interactifs trouvés
+  -- 🛡️ ANTI-SPAM HUD UPDATE: Variables locales statiques pour throttling
+  hud._updateLogCache = hud._updateLogCache or {
+    lastCount = nil,
+    lastLogTime = 0,
+    logInterval = 2.0 -- 2 secondes minimum entre logs identiques
+  }
+
+  -- Debug: Log les éléments interactifs trouvés avec anti-spam
   pcall(function()
     local count = 0
     for id, el in pairs(elements) do
       if el and el.interactive then count = count + 1 end
     end
+
     if count > 0 then
-      local f = io.open("gameLogs/hud_update_debug.log", "a")
-      if f then
-        f:write(string.format("%s - hud.update() trouvé %d éléments interactifs\n",
-          os.date("%Y-%m-%d %H:%M:%S"), count))
-        f:close()
+      local currentTime = os.clock()
+      local cache = hud._updateLogCache
+      local isDifferentCount = (cache.lastCount ~= count)
+      local enoughTimePassed = (currentTime - cache.lastLogTime) >= cache.logInterval
+
+      -- Log seulement si count différent OU assez de temps écoulé
+      if isDifferentCount or enoughTimePassed then
+        local f = io.open("gameLogs/hud_update_debug.log", "a")
+        if f then
+          local logMsg = string.format("%s - hud.update() trouvé %d éléments interactifs",
+            os.date("%Y-%m-%d %H:%M:%S"), count)
+          if not isDifferentCount then
+            logMsg = logMsg .. " (throttled - same count after " .. cache.logInterval .. "s)"
+          end
+          f:write(logMsg .. "\n")
+          f:close()
+        end
+
+        cache.lastCount = count
+        cache.lastLogTime = currentTime
       end
     end
   end)
