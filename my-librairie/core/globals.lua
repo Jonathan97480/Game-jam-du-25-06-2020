@@ -88,15 +88,19 @@ _G.Enemies = require("my-librairie.entities.Enemy.Enemies")
 Configuration Flags & Constants
 ===================================================================== ]]
 
--- Game state flags - Initialisation robuste
+-- Game state flags - Migration vers système debug centralisé
 if not _G.GameFlags then
     _G.GameFlags = {}
 end
 
--- S'assurer que tous les flags ont des valeurs par défaut
+-- S'assurer que tous les flags ont des valeurs par défaut (legacy)
 _G.GameFlags.initial_draft_completed = _G.GameFlags.initial_draft_completed or false
 _G.GameFlags.debug_mode = _G.GameFlags.debug_mode or false
 _G.GameFlags.hud_debug_energy = _G.GameFlags.hud_debug_energy or false
+
+-- 🔧 NOUVEAU: Système debug centralisé (Problème #13)
+local debugConfig = require("my-librairie/core/debugConfig")
+debugConfig.init()  -- Initialise et migre les anciens flags
 
 -- Scene Manager
 _G.scene = require("my-librairie/core/sceneManager")
