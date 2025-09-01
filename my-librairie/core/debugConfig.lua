@@ -300,8 +300,8 @@ function DebugConfig.init()
     -- Migration des anciens flags
     DebugConfig.migrateLegacyFlags()
 
-    -- Configuration par défaut (développement)
-    DebugConfig.setDevelopmentMode()
+    -- Configuration par défaut (production - réduction verbosité)
+    DebugConfig.setProductionMode()
 
     -- Exposition globale pour accès facile
     _G.DebugConfig = DebugConfig
