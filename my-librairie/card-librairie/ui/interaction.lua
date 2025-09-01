@@ -15,7 +15,121 @@ if not okI then inputI = nil end
 local okCTS, CardTargetSelection = pcall(require, "my-librairie/card-librairie/ui/card_target_selection")
 if not okCTS then CardTargetSelection = nil end
 
-local M                         = {}
+local M               = {}
+
+-- ============================================================================
+-- SYSTÈME ANTI-SPAM HOVER (Performance Critique)
+-- ============================================================================
+-- Variables anti-spam pour éviter logging massif
+local _hoverSpamCache = {
+    lastActionState = nil, -- Dernier état action (nil, "click")
+    lastLogTime = 0,       -- Timestamp dernier log
+    logInterval = 0.2,     -- Minimum 200ms entre logs identiques
+    spamThreshold = 10,    -- Max 10 logs identiques consécutifs
+    consecutiveCount = 0,  -- Compteur messages identiques
+    totalSkipped = 0       -- Total messages skippés pour stats
+}
+
+-- Fonction logging avec anti-spam intelligent
+local function _logHoverSafe(action, isDown, mouseWasDown)
+    local currentTime = os.clock()
+    local actionStr = tostring(action)
+    local stateKey = actionStr .. "_" .. tostring(isDown) .. "_" .. tostring(mouseWasDown)
+
+    -- Vérifier si même état que précédent
+    local isDuplicate = (_hoverSpamCache.lastActionState == stateKey)
+
+    -- Conditions anti-spam
+    local timeSinceLastLog = currentTime - _hoverSpamCache.lastLogTime
+    local withinInterval = timeSinceLastLog < _hoverSpamCache.logInterval
+    local tooManyConsecutive = _hoverSpamCache.consecutiveCount >= _hoverSpamCache.spamThreshold
+
+    -- Skip si spam détecté
+    if isDuplicate and (withinInterval or tooManyConsecutive) then
+        _hoverSpamCache.totalSkipped = _hoverSpamCache.totalSkipped + 1
+        _hoverSpamCache.consecutiveCount = _hoverSpamCache.consecutiveCount + 1
+        return false -- Pas de log
+    end
+
+    -- Reset compteur si état différent
+    if not isDuplicate then
+        _hoverSpamCache.consecutiveCount = 0
+    end
+
+    -- Log avec info anti-spam si pertinent
+    local logText = "hover start action=" .. actionStr
+    if _hoverSpamCache.totalSkipped > 0 and not isDuplicate then
+        logText = logText .. " (skipped " .. _hoverSpamCache.totalSkipped .. " duplicate)"
+        _hoverSpamCache.totalSkipped = 0 -- Reset après affichage
+    end
+
+    -- Sauvegarder état et logger
+    _hoverSpamCache.lastActionState = stateKey
+    _hoverSpamCache.lastLogTime = currentTime
+    _hoverSpamCache.consecutiveCount = _hoverSpamCache.consecutiveCount + 1
+
+    -- Log vers fichier avec logique anti-spam
+    -- Pour action=nil : seulement si c'est le premier ou après une pause
+    local shouldLogNil = (action == nil) and (not isDuplicate or timeSinceLastLog > 2.0)
+    local shouldLogAction = (action ~= nil)
+
+    if shouldLogAction or shouldLogNil then
+        pcall(function()
+            local f = io.open("gameLogs/hover_trace.log", "a")
+            if f then
+                f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - " .. logText .. "\n")
+                f:close()
+            end
+        end)
+    end
+
+    return true -- Log effectué
+end
+
+-- Fonction logging HUD avec anti-spam similaire
+local function _logHUDHoverSafe(message)
+    local currentTime = os.clock()
+    local messageKey = "hud_" .. message
+
+    -- Cache anti-spam spécialement pour HUD hover
+    if not _hoverSpamCache.hudCache then
+        _hoverSpamCache.hudCache = {
+            lastMessage = nil,
+            lastTime = 0,
+            skipCount = 0
+        }
+    end
+
+    local hudCache = _hoverSpamCache.hudCache
+    local isDuplicate = (hudCache.lastMessage == messageKey)
+    local timeSince = currentTime - hudCache.lastTime
+
+    -- Skip si même message dans les 500ms
+    if isDuplicate and timeSince < 0.5 then
+        hudCache.skipCount = hudCache.skipCount + 1
+        return false
+    end
+
+    -- Log avec info skip si applicable
+    local logText = message
+    if hudCache.skipCount > 0 and not isDuplicate then
+        logText = logText .. " (skipped " .. hudCache.skipCount .. " similar)"
+        hudCache.skipCount = 0
+    end
+
+    hudCache.lastMessage = messageKey
+    hudCache.lastTime = currentTime
+
+    pcall(function()
+        local f = io.open("gameLogs/hover_trace.log", "a")
+        if f then
+            f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - " .. logText .. "\n")
+            f:close()
+        end
+    end)
+
+    return true
+end
 
 local mouseWasDown              = false
 local draggedCard, draggedIndex = nil, nil
@@ -77,25 +191,23 @@ function M.resetInteractions(hard)
     for i = 1, #Common.hand.cards do
         local _card = Common.hand.cards[i]
         -- Protection : utiliser CardManager pour vérifier les cartes protégées
-        if CardManager.isCardPlaying(_card) then
+        if not CardManager.isCardPlaying(_card) then
+            _logf("[Card.Interaction] 📍 Repositionnement carte %d: %s", i, _card.name or "sans nom")
+
+            local bx = (_card.oldVector2 and _card.oldVector2.x) or (_card.target and _card.target.x) or _card.vector2.x
+            local by = (_card.oldVector2 and _card.oldVector2.y) or (_card.target and _card.target.y) or _card.vector2.y
+            _card._targetPos = _card._targetPos or { x = bx, y = by }
+            _card._targetScale = _card._targetScale or { x = Common.SCALE_BASE, y = Common.SCALE_BASE }
+            _card._targetPos.x, _card._targetPos.y = bx, by
+            _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
+            if hard then
+                _logf("[Card.Interaction] 💥 HARD RESET carte %s: position (%d, %d)", _card.name or "carte", bx, by)
+                _card.vector2.x, _card.vector2.y = bx, by
+                _card.scale.x, _card.scale.y = Common.SCALE_BASE, Common.SCALE_BASE
+            end
+        else
             _logf("[Card.Interaction] 🛡️  Protection CardManager: %s (ignore repositionnement)", _card.name or "carte")
-            goto continue
         end
-
-        _logf("[Card.Interaction] 📍 Repositionnement carte %d: %s", i, _card.name or "sans nom")
-
-        local bx = (_card.oldVector2 and _card.oldVector2.x) or (_card.target and _card.target.x) or _card.vector2.x
-        local by = (_card.oldVector2 and _card.oldVector2.y) or (_card.target and _card.target.y) or _card.vector2.y
-        _card._targetPos = _card._targetPos or { x = bx, y = by }
-        _card._targetScale = _card._targetScale or { x = Common.SCALE_BASE, y = Common.SCALE_BASE }
-        _card._targetPos.x, _card._targetPos.y = bx, by
-        _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
-        if hard then
-            _logf("[Card.Interaction] 💥 HARD RESET carte %s: position (%d, %d)", _card.name or "carte", bx, by)
-            _card.vector2.x, _card.vector2.y = bx, by
-            _card.scale.x, _card.scale.y = Common.SCALE_BASE, Common.SCALE_BASE
-        end
-        ::continue::
     end
 end
 
@@ -138,13 +250,11 @@ function M.hover(dt)
         end
     end
     local action = UX.UX_click(isDown, mouseWasDown) and "click" or nil
-    pcall(function()
-        local f = io.open("gameLogs/hover_trace.log", "a")
-        if f then
-            f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hover start action=" .. tostring(action) .. "\n"); f:close()
-        end
-    end)
-    if DEBUG then
+
+    -- 🛡️ ANTI-SPAM: Log intelligent avec protection performance
+    local logSuccess = _logHoverSafe(action, isDown, mouseWasDown)
+
+    if DEBUG and logSuccess then
         _logf("[Card.Interaction] isDown=%s mouseWasDown=%s action=%s", tostring(isDown),
             tostring(mouseWasDown), tostring(action))
     end
@@ -182,20 +292,14 @@ function M.hover(dt)
     local overHUD = UX.isMouseOverHUD()
     local hudHover = false
     if hud and hud.hover and overHUD and not draggedCard then
-        pcall(function()
-            local f = io.open("gameLogs/hover_trace.log", "a")
-            if f then
-                f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - calling hud.hover\n"); f:close()
-            end
-        end)
+        -- 🛡️ ANTI-SPAM: Log HUD hover avec protection
+        _logHUDHoverSafe("calling hud.hover")
+
         local ok, res = pcall(hud.hover, action)
         if ok then hudHover = res or false else hudHover = false end
-        pcall(function()
-            local f = io.open("gameLogs/hover_trace.log", "a")
-            if f then
-                f:write(os.date("%Y-%m-%d %H:%M:%S") .. " - hud.hover returned=" .. tostring(hudHover) .. "\n"); f:close()
-            end
-        end)
+
+        -- 🛡️ ANTI-SPAM: Log résultat HUD hover
+        _logHUDHoverSafe("hud.hover returned=" .. tostring(hudHover))
     end
     if hudHover then
         mouseWasDown = isDown; return
