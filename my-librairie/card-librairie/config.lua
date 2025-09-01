@@ -40,12 +40,12 @@ Config.STANDBY = {
     standbyY = 400,
     scaleX = 0.8,
     scaleY = 0.8,
-    animationSpeed = 0.15,
+    animationSpeed = 10,
 
     DEBUG_ENABLED = true,
     DURATION = 0.15,
     --au play card self
-    AUTO_CONFIRM = 2.0,
+    AUTO_CONFIRM = 2,
     fontPath = 'fonts/PANICKO.ttf',
     fontSize = 24
 

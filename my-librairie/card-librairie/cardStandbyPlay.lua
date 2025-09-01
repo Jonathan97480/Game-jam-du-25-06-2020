@@ -129,8 +129,10 @@ function CardStandbyPlay.putCardInStandby(card, originalHandIndex)
     -- 4. SAUVEGARDER L'ÉTAT
     CardStandbyPlay.state.cardInStandby = card      -- Carte originale (invisible)
     CardStandbyPlay.state.standbyCopy = standbyCard -- Copie visible
+
     CardStandbyPlay.state.originalHandIndex = originalHandIndex or 1
     CardStandbyPlay.state.isActive = true
+
 
     -- Si la carte est self-only, lancer un timer d'auto-confirmation (2s)
     if card.self_only then
@@ -335,13 +337,21 @@ function CardStandbyPlay.update(dt)
         standby.vector2 = standby.vector2 or { x = CardStandbyPlay.config.standbyX, y = CardStandbyPlay.config.standbyY }
         standby._targetPos = standby._targetPos or { x = standby.vector2.x, y = standby.vector2.y }
         -- Si un target est défini, lerp vers celui-ci
-        local speed = CardStandbyPlay.config.animationSpeed or 0.15
+        local speed = config.STANDBY.animationSpeed or 0.15
         if standby.target and standby.target.x and standby.target.y then
-            standby._targetPos.x = standby.target.x
-            standby._targetPos.y = standby.target.y
+            standby._targetPos.x = config.STANDBY.standbyX or 50
+            standby._targetPos.y = config.STANDBY.standbyY or 50
         end
-        standby.vector2.x = gf and gf.lerp and gf.lerp(standby.vector2.x, standby._targetPos.x, speed) or standby._targetPos.x
-        standby.vector2.y = gf and gf.lerp and gf.lerp(standby.vector2.y, standby._targetPos.y, speed) or standby._targetPos.y
+        -- Safely interpolate numeric values. globalFunction.lerp expects tables; use lerpNum for scalars.
+        local actualDt = dt or rawget(_G, "Delta") or 0.016
+        local coef = math.min(1, (speed or 0.15) * actualDt)
+        if gf and gf.lerpNum then
+            standby.vector2.x = gf.lerpNum(standby.vector2.x or standby._targetPos.x, standby._targetPos.x, coef)
+            standby.vector2.y = gf.lerpNum(standby.vector2.y or standby._targetPos.y, standby._targetPos.y, coef)
+        else
+            standby.vector2.x = standby._targetPos.x
+            standby.vector2.y = standby._targetPos.y
+        end
     end
 
     -- Gestion du timer d'auto-play pour les cartes self-only
@@ -379,7 +389,7 @@ function CardStandbyPlay.draw()
         love.graphics.setColor(1, 1, 0, 0.7) -- Jaune semi-transparent
         local font = cacheManager.font(config.STANDBY.fontPath, config.STANDBY.fontSize or 20)
         love.graphics.setFont(font)
-        love.graphics.printf("EN ATTENTE", card.vector2.x + 50, card.vector2.y - 150, 100, "center")
+        love.graphics.printf("EN ATTENTE", card.vector2.x + 50, card.vector2.y - 300, 100, "center")
 
 
         love.graphics.setColor(1, 1, 1, 1) -- Reset couleur
