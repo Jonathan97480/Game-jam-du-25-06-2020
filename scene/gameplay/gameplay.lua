@@ -45,6 +45,47 @@ gameplay.config = require("scene.gameplay.config")
 -- Débogage local
 local DEBUG_GAMEPLAY = true
 
+----------------------------------------------------------------------
+-- 🧹 Système de cleanup automatique des logs transitions
+----------------------------------------------------------------------
+local function cleanup_transition_logs()
+    pcall(function()
+        local log_path = "gameLogs/transition_debug.log"
+        local f = io.open(log_path, "r")
+        if not f then return end
+
+        -- Compter les lignes
+        local line_count = 0
+        for _ in f:lines() do
+            line_count = line_count + 1
+        end
+        f:close()
+
+        -- Si >1000 lignes, garder seulement les 500 dernières
+        if line_count > 1000 then
+            local f_read = io.open(log_path, "r")
+            if f_read then
+                local lines = {}
+                for line in f_read:lines() do
+                    table.insert(lines, line)
+                end
+                f_read:close()
+
+                -- Réécrire avec seulement les 500 dernières lignes
+                local f_write = io.open(log_path, "w")
+                if f_write then
+                    local start_idx = math.max(1, #lines - 499)
+                    f_write:write("-- Log automatically rotated on " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n")
+                    for i = start_idx, #lines do
+                        f_write:write(lines[i] .. "\n")
+                    end
+                    f_write:close()
+                end
+            end
+        end
+    end)
+end
+
 -- Utilitaires log
 local function _to_text(...)
     local t = {}
@@ -301,6 +342,9 @@ end
 -- @tparam table self Référence scène
 -- @tparam[opt] table params Paramètres d’initialisation
 function gameplay.load(self, params)
+    -- 🧹 Cleanup automatique des logs (rotation si >1000 lignes)
+    cleanup_transition_logs()
+
     -- Apparition des ennemis
     auto_spawn_enemies()
 
@@ -359,14 +403,51 @@ function gameplay.load(self, params)
     -- Transition manager (instanciation/chargement)
     safecall("Transition.load", function()
         pcall(function()
-            local f = io.open("gameLogs/transition_debug.log", "a")
-            if f then
-                f:write(os.date("%Y-%m-%d %H:%M:%S") ..
-                    " - gameplay.load -> Transition present=" ..
-                    tostring(TransitionCombat ~= nil) ..
-                    " GameFlags.initial_draft_completed=" ..
-                    tostring((rawget(_G, 'GameFlags') or {}).initial_draft_completed) .. "\n")
-                f:close()
+            -- 🔧 ANTI-SPAM: Logger seulement lors de changements d'état
+            local current_transition_present = TransitionCombat ~= nil
+            local current_draft_flag = (rawget(_G, 'GameFlags') or {}).initial_draft_completed
+
+            -- Vérifier si état a changé depuis dernier log
+            local key = "transition_state_cache"
+            local cache = rawget(_G, key) or {}
+            rawset(_G, key, cache)
+
+            local prev_transition = cache.transition_present
+            local prev_draft = cache.draft_completed
+            local state_changed = (prev_transition ~= current_transition_present) or
+                (prev_draft ~= current_draft_flag)
+
+            -- Logger uniquement si changement d'état OU première fois
+            if state_changed or not cache.initialized then
+                local f = io.open("gameLogs/transition_debug.log", "a")
+                if f then
+                    local change_info = ""
+                    if cache.initialized then
+                        if prev_transition ~= current_transition_present then
+                            change_info = change_info ..
+                            " [Transition:" ..
+                            tostring(prev_transition) .. "→" .. tostring(current_transition_present) .. "]"
+                        end
+                        if prev_draft ~= current_draft_flag then
+                            change_info = change_info ..
+                            " [Draft:" .. tostring(prev_draft) .. "→" .. tostring(current_draft_flag) .. "]"
+                        end
+                    else
+                        change_info = " [INIT]"
+                    end
+
+                    f:write(os.date("%Y-%m-%d %H:%M:%S") ..
+                        " - gameplay.load -> Transition present=" ..
+                        tostring(current_transition_present) ..
+                        " GameFlags.initial_draft_completed=" ..
+                        tostring(current_draft_flag) .. change_info .. "\n")
+                    f:close()
+                end
+
+                -- Mettre à jour le cache
+                cache.transition_present = current_transition_present
+                cache.draft_completed = current_draft_flag
+                cache.initialized = true
             end
         end)
         return TransitionCombat and TransitionCombat.load and TransitionCombat:load()
