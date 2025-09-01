@@ -14,6 +14,12 @@ README — Game Jam (fork)
 #### Scene Management
 - **[SceneManager_Documentation.md](./SceneManager_Documentation.md)** - Système de gestion des scènes avec pile et lifecycle
 
+#### Card System ⭐ **NOUVEAU**
+- **[CardStandbyPlay_Documentation.md](./CardStandbyPlay_Documentation.md)** - Système révolutionnaire copie/invisible ⭐ **NOUVEAU**
+
+#### Transitions & Effects ⭐ **NOUVEAU**  
+- **[Transitions_System.md](./Transitions_System.md)** - Système de transitions avec anti-spam intelligent ⭐ **NOUVEAU**
+
 #### Input System
 - **[InputSystem_Documentation.md](./InputSystem_Documentation.md)** - Système d'entrées unifié
 - **[InputSystem_Examples.md](./InputSystem_Examples.md)** - Exemples d'utilisation des inputs
@@ -22,9 +28,21 @@ README — Game Jam (fork)
 ### 🔄 Migrations et Overlays
 - **[Overlay_Initiative_HUD_Migration.md](./Overlay_Initiative_HUD_Migration.md)** - Migration spécifique de l'overlay initiative
 
-### 🚀 Changements Récents (Août 2025)
+### 🚀 Changements Récents (Septembre 2025)
 
-#### ✅ HUD Centralisé - Migration Complète
+#### ✅ Documentation Système Complète (Problème #11)
+- **CardStandbyPlay** complet avec API 12 fonctions et patterns d'intégration
+- **Transitions anti-spam** avec cache intelligent et auto-cleanup
+- **HUD responsive** fixes coordonnées souris documentés
+- **Patterns consolidés** GameFlags et safe require
+
+#### ✅ Système Transitions Anti-Spam (Problème #10)
+- **Cache intelligent** réduction logs répétitifs
+- **Auto-cleanup** périodique mémoire (30s)
+- **Performance** optimisée pour logs debug  
+- **Monitoring** intégré état système
+
+#### ✅ HUD Centralisé - Migration Complète  
 - **Rendu unique** dans `main.lua` - fini les conflits de rendu multiples
 - **API modernisée** avec structure `opts` table unifiée
 - **Smart clearing** automatique quand pile de scènes devient vide
@@ -40,6 +58,58 @@ README — Game Jam (fork)
 - **Smart clearing HUD** seulement quand pile de scènes vide
 - **Logs détaillés** pour debugging et monitoring
 - **Error handling** robuste pour toutes les transitions
+
+---
+
+## 🔧 Patterns de Développement Consolidés
+
+### GameFlags Pattern (Problème #3)
+**Convention consolidée** : Utiliser `GameFlags` comme namespace centralisé pour états globaux :
+
+```lua
+-- RECOMMANDÉ : Pattern GameFlags consolidé
+GameFlags.showOverlayInitiative = true
+GameFlags.combatActive = false
+GameFlags.turnInProgress = true
+
+-- ÉVITER : Variables globales dispersées
+showOverlayInitiative = true
+COMBAT_STATE = "active"
+turnState = "player"
+```
+
+**Avantages** :
+- Namespace unique évite les conflits
+- Debug facilité avec `table.inspect(GameFlags)`
+- Centralisation des états de jeu
+- IDE autocomplete amélioré
+
+### Safe Require Pattern (Problème #8)
+**Pattern unifié** pour chargement robuste de modules :
+
+```lua
+local function _safeRequire(name)
+    local ok, mod = pcall(require, name)
+    if ok then
+        return mod
+    else
+        print("⚠️ Module non trouvé:", name)
+        return nil
+    end
+end
+
+-- Usage
+local cardManager = _safeRequire("my-librairie/card-librairie/cardManager")
+if cardManager then
+    cardManager.init()
+end
+```
+
+**Best Practices** :
+- Toujours vérifier retour avant usage
+- Log en cas d'échec pour debug
+- Fallback gracieux si module optionnel
+- Pattern centralisé dans `globals.lua`
 
 ### 🏗️ Architecture Principale
 

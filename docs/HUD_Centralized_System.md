@@ -343,3 +343,85 @@ Le système HUD centralisé représente une évolution majeure qui :
 - **Facilite** la maintenance et l'extension
 
 Cette architecture est maintenant le standard pour tous les développements HUD dans le projet.
+
+---
+
+## 🔧 MISE À JOUR - Coordonnées Responsive (Problème #9)
+
+### Problème Résolu : Boutons Non-Cliquables
+
+**Symptôme** : Boutons HUD non réactifs malgré apparence normale
+**Cause** : Mismatch coordonnées souris vs positions boutons (transformation responsive)
+**Solution** : Fix transformation dans `hud.hover()` avec facteurs d'échelle
+
+### Fix Technique : Transformation Responsive
+
+#### Avant (Bugué)
+```lua
+-- Dans hud.lua
+function hud.hover(event_type)
+    local mouseX, mouseY = love.mouse.getPosition()
+    -- ❌ Coordonnées brutes non transformées
+    
+    for _, button in ipairs(buttons) do
+        if pointInRect(mouseX, mouseY, button.x, button.y, button.w, button.h) then
+            -- Ne fonctionne pas avec responsive
+        end
+    end
+end
+```
+
+#### Après (Corrigé)
+```lua
+-- Dans hud.lua - FIX RESPONSIVE COORDINATES
+function hud.hover(event_type)
+    local mouseX, mouseY = love.mouse.getPosition()
+    
+    -- 🔧 TRANSFORMATION RESPONSIVE
+    local inputInterface = _G.inputInterface
+    if inputInterface and inputInterface.screen and inputInterface.screen.ratioScreen then
+        -- Appliquer facteurs d'échelle inverse
+        local sx = inputInterface.screen.ratioScreen
+        local sy = inputInterface.screen.ratioScreen
+        mouseX = mouseX / sx
+        mouseY = mouseY / sy
+    end
+    
+    for _, button in ipairs(buttons) do
+        if pointInRect(mouseX, mouseY, button.x, button.y, button.w, button.h) then
+            -- ✅ Fonctionne parfaitement avec responsive
+        end
+    end
+end
+```
+
+### Troubleshooting Coordonnées Responsive
+
+#### Problème : Bouton Visible Mais Non-Cliquable
+**Debug :**
+```lua
+-- 1. Vérifier facteur d'échelle
+print("Ratio screen:", (_G.inputInterface and _G.inputInterface.screen and _G.inputInterface.screen.ratioScreen) or "UNDEFINED")
+
+-- 2. Comparer coordonnées
+local rawX, rawY = love.mouse.getPosition()
+local transformedX, transformedY = getTransformedMouseCoords()
+print(string.format("Coords: Raw(%d,%d) vs Transformed(%d,%d)", rawX, rawY, transformedX, transformedY))
+
+-- 3. Valider position bouton
+local button = hud.getButton("problematic_button")
+print(string.format("Button pos: (%d,%d) size: %dx%d", button.x, button.y, button.w, button.h))
+```
+
+#### Guidelines Développement
+1. **Positions boutons** : Toujours en coordonnées écran logiques
+2. **Mouse input** : Transformer avant collision detection
+3. **Debugging** : Toujours comparer raw vs transformed
+4. **Tests** : Valider sur plusieurs résolutions
+
+---
+
+**État Fix** : ✅ **Résolu et Validé**  
+**Tests** : Boutons fonctionnels sur multiples résolutions  
+**Impact** : HUD responsive 100% fonctionnel  
+**Dernière MàJ** : 1er septembre 2025 (Problème #9)
