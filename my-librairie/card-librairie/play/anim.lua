@@ -144,14 +144,6 @@ function M.draw() end
 function M.drawHand()
     if not love or not love.graphics then return end
 
-    -- NOUVEAU : Dessiner d'abord la copie standby si elle existe
-    local CardStandbyPlay = rawget(_G, "CardStandbyPlay")
-    if CardStandbyPlay and CardStandbyPlay.getStandbyCopy then
-        local standbyCopy = CardStandbyPlay.getStandbyCopy()
-        if standbyCopy and standbyCopy.isVisible ~= false then
-            M.drawSingleCard(standbyCopy)
-        end
-    end
 
     -- Dessiner les cartes de la main (en ignorant les invisibles)
     for i = 1, #Common.hand.cards do

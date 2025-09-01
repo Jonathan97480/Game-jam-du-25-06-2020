@@ -45,7 +45,10 @@ Config.STANDBY = {
     DEBUG_ENABLED = true,
     DURATION = 0.15,
     --au play card self
-    AUTO_CONFIRM = 2.0
+    AUTO_CONFIRM = 2.0,
+    fontPath = 'fonts/PANICKO.ttf',
+    fontSize = 24
+
 }
 
 return Config

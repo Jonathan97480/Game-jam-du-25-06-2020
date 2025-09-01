@@ -104,9 +104,8 @@ _G.inputManager = okInput and inputManager or nil
 local okActor, actorManager = pcall(require, "my-librairie/managers/actorManager")
 _G.actorManager = okActor and actorManager or nil
 
-
-
-
+--systeme de chache pour les fonts les images et e le sond
+_G.cache = require("my-librairie.managers.resource_cache")
 --[[ =====================================================================
 Configuration Flags & Constants
 ===================================================================== ]]

@@ -18,6 +18,7 @@ end
 local gf = _G.globalFunction or require("my-librairie/utils/globalFunction")
 local responsive = _G.screen or require("my-librairie/utils/responsive")
 local config = require("my-librairie/card-librairie/config") or {}
+local cacheManager = _G.cache or require("my-librairie.managers.resource_cache")
 
 -- État du système (NOUVEAU : avec copie)
 CardStandbyPlay.state = {
@@ -106,24 +107,24 @@ function CardStandbyPlay.putCardInStandby(card, originalHandIndex)
     else
         _log("error", "[putCardInStandby] : globalFunction.clone non disponible, vérifier la fonction ou l'appel")
     end
-    -- La copie est visible
-    standbyCard.isVisible = true
-    standbyCard.isStandbyCopy = true -- Marquer comme copie
 
+    -- Vérifier que la copie a bien été créée avant tout accès
     if standbyCard == nil then
         _log("error", "❌ Échec de la création de la copie standby, annulation")
         card.isVisible = true -- Remettre visible
         return false
     end
 
-    -- 3. POSITIONNER LA COPIE à gauche
+    -- La copie est visible et marquée
+    standbyCard.isVisible = true
+    standbyCard.isStandbyCopy = true -- Marquer comme copie
+
+    -- Assurer champs vector2/scale existants
     standbyCard.vector2 = standbyCard.vector2 or {}
-    standbyCard.vector2.x = CardStandbyPlay.config.standbyX
-    standbyCard.vector2.y = CardStandbyPlay.config.standbyY
     standbyCard.scale = standbyCard.scale or {}
 
-    standbyCard.scale.x = config.STANDBY.scaleX or 0.8
-    standbyCard.scale.y = config.STANDBY.scaleY or 0.8
+    standbyCard.scale.x = standbyCard.scale.x or (config.STANDBY.scaleX or 0.8)
+    standbyCard.scale.y = standbyCard.scale.y or (config.STANDBY.scaleY or 0.8)
 
     -- 4. SAUVEGARDER L'ÉTAT
     CardStandbyPlay.state.cardInStandby = card      -- Carte originale (invisible)
@@ -328,14 +329,19 @@ function CardStandbyPlay.update(dt)
         return
     end
 
-    local card = CardStandbyPlay.state.cardInStandby
-    if card and card.targetPosition and card.position then
-        -- Animation simple vers la position cible
-        local speed = CardStandbyPlay.config.animationSpeed
-        card.position.x = gf and gf.lerp and gf.lerp(card.position.x, card.targetPosition.x, speed) or
-            card.targetPosition.x
-        card.position.y = gf and gf.lerp and gf.lerp(card.position.y, card.targetPosition.y, speed) or
-            card.targetPosition.y
+    -- Animer la copie standby si elle existe (utiliser vector2/target pour cohérence)
+    local standby = CardStandbyPlay.state.standbyCopy
+    if standby then
+        standby.vector2 = standby.vector2 or { x = CardStandbyPlay.config.standbyX, y = CardStandbyPlay.config.standbyY }
+        standby._targetPos = standby._targetPos or { x = standby.vector2.x, y = standby.vector2.y }
+        -- Si un target est défini, lerp vers celui-ci
+        local speed = CardStandbyPlay.config.animationSpeed or 0.15
+        if standby.target and standby.target.x and standby.target.y then
+            standby._targetPos.x = standby.target.x
+            standby._targetPos.y = standby.target.y
+        end
+        standby.vector2.x = gf and gf.lerp and gf.lerp(standby.vector2.x, standby._targetPos.x, speed) or standby._targetPos.x
+        standby.vector2.y = gf and gf.lerp and gf.lerp(standby.vector2.y, standby._targetPos.y, speed) or standby._targetPos.y
     end
 
     -- Gestion du timer d'auto-play pour les cartes self-only
@@ -355,26 +361,27 @@ function CardStandbyPlay.draw()
         return
     end
 
-    local card = CardStandbyPlay.state.cardInStandby
-    if card and card.position then
+    local card = CardStandbyPlay.getStandbyCopy()
+    if card and card.vector2 then
         -- Dessiner la carte en standby avec un effet visuel
-        love.graphics.push()
+
 
         -- Légère transparence pour indiquer l'état standby
         love.graphics.setColor(1, 1, 1, 0.8)
 
         -- Dessiner la carte (utiliser le système de rendu existant)
-        local cardRender = _safeRequire("my-librairie/card-librairie/render")
-        if cardRender and cardRender.drawCard then
-            cardRender.drawCard(card)
+        local cardRender = require("my-librairie.card-librairie.play.anim")
+        if cardRender and cardRender.drawSingleCard then
+            cardRender.drawSingleCard(card)
         end
 
         -- Indicateur visuel "EN ATTENTE"
-        love.graphics.setColor(1, 1, 0, 0.7)           -- Jaune semi-transparent
-        love.graphics.setFont(love.graphics.getFont()) -- Utiliser la font par défaut
-        love.graphics.printf("EN ATTENTE", card.position.x - 50, card.position.y - 40, 100, "center")
+        love.graphics.setColor(1, 1, 0, 0.7) -- Jaune semi-transparent
+        local font = cacheManager.font(config.STANDBY.fontPath, config.STANDBY.fontSize or 20)
+        love.graphics.setFont(font)
+        love.graphics.printf("EN ATTENTE", card.vector2.x + 50, card.vector2.y - 150, 100, "center")
 
-        love.graphics.pop()
+
         love.graphics.setColor(1, 1, 1, 1) -- Reset couleur
     end
 end
