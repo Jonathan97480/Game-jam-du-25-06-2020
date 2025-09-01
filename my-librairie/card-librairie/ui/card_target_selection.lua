@@ -414,9 +414,9 @@ function CardTargetSelection.detectEnemyHover(enemy, mouseX, mouseY)
         return false
     end
 
-
-    _logf("[ENEMY DEBUG]   x: %s", tostring(enemy.x))
-    _logf("[ENEMY DEBUG]   y: %s", tostring(enemy.y))
+    -- Corriger les logs de debug pour afficher les bonnes propriétés
+    _logf("[ENEMY DEBUG]   vector2.x: %s", tostring(enemy.vector2 and enemy.vector2.x))
+    _logf("[ENEMY DEBUG]   vector2.y: %s", tostring(enemy.vector2 and enemy.vector2.y))
 
     -- Essayer différentes structures de position
     local x, y, w, h
