@@ -22,32 +22,29 @@
 - [x] **Status**: ✅ **RÉSOLU ET COMMITTÉ**
 
 ### 🔥 2. Erreur "attempt to call a string value" dans l'IA
-- [x] **Problème identifié**: 18+ occurrences dans les logs
-- [x] **Source localisée**: `my-librairie/ai/controller.lua` ligne ~149
-- [x] **Cause**: Fonctions `onPlay` des cartes stockées comme chaînes au lieu de fonctions
-- [ ] **Fichiers à vérifier**:
-  - [ ] `ressources/cards_data_player.lua` (vérifier format `onPlay`)
-  - [ ] `ressources/cardsIA.lua` (vérifier format `onPlay` ennemis)
-  - [ ] `my-librairie/ai/controller.lua` (améliorer validation avant appel)
-  - [ ] `my-librairie/utils/globalFunction.lua` (améliorer `safecall`)
-- [ ] **Test à créer**: Validation des fonctions `onPlay`
-- [ ] **Status**: 🔄 **EN ATTENTE**
+- [x] **Problème identifié**: `globalFunction.safecall` mal utilisé - inversion paramètres
+- [x] **Source localisée**: `my-librairie/ai/controller.lua` lignes 506, 511, 527, 532
+- [x] **Cause**: Appels `safecall("string", function)` au lieu de `safecall(function)`
+- [x] **Solution appliquée**: Correction signature + ajout pattern `onPlay(target)`
+- [x] **Fichiers modifiés**:
+  - [x] `my-librairie/ai/controller.lua` (safecall corrigé + signature target-only)
+  - [x] `test/test_ai_safecall_fix.lua` (test de validation)
+- [x] **Test validé**: Logs `session_20250901_124129.log` - Plus d'erreur "attempt to call"
+- [x] **Status**: ✅ **RÉSOLU** - Correction fonctionnelle
 
 ### ⚙️ 3. GameFlags non initialisés
-- [x] **Problème identifié**: `GameFlags.first_draft_done = nil`
-- [x] **Source localisée**: `my-librairie/core/globals.lua` ligne ~112
-- [ ] **Solution à appliquer**: Initialiser explicitement les flags
-- [ ] **Fichier à modifier**: `my-librairie/core/globals.lua`
-- [ ] **Code requis**:
-  ```lua
-  _G.GameFlags = {
-      first_draft_done = false, -- au lieu de nil
-      debug_mode = false,
-      hud_debug_energy = false
-  }
-  ```
-- [ ] **Test à effectuer**: Vérifier dans `transition_debug.log`
-- [ ] **Status**: 🔄 **EN ATTENTE**
+- [x] **Problème identifié**: Duplication définition `GameFlags` + flag `first_draft_done = nil`
+- [x] **Source localisée**: `my-librairie/core/globals.lua` lignes 81 et 115 (duplication)
+- [x] **Solution appliquée**: Suppression duplication + renommage flag + initialisation robuste
+- [x] **Fichiers modifiés**:
+  - [x] `my-librairie/core/globals.lua` (suppression duplication, logique OR robuste)
+  - [x] `my-librairie/transitions/templateCombatTransition.lua` (renommage flag)
+  - [x] `scene/gameplay/gameplay.lua` (mise à jour logs debug)
+  - [x] `test/test_gameflags_fix.lua` (test de validation)
+- [x] **Renommage**: `first_draft_done` → `initial_draft_completed` (plus explicite)
+- [x] **Valeur par défaut**: `false` (logique métier: draft pas encore fait)
+- [x] **Test validé**: ✅ Initialisation robuste + préservation valeurs existantes
+- [x] **Status**: ✅ **RÉSOLU** - GameFlags correctement initialisés et renommés
 
 ---
 

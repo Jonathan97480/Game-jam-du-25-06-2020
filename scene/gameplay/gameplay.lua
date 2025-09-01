@@ -358,8 +358,8 @@ function gameplay.load(self, params)
                 f:write(os.date("%Y-%m-%d %H:%M:%S") ..
                     " - gameplay.load -> Transition present=" ..
                     tostring(TransitionCombat ~= nil) ..
-                    " GameFlags.first_draft_done=" ..
-                    tostring((rawget(_G, 'GameFlags') or {}).first_draft_done) .. "\n")
+                    " GameFlags.initial_draft_completed=" ..
+                    tostring((rawget(_G, 'GameFlags') or {}).initial_draft_completed) .. "\n")
                 f:close()
             end
         end)

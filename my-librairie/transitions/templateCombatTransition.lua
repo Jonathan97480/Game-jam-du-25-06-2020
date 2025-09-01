@@ -208,7 +208,7 @@ function CombatFlow:finalizeFirstDraftSelection(selectedCards)
         end
     end
     ensurePlayerDeckMax10()
-    GameFlags.first_draft_done = true
+    GameFlags.initial_draft_completed = true
     if SceneManager and SceneManager.pop then SceneManager:pop() end
     changeState("setup_round")
     self.timer = 0
@@ -475,7 +475,7 @@ end
 
 --- Bouton/validation dans l’overlay de début de combat.
 function CombatFlow:confirmStartOverlay()
-    -- Ne pas toucher à GameFlags.first_draft_done ici.
+    -- Ne pas toucher à GameFlags.initial_draft_completed ici.
     self.flagStartOverlayDone = true
     logT("confirmStartOverlay -> flagStartOverlayDone=true (transition vers initiative)")
 end
