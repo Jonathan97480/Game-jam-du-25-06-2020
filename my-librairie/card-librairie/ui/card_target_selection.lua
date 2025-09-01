@@ -2,8 +2,6 @@
 -- Module de gestion de sélection de cibles pour le système de ciblage multi-ennemis
 -- Permet au joueur de sélectionner manuellement l'ennemi cible lors du jeu d'une carte
 
-print("[LOADING] CardTargetSelection module chargé - VERSION DEBUG!")
-
 -- Chargement sécurisé pour éviter les boucles circulaires
 local function _safeRequire(name)
     local ok, mod = pcall(require, name)
@@ -19,8 +17,14 @@ local CardManager = _safeRequire("my-librairie/card-librairie/card_manager")
 -- Module principal
 local CardTargetSelection = {}
 
--- Activer le debug pour voir les logs
-CardTargetSelection.DEBUG = true
+-- Configuration Debug - Réduction verbosité (Problem #4)
+CardTargetSelection.DEBUG = rawget(_G, "DEBUG_TARGET_SELECTION") or false       -- Configurable globalement
+CardTargetSelection.DEBUG_VERBOSE = rawget(_G, "DEBUG_TARGET_VERBOSE") or false -- Logs ultra-détaillés
+
+-- Debug de chargement uniquement si verbose activé
+if CardTargetSelection.DEBUG_VERBOSE then
+    print("[LOADING] CardTargetSelection module chargé - VERSION DEBUG!")
+end
 
 -- ============================================================================
 -- VARIABLES D'ÉTAT GLOBALES
@@ -59,8 +63,9 @@ CardTargetSelection.config = {
     }
 }
 
--- Debug et logging
-CardTargetSelection.DEBUG = true -- rawget(_G, "DEBUG_TARGET_SELECTION") or false
+-- Debug et logging avec niveaux de verbosité (Problem #4 Fix)
+CardTargetSelection.DEBUG = rawget(_G, "DEBUG_TARGET_SELECTION") or false       -- Configurable via globale
+CardTargetSelection.DEBUG_VERBOSE = rawget(_G, "DEBUG_TARGET_VERBOSE") or false -- Logs ultra-détaillés
 CardTargetSelection.stats = {
     selectionsStarted = 0,
     selectionsCompleted = 0,
@@ -68,13 +73,33 @@ CardTargetSelection.stats = {
     hoversDetected = 0
 }
 
+-- Anti-spam pour les logs répétitifs
+CardTargetSelection._lastLoggedPosition = nil
+CardTargetSelection._lastLoggedTime = 0
+CardTargetSelection._logSpamInterval = 0.5 -- Limite: 1 log par 500ms pour position
+
 -- ============================================================================
 -- UTILITAIRES ET LOGGING
 -- ============================================================================
 
+-- Fonction de logging avec anti-spam intégré
 local function _logf(fmt, ...)
     if not CardTargetSelection.DEBUG then return end
+
     local text = string.format("[CardTargetSelection] " .. fmt, ...)
+
+    -- Anti-spam pour les logs de position/hover fréquents
+    local isPositionLog = text:match("findHoveredEnemyAt") or text:match("vérification.*ennemis") or
+    text:match("getEnemyList")
+    if isPositionLog and not CardTargetSelection.DEBUG_VERBOSE then
+        local currentTime = os.clock()
+        if CardTargetSelection._lastLoggedTime and
+            (currentTime - CardTargetSelection._lastLoggedTime) < CardTargetSelection._logSpamInterval then
+            return -- Skip ce log pour éviter le spam
+        end
+        CardTargetSelection._lastLoggedTime = currentTime
+    end
+
     print(text) -- DEBUG temporaire
     if globalFunction and globalFunction.log and globalFunction.log.info then
         globalFunction.log.info(text)
@@ -123,8 +148,10 @@ end
 
 -- Helper pour accéder au système de dragLock sans dépendance circulaire
 local function _setDragLock(state)
-    _logf("🔴 DEBUG: _setDragLock DÉSACTIVÉE - tentative de %s", state and "activation" or "désactivation")
-    _logf("🔴 DEBUG: Le dragLock n'est pas modifié pour observation")
+    if CardTargetSelection.DEBUG_VERBOSE then
+        _logf("🔴 DEBUG: _setDragLock DÉSACTIVÉE - tentative de %s", state and "activation" or "désactivation")
+        _logf("🔴 DEBUG: Le dragLock n'est pas modifié pour observation")
+    end
 
     -- DÉSACTIVÉ TEMPORAIREMENT POUR DEBUG
     --[[ FONCTIONNALITÉ ORIGINALE COMMENTÉE
@@ -389,8 +416,8 @@ function CardTargetSelection.getEnemyList()
     -- Diagnostic : tente de récupérer le gestionnaire d'ennemis global
     local enemiesManager = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
 
-    -- Affiche des informations de debug sur le gestionnaire trouvé
-    if CardTargetSelection.DEBUG then
+    -- Debug réduit : logs seulement en mode verbose
+    if CardTargetSelection.DEBUG_VERBOSE then
         _logf("🔍 [getEnemyList] Gestionnaire trouvé : %s", enemiesManager and tostring(enemiesManager) or "nil")
         if enemiesManager and enemiesManager.listeEnemies then
             _logf("    .listeEnemies présent (%d ennemis)", #enemiesManager.listeEnemies)
@@ -410,13 +437,20 @@ end
 
 function CardTargetSelection.detectEnemyHover(enemy, mouseX, mouseY)
     if not enemy then
-        _logf("[ENEMY DEBUG] Enemy est nil")
+        if CardTargetSelection.DEBUG_VERBOSE then
+            _logf("[ENEMY DEBUG] Enemy est nil")
+        end
         return false
     end
 
-    -- Corriger les logs de debug pour afficher les bonnes propriétés
-    _logf("[ENEMY DEBUG]   vector2.x: %s", tostring(enemy.vector2 and enemy.vector2.x))
-    _logf("[ENEMY DEBUG]   vector2.y: %s", tostring(enemy.vector2 and enemy.vector2.y))
+    -- Logs de debug des ennemis seulement en mode VERBOSE
+    if CardTargetSelection.DEBUG_VERBOSE then
+        _logf("[ENEMY DEBUG] Check: %s at vector2(%s,%s)",
+            enemy.name or "unnamed",
+            tostring(enemy.vector2 and enemy.vector2.x),
+            tostring(enemy.vector2 and enemy.vector2.y))
+        _logf("[ENEMY DEBUG] Souris: x=%s y=%s", tostring(mouseX), tostring(mouseY))
+    end
 
     -- Essayer différentes structures de position
     local x, y, w, h
@@ -425,7 +459,9 @@ function CardTargetSelection.detectEnemyHover(enemy, mouseX, mouseY)
         x = enemy.vector2.x
         y = enemy.vector2.y
     else
-        _logf("[ENEMY DEBUG] Aucune position trouvée pour cet ennemi")
+        if CardTargetSelection.DEBUG_VERBOSE then
+            _logf("[ENEMY DEBUG] Aucune position trouvée pour ennemi: %s", enemy.name or "unnamed")
+        end
         return false
     end
 
@@ -433,16 +469,15 @@ function CardTargetSelection.detectEnemyHover(enemy, mouseX, mouseY)
     h = enemy.height or 0
 
     if w == 0 and h == 0 then
-        _logf("[ENEMY DEBUG] Aucune taille valide trouvée pour cet ennemi")
+        if CardTargetSelection.DEBUG_VERBOSE then
+            _logf("[ENEMY DEBUG] Aucune taille valide pour ennemi: %s", enemy.name or "unnamed")
+        end
         return false
     end
 
-    --[[   _logf("[ENEMY DEBUG] Position finale: x=%s y=%s w=%s h=%s", tostring(x), tostring(y), tostring(w), tostring(h)) ]]
-    _logf("[ENEMY DEBUG] Souris: x=%s y=%s", tostring(mouseX), tostring(mouseY))
-
     local isHovered = CardTargetSelection.isPointInEnemy(mouseX, mouseY, x, y, w, h)
-    _logf("[ENEMY DEBUG] isHovered: %s", tostring(isHovered))
-    if isHovered then
+
+    if isHovered and CardTargetSelection.DEBUG then
         _logf("Ennemi survolé détecté: %s", enemy.name or "sans nom")
     end
 
@@ -469,29 +504,37 @@ end
 -- Trouve l'ennemi à une position donnée (pour handleMouseClick)
 function CardTargetSelection.findHoveredEnemyAt(x, y)
     if not CardTargetSelection.config.mouseDetection.enabled then
-        _logf("findHoveredEnemyAt: détection souris désactivée")
+        if CardTargetSelection.DEBUG_VERBOSE then
+            _logf("findHoveredEnemyAt: détection souris désactivée")
+        end
         return nil
     end
 
     -- Obtient la liste des ennemis
     local enemyList = CardTargetSelection.getEnemyList()
     if not enemyList or #enemyList == 0 then
-        _logf("findHoveredEnemyAt: aucun ennemi dans la liste")
+        if CardTargetSelection.DEBUG_VERBOSE then
+            _logf("findHoveredEnemyAt: aucun ennemi dans la liste")
+        end
         return nil
     end
 
-    _logf("findHoveredEnemyAt: vérification %d ennemis à position (%d,%d)", #enemyList, x, y)
+    -- Log réduit (seulement si verbose OU première fois)
+    if CardTargetSelection.DEBUG_VERBOSE then
+        _logf("findHoveredEnemyAt: vérification %d ennemis à position (%d,%d)", #enemyList, x, y)
+    end
 
     -- Parcourt la liste des ennemis pour détecter la collision
     for i, enemy in ipairs(enemyList) do
         if CardTargetSelection.detectEnemyHover(enemy, x, y) then
-            --[[ _logf("findHoveredEnemyAt: ennemi trouvé - %s", enemy.name or "sans nom")
-            _logf("Ennemi survolé: %s à (%d,%d)", enemy.name or "Inconnu", x, y) ]]
+            if CardTargetSelection.DEBUG_VERBOSE then
+                _logf("findHoveredEnemyAt: ennemi trouvé - %s", enemy.name or "sans nom")
+            end
             return enemy, i
         end
     end
 
-    --[[ _logf("findHoveredEnemyAt: aucun ennemi trouvé à position (%d,%d)", x, y) ]]
+    -- Pas trouvé - log seulement si verbose
     return nil
 end
 
@@ -847,12 +890,14 @@ function CardTargetSelection.update(dt)
     local isInStandbyMode = CardStandbyPlay and CardStandbyPlay.hasCardInStandby and CardStandbyPlay.hasCardInStandby()
 
     if CardTargetSelection.isSelectingTarget and isInStandbyMode then
-        -- DIAGNOSTIC: Vérifier périodiquement la disponibilité des ennemis seulement en standby
-        local enemies = CardTargetSelection.getEnemyList()
-        if #enemies == 0 then
-            _logf("🔍 DEBUG STANDBY: Aucun ennemi disponible pour ciblage (liste vide)")
-        else
-            _logf("🔍 DEBUG STANDBY: %d ennemis disponibles pour ciblage", #enemies)
+        -- DIAGNOSTIC: Vérifier périodiquement la disponibilité des ennemis (seulement en verbose)
+        if CardTargetSelection.DEBUG_VERBOSE then
+            local enemies = CardTargetSelection.getEnemyList()
+            if #enemies == 0 then
+                _logf("🔍 DEBUG STANDBY: Aucun ennemi disponible pour ciblage (liste vide)")
+            else
+                _logf("🔍 DEBUG STANDBY: %d ennemis disponibles pour ciblage", #enemies)
+            end
         end
 
         -- Mise à jour de la détection de survol pour vérifier les ennemis en continu
