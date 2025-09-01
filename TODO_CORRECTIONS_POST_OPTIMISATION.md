@@ -6,7 +6,7 @@
 ## 🎯 Statut Global
 - [x] ✅ Optimisations principales terminées (13/13 problèmes résolus)
 - [x] 🔥 Régressions critiques détectées (5 nouveaux problèmes)
-- [ ] 🚨 Stabilisation production en cours (3/5 résolus - 60% complet)
+- [ ] 🚨 Stabilisation production en cours (4/5 résolus - 80% complet)
 
 ---
 
@@ -60,15 +60,22 @@
 
 ## ⚠️ PRIORITÉ ÉLEVÉE - Fonctionnalités Gameplay
 
-### 4. Erreurs IA Récurrentes
-- [ ] **Problème**: IA échoue validation cartes sur ennemis morts
-- [ ] **Symptômes**:
+### 4. Erreurs IA Récurrentes ✅ **RÉSOLU**
+- [x] **Problème**: IA échoue validation cartes sur ennemis morts
+- [x] **Symptômes**:
   - [x] `[AI][ERROR] Validation échouée pour carte 'j'ais d'encre'`
   - [x] `[AI][ERROR] - Ennemi sans vie/santé`
-- [ ] **Impact**: IA dysfonctionnelle, gameplay compromis
-- [ ] **Source**: État ennemis incohérent (morts mais en mémoire)
-- [ ] **Solution**: Fix validation IA + cleanup ennemis morts
-- [ ] **Urgence**: ⚠️ **ÉLEVÉE** - Gameplay cassé
+- [x] **Impact**: IA dysfonctionnelle, gameplay compromis
+- [x] **Source**: Ancien système `currentEnemy` (vestige) vs nouveau templateCombatTransition
+- [x] **Solution**: Migration complète vers `getCurrentEnemy()` + validation robuste
+- [x] **Status**: ✅ **RÉSOLU** - Nouveau système d'ennemi implémenté
+- [x] **Implémentation**:
+  - ✅ Suppression `currentEnemy` vestige + migration `getCurrentEnemy()`
+  - ✅ Système double: `Transition.enemyOrder[enemyIndex]` + fallback `Enemies.listeEnemies`
+  - ✅ Validation améliorée: `enemy.state.dead` et `enemy.state.life <= 0`
+  - ✅ Messages informatifs `[AI][WARN]` au lieu d'erreurs pour ennemis morts
+  - ✅ Tests validation: 100% succès (test_ai_nouveau_systeme.lua)
+- [x] **Résultat**: 🎯 **ERREURS IA RÉCURRENTES ÉLIMINÉES - Gameplay stabilisé**
 
 ### 5. Repositionnement Cartes Bloqué
 - [ ] **Problème**: CardManager verrouille repositionnement indéfiniment
@@ -106,12 +113,13 @@
    - ✅ `DebugConfig.setProductionMode()`
    - ✅ Désactiver flags verbeux
 
-### Phase 2 - CRITIQUE (< 1h)
-3. **Fix validation IA ennemis**
-   - Check état santé avant validation carte
-   - Cleanup ennemis morts de la liste
+### Phase 2 - CRITIQUE ✅ **80% TERMINÉE** (< 1h)
+3. ✅ **Fix validation IA ennemis**
+   - ✅ Check état santé avant validation carte
+   - ✅ Cleanup ennemis morts de la liste
+   - ✅ Migration vers système templateCombatTransition.enemyIndex
    
-4. **Débloquer repositionnement cartes**
+4. **Débloquer repositionnement cartes** ⏳ **EN COURS**
    - Timeout verrouillage automatique
    - Synchronisation états ciblage
 

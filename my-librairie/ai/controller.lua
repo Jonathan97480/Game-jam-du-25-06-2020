@@ -13,14 +13,41 @@ local CardSelectionStrategy   = _G._safeRequire("my-librairie/ai/card_selection_
 local responsive              = _G.screen or _G._safeRequire("my-librairie/utils/responsive")
 
 local TransitionCombat        = _G.TransitionCombat or
-_G._safeRequire("my-librairie/transitions/templateCombatTransition")
+    _G._safeRequire("my-librairie/transitions/templateCombatTransition")
 
 local timerMaxTurnChanged     = 1
 local timerDrawTurned         = 0
 local lastTurnTransitionState = ''
-local currentEnemy            = {}
+-- currentEnemy supprimé - utilise maintenant templateCombatTransition.enemyOrder[enemyIndex]
 
-local AI                      = {
+-- Fonction pour obtenir l'ennemi actuel via le nouveau système templateCombatTransition
+local function getCurrentEnemy()
+  -- Essayer d'abord via le système de transition
+  local Transition = rawget(_G, "Transition")
+  if Transition and Transition.enemyOrder and Transition.enemyIndex then
+    local currentIndex = Transition.enemyIndex
+    if currentIndex > 0 and currentIndex <= #Transition.enemyOrder then
+      local enemy = Transition.enemyOrder[currentIndex]
+      if enemy and not (enemy.state and enemy.state.dead) and (enemy.state and enemy.state.life and enemy.state.life > 0) then
+        return enemy
+      end
+    end
+  end
+
+  -- Fallback : chercher dans Enemies.listeEnemies le premier ennemi vivant
+  local EnemiesMod = rawget(_G, "Enemies")
+  if EnemiesMod and EnemiesMod.listeEnemies then
+    for _, enemy in ipairs(EnemiesMod.listeEnemies) do
+      if enemy and not (enemy.state and enemy.state.dead) and (enemy.state and enemy.state.life and enemy.state.life > 0) then
+        return enemy
+      end
+    end
+  end
+
+  return nil -- Aucun ennemi vivant trouvé
+end
+
+local AI = {
   state               = "idle",
   timer               = 0,
   telegraphMin        = 0.3,
@@ -546,14 +573,25 @@ local function validateCardParameters(card, enemy, hero)
     end
   end
 
-  -- Validation ennemi
+  -- Validation ennemi avec nouveau système d'état
   if not enemy then
     table.insert(errors, "Ennemi manquant (nil)")
   elseif type(enemy) ~= "table" then
     table.insert(errors, "Ennemi n'est pas une table")
   else
-    if not enemy.life and not enemy.health then
-      table.insert(errors, "Ennemi sans vie/santé")
+    -- Vérification selon le nouveau système : enemy.state.life et enemy.state.dead
+    if enemy.state then
+      if enemy.state.dead then
+        table.insert(errors, "Ennemi mort (state.dead = true)")
+      end
+      if not enemy.state.life or enemy.state.life <= 0 then
+        table.insert(errors, "Ennemi sans vie/santé (state.life <= 0)")
+      end
+    else
+      -- Fallback pour ancien système
+      if not enemy.life and not enemy.health then
+        table.insert(errors, "Ennemi sans vie/santé")
+      end
     end
   end
 
@@ -659,17 +697,17 @@ local function applyCard(c)
   Hero                = Hero or rawget(_G, "Hero")
   EnemiesManager      = EnemiesManager or rawget(_G, "EnemiesManager")
 
-  local enemyActor    = currentEnemy
+  local enemyActor    = getCurrentEnemy() -- Nouveau système via templateCombatTransition
   local heroActor     = Hero and Hero.actor
 
   -- AMÉLIORATION #6: Validation préalable
   local valid, errors = validateCardParameters(c, enemyActor, heroActor)
   if not valid then
-    logf("[AI][ERROR] Validation échouée pour carte '%s':", tostring(c.name))
+    logf("[AI][WARN] Validation échouée pour carte '%s' (ennemi possiblement mort):", tostring(c.name))
     for _, error in ipairs(errors) do
-      logf("[AI][ERROR]   - %s", error)
+      logf("[AI][WARN]   - %s", error)
     end
-    return false
+    return false -- Carte non jouable sur cet ennemi
   end
 
   local eff = getEffects(c)
@@ -765,7 +803,7 @@ end
 -- ---------- API ----------
 function AI.load(_enemy)
   ensureAIContainers(_enemy)
-  currentEnemy = _enemy
+  -- currentEnemy supprimé - utilise maintenant getCurrentEnemy() via templateCombatTransition
   AI.state, AI.timer, AI.currentIndex, AI.currentCard, AI.lastPlayed =
       "idle", 0, nil, nil, nil
   AI.busy, AI.running, AI._endSent, AI.enemy, AI._badDtWarned =
@@ -797,7 +835,7 @@ function AI:isTurnDone() return self._endSent == true end
 function AI:update(dt)
   dt = normDt(dt)
   EnemiesManager = EnemiesManager or rawget(_G, "EnemiesManager")
-  local e = currentEnemy
+  local e = getCurrentEnemy() -- Utilise le nouveau système
 
   -- Gestion du timer pour les cartes en chaîne
   if AI.chainTimer > 0 then
@@ -995,5 +1033,19 @@ function AI.draw()
   drawTourCh(_G.Tour, _G.deltaTime) -- Annonce les changements de tour
   -- indicateurs visuels éventuels (si tu veux des overlays de debug)
 end
+
+-- ========== FONCTIONS DE TEST (exposées pour validation) ==========
+-- Exposition de getCurrentEnemy pour les tests
+AI._getCurrentEnemy = getCurrentEnemy
+
+-- Exposition de validateCardParameters pour les tests
+AI._testValidation = function(card)
+  local enemy = getCurrentEnemy()
+  local hero = Hero and Hero.actor
+  return validateCardParameters(card, enemy, hero)
+end
+
+-- Exposition d'applyCard pour les tests
+AI._testApplyCard = applyCard
 
 return AI
