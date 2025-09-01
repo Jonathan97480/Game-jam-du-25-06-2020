@@ -7,29 +7,18 @@
 -- @module my-librairie.transition.templateCombatTransition
 
 ----------------------------------------------------------------------
--- Require sécurisé via _G.globalFunction.safecall (fallback pcall)
+-- Require sécurisé via _safeRequire centralisée
 ----------------------------------------------------------------------
---- Charge un module via globalFunction.safecall si disponible, sinon pcall.
--- @tparam string name Nom du module à require
--- @treturn any|nil Module ou nil si erreur
-local function safe_require(name)
-    local gf = rawget(_G, "globalFunction")
-    if gf and type(gf.safecall) == "function" then
-        return gf.safecall(function() return require(name) end)
-    end
-    local ok, mod = pcall(require, name)
-    return ok and mod or nil
-end
 
 ----------------------------------------------------------------------
--- Dépendances globales (tolère l'absence, via safe_require)
+-- Dépendances globales (tolère l'absence, via _safeRequire centralisée)
 ----------------------------------------------------------------------
-local SceneManager = rawget(_G, "scene") or safe_require("my-librairie/core/sceneManager")
-local Card         = rawget(_G, "Card") or safe_require("my-librairie/card-librairie/card")
-local Hero         = rawget(_G, "Hero") or safe_require("my-librairie/entities/player/Hero")
+local SceneManager = rawget(_G, "scene") or _G._safeRequire("my-librairie/core/sceneManager")
+local Card         = rawget(_G, "Card") or _G._safeRequire("my-librairie/card-librairie/card")
+local Hero         = rawget(_G, "Hero") or _G._safeRequire("my-librairie/entities/player/Hero")
 local AI           = rawget(_G, "AI") or
-    safe_require("my-librairie/ai/controller") -- Gestionnaire d'acteurs (ennemis vivants)
-local EnemiesMod   = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
+    _G._safeRequire("my-librairie/ai/controller") -- Gestionnaire d'acteurs (ennemis vivants)
+local EnemiesMod   = _G.Enemies or _G._safeRequire("my-librairie.entities.Enemy.Enemies")
 
 -- Persistance simple pour flags globaux (draft du premier combat)
 local GameFlags    = rawget(_G, "GameFlags") or {}

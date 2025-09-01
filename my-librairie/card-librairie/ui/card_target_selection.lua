@@ -2,17 +2,11 @@
 -- Module de gestion de sélection de cibles pour le système de ciblage multi-ennemis
 -- Permet au joueur de sélectionner manuellement l'ennemi cible lors du jeu d'une carte
 
--- Chargement sécurisé pour éviter les boucles circulaires
-local function _safeRequire(name)
-    local ok, mod = pcall(require, name)
-    return ok and mod or nil
-end
-
--- Dependencies
-local globalFunction = _G.globalFunction or require("my-librairie.utils.globalFunction")
+-- Dependencies (utilise _safeRequire centralisée)
+local globalFunction = _G.globalFunction or _G._safeRequire("my-librairie.utils.globalFunction")
 
 -- Import du nouveau CardManager
-local CardManager = _safeRequire("my-librairie/card-librairie/card_manager")
+local CardManager = _G._safeRequire("my-librairie/card-librairie/card_manager")
 
 -- Module principal
 local CardTargetSelection = {}
@@ -90,7 +84,7 @@ local function _logf(fmt, ...)
 
     -- Anti-spam pour les logs de position/hover fréquents
     local isPositionLog = text:match("findHoveredEnemyAt") or text:match("vérification.*ennemis") or
-    text:match("getEnemyList")
+        text:match("getEnemyList")
     if isPositionLog and not CardTargetSelection.DEBUG_VERBOSE then
         local currentTime = os.clock()
         if CardTargetSelection._lastLoggedTime and
@@ -168,8 +162,8 @@ local function _setDragLock(state)
     end
 
     -- Essaie directement via require si disponible
-    local ok, Common = pcall(require, "my-librairie/card-librairie/core/common")
-    if ok and Common then
+    local Common = _G._safeRequire("my-librairie/card-librairie/core/common")
+    if Common then
         Common.__dragLock = state
         _logf("🔒 DragLock %s via require Common", state and "activé" or "désactivé")
         return true

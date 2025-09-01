@@ -748,6 +748,33 @@ globalFunction.default = function(valeur, defaut)
 end
 
 -- =====================================================================
+-- REQUIRE SÉCURISÉ CENTRALISÉ
+-- =====================================================================
+
+--- Require sécurisé avec gestion d'erreur centralisée
+-- @param name string : Nom du module à charger
+-- @return any : Module chargé ou nil en cas d'erreur
+globalFunction._safeRequire = function(name)
+    if type(name) ~= "string" or name == "" then
+        globalFunction.log.warn("_safeRequire: nom de module invalide '" .. tostring(name) .. "'")
+        return nil
+    end
+
+    local ok, mod = pcall(require, name)
+    if ok then
+        -- Log optionnel pour debug (peut être verbeux)
+        -- globalFunction.log.info("_safeRequire: module '" .. name .. "' chargé avec succès")
+        return mod
+    else
+        globalFunction.log.warn("_safeRequire: échec du chargement de '" .. name .. "': " .. tostring(mod))
+        return nil
+    end
+end
+
+-- Alias pour compatibilité avec le code existant
+globalFunction.safeRequire = globalFunction._safeRequire
+
+-- =====================================================================
 -- UTILITAIRES GÉNÉRAUX
 -- =====================================================================
 

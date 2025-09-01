@@ -9,6 +9,20 @@ local globals = {}
 Modules Core - Chargés et exposés globalement
 ===================================================================== ]]
 
+-- GlobalFunction (fonctions utilitaires et logging) - DOIT ÊTRE EN PREMIER
+_G.globalFunction = require("my-librairie/utils/globalFunction")
+
+-- Fonction _safeRequire centralisée (exposition globale immédiate)
+if _G.globalFunction and _G.globalFunction._safeRequire then
+    _G._safeRequire = _G.globalFunction._safeRequire
+else
+    -- Fallback si globalFunction n'est pas encore chargé
+    _G._safeRequire = function(name)
+        local ok, mod = pcall(require, name)
+        if ok then return mod else return nil end
+    end
+end
+
 -- JSON Library
 _G.json = require("my-librairie.utils.json")
 
@@ -34,8 +48,6 @@ _G.effect = require("ressources/effect")
 _G.Transition = require("my-librairie.transitions.transitionManager")
 _G.TransitionCombat = require("my-librairie/transitions/templateCombatTransition")
 
--- GlobalFunction (fonctions utilitaires et logging)
-_G.globalFunction = require("my-librairie/utils/globalFunction")
 -- Le module `core/cursor` a été supprimé : utiliser `inputInterface` comme source unique d'input
 local okInputIface, inputInterface = pcall(require, "my-librairie/inputInterface")
 _G.cursor = okInputIface and inputInterface or nil

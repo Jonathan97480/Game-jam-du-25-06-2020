@@ -1,23 +1,19 @@
 -- my-librairie/ai/controller.lua
 -- IA : logique de jeu des cartes (pipeline Card.* + fallback) + auto-câblage du télégraphe (visuel optionnel)
 
--- Chargement sécurisé pour éviter les boucles circulaires
-local function _safeRequire(name)
-  local ok, mod = pcall(require, name)
-  return ok and mod or nil
-end
-
-local actorMgr                = _G.actorManager or _safeRequire("my-librairie/managers/actorManager")
+-- Utilisation de _safeRequire centralisée
+local actorMgr                = _G.actorManager or _G._safeRequire("my-librairie/managers/actorManager")
 local Card                    = _G.Card or rawget(_G, "Card") or rawget(_G, "card")
-local Hero                    = _G.Hero or require("my-librairie.entities.player.Hero")
-local EnemiesManager          = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
+local Hero                    = _G.Hero or _G._safeRequire("my-librairie.entities.player.Hero")
+local EnemiesManager          = _G.Enemies or _G._safeRequire("my-librairie.entities.Enemy.Enemies")
 local globalFunction          = _G.globalFunction or rawget(_G, 'globalFunction')
 
 -- Nouveau : Module de stratégie de sélection de cartes et ciblage
-local CardSelectionStrategy   = _safeRequire("my-librairie/ai/card_selection_strategy")
-local responsive              = _G.screen or require("my-librairie/utils/responsive")
+local CardSelectionStrategy   = _G._safeRequire("my-librairie/ai/card_selection_strategy")
+local responsive              = _G.screen or _G._safeRequire("my-librairie/utils/responsive")
 
-local TransitionCombat        = _G.TransitionCombat or _safeRequire("my-librairie/transitions/templateCombatTransition")
+local TransitionCombat        = _G.TransitionCombat or
+_G._safeRequire("my-librairie/transitions/templateCombatTransition")
 
 local timerMaxTurnChanged     = 1
 local timerDrawTurned         = 0
@@ -115,8 +111,8 @@ end
 local function _autoWireTelegraph()
   if not AI.AUTO_WIRE_TELEGRAPH then return end
   if AI.listener ~= nil then return end
-  local ok, Telegraph = pcall(require, "my-librairie/ai/telegraph")
-  if ok and type(Telegraph) == "table" then
+  local Telegraph = _G._safeRequire("my-librairie/ai/telegraph")
+  if Telegraph and type(Telegraph) == "table" then
     AI.setListener(Telegraph)
     if type(Telegraph.setDelay) == "function" and tonumber(AI.telegraphMin) then
       Telegraph:setDelay(AI.telegraphMin)

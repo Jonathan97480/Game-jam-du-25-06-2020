@@ -9,16 +9,11 @@ jusqu'à ce qu'il sélectionne une cible ou annule.
 
 local CardStandbyPlay = {}
 
--- Modules requis
-local _safeRequire = function(name)
-    local ok, mod = pcall(require, name)
-    return ok and mod or nil
-end
-
-local gf = _G.globalFunction or require("my-librairie/utils/globalFunction")
-local responsive = _G.screen or require("my-librairie/utils/responsive")
-local config = require("my-librairie/card-librairie/config") or {}
-local cacheManager = _G.cache or require("my-librairie.managers.resource_cache")
+-- Modules requis (utilise _safeRequire centralisée)
+local gf = _G.globalFunction or _G._safeRequire("my-librairie/utils/globalFunction")
+local responsive = _G.screen or _G._safeRequire("my-librairie/utils/responsive")
+local config = _G._safeRequire("my-librairie/card-librairie/config") or {}
+local cacheManager = _G.cache or _G._safeRequire("my-librairie.managers.resource_cache")
 
 -- État du système (NOUVEAU : avec copie)
 CardStandbyPlay.state = {
