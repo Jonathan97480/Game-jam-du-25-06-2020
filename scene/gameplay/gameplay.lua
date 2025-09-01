@@ -425,12 +425,12 @@ function gameplay.load(self, params)
                     if cache.initialized then
                         if prev_transition ~= current_transition_present then
                             change_info = change_info ..
-                            " [Transition:" ..
-                            tostring(prev_transition) .. "→" .. tostring(current_transition_present) .. "]"
+                                " [Transition:" ..
+                                tostring(prev_transition) .. "→" .. tostring(current_transition_present) .. "]"
                         end
                         if prev_draft ~= current_draft_flag then
                             change_info = change_info ..
-                            " [Draft:" .. tostring(prev_draft) .. "→" .. tostring(current_draft_flag) .. "]"
+                                " [Draft:" .. tostring(prev_draft) .. "→" .. tostring(current_draft_flag) .. "]"
                         end
                     else
                         change_info = " [INIT]"

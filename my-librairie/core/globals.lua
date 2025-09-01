@@ -100,7 +100,7 @@ _G.GameFlags.hud_debug_energy = _G.GameFlags.hud_debug_energy or false
 
 -- 🔧 NOUVEAU: Système debug centralisé (Problème #13)
 local debugConfig = require("my-librairie/core/debugConfig")
-debugConfig.init()  -- Initialise et migre les anciens flags
+debugConfig.init() -- Initialise et migre les anciens flags
 
 -- Scene Manager
 _G.scene = require("my-librairie/core/sceneManager")
