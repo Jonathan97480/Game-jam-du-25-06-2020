@@ -34,4 +34,18 @@ Config.DEAL = {
     HOP = 12
 }
 
+Config.STANDBY = {
+    --POSITION LEFT SCREEN
+    standbyX = 50,
+    standbyY = 400,
+    scaleX = 0.8,
+    scaleY = 0.8,
+    animationSpeed = 0.15,
+
+    DEBUG_ENABLED = true,
+    DURATION = 0.15,
+    --au play card self
+    AUTO_CONFIRM = 2.0
+}
+
 return Config

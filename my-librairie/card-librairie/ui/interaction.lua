@@ -448,4 +448,13 @@ function M.hover(dt)
     end
 end
 
+M.disableDrag = function()
+    -- TODO NOT IMPLEMENTED
+    globalFunction.log.warn("[Card.Interaction] ⚠️  disableDrag() NOT IMPLEMENTED")
+end
+M.enableDrag = function(card, index)
+    -- TODO NOT IMPLEMENTED
+    globalFunction.log.warn("[Card.Interaction] ⚠️  enableDrag() NOT IMPLEMENTED")
+end
+
 return M

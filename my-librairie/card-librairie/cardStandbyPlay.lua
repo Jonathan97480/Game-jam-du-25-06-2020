@@ -15,8 +15,9 @@ local _safeRequire = function(name)
     return ok and mod or nil
 end
 
-local gf = _G.globalFunction
-local responsive = _safeRequire("my-librairie/responsive")
+local gf = _G.globalFunction or require("my-librairie/utils/globalFunction")
+local responsive = _G.screen or require("my-librairie/utils/responsive")
+local config = require("my-librairie/card-librairie/config") or {}
 
 -- État du système (NOUVEAU : avec copie)
 CardStandbyPlay.state = {
@@ -28,12 +29,13 @@ CardStandbyPlay.state = {
     isActive = false                    -- Système actif
 }
 
+
 -- Configuration
 CardStandbyPlay.config = {
-    standbyX = 50,         -- Position X de standby (gauche écran)
-    standbyY = 400,        -- Position Y de standby (centre vertical)
-    animationSpeed = 0.15, -- Vitesse d'animation vers standby
-    debugMode = true       -- Logs de debug
+    standbyX = config.STANDBY.standbyX or 50,               -- Position X de standby (gauche écran)
+    standbyY = config.STANDBY.standbyY or 400,              -- Position Y de standby (centre vertical)
+    animationSpeed = config.STANDBY.animationSpeed or 0.15, -- Vitesse d'animation vers standby
+    debugMode = config.STANDBY.DEBUG_ENABLED or false       -- Logs de debug
 }
 
 -- Fonction de log interne
@@ -81,6 +83,7 @@ function CardStandbyPlay.putCardInStandby(card, originalHandIndex)
         return false
     end
 
+
     -- Vérifier qu'aucune carte n'est déjà en standby
     if CardStandbyPlay.hasCardInStandby() then
         _log("warn", "⚠️ Une carte est déjà en standby, annulation automatique")
@@ -96,42 +99,46 @@ function CardStandbyPlay.putCardInStandby(card, originalHandIndex)
     -- 2. CRÉER UNE COPIE pour le standby avec globalFunction.clone
     local gf = _G.globalFunction
     local standbyCard = nil
+
     if gf and gf.clone then
         standbyCard = gf.clone(card)
         _log("info", "📋 Copie créée avec globalFunction.clone")
     else
-        -- Fallback copie manuelle
-        standbyCard = {}
-        for k, v in pairs(card) do
-            if type(v) ~= "table" then
-                standbyCard[k] = v
-            else
-                -- Copie superficielle des tables
-                standbyCard[k] = {}
-                for k2, v2 in pairs(v) do
-                    standbyCard[k2] = v2
-                end
-            end
-        end
-        _log("info", "📋 Copie créée manuellement (fallback)")
+        _log("error", "[putCardInStandby] : globalFunction.clone non disponible, vérifier la fonction ou l'appel")
     end
     -- La copie est visible
     standbyCard.isVisible = true
     standbyCard.isStandbyCopy = true -- Marquer comme copie
+
+    if standbyCard == nil then
+        _log("error", "❌ Échec de la création de la copie standby, annulation")
+        card.isVisible = true -- Remettre visible
+        return false
+    end
 
     -- 3. POSITIONNER LA COPIE à gauche
     standbyCard.vector2 = standbyCard.vector2 or {}
     standbyCard.vector2.x = CardStandbyPlay.config.standbyX
     standbyCard.vector2.y = CardStandbyPlay.config.standbyY
     standbyCard.scale = standbyCard.scale or {}
-    standbyCard.scale.x = 0.8
-    standbyCard.scale.y = 0.8
+
+    standbyCard.scale.x = config.STANDBY.scaleX or 0.8
+    standbyCard.scale.y = config.STANDBY.scaleY or 0.8
 
     -- 4. SAUVEGARDER L'ÉTAT
     CardStandbyPlay.state.cardInStandby = card      -- Carte originale (invisible)
     CardStandbyPlay.state.standbyCopy = standbyCard -- Copie visible
     CardStandbyPlay.state.originalHandIndex = originalHandIndex or 1
     CardStandbyPlay.state.isActive = true
+
+    -- Si la carte est self-only, lancer un timer d'auto-confirmation (2s)
+    if card.self_only then
+        CardStandbyPlay.state.autoTimer = config.STANDBY.AUTO_CONFIRM or 2.0
+
+        _log("info", "⏱️ Carte self-only détectée — auto-play dans 2s: " .. tostring(card.name or "<unknown>"))
+    else
+        CardStandbyPlay.state.autoTimer = nil
+    end
 
     _log("info", "✅ SYSTÈME STANDBY ACTIVÉ - Original invisible, copie visible à gauche")
     return true
@@ -193,33 +200,53 @@ function CardStandbyPlay.getStandbyCopy()
     return CardStandbyPlay.state.standbyCopy
 end
 
--- Désactiver la gestion de la main
-function CardStandbyPlay.disableHandManagement()
-    CardStandbyPlay.state.handManagementDisabled = true
-    _log("info", "🚫 GESTION MAIN DÉSACTIVÉE")
-
-    -- Notifier les autres systèmes si nécessaire
-    local interaction = _safeRequire("my-librairie/card-librairie/interaction")
-    if interaction and interaction.disableDrag then
-        interaction.disableDrag("CardStandbyPlay actif")
+-- Fonction d'auto-play pour les cartes self-only
+function CardStandbyPlay.autoPlaySelfOnly()
+    if not CardStandbyPlay.hasCardInStandby() then
+        _log("warn", "⚠️ Aucune carte en standby à auto-jouer")
+        return false
     end
-end
 
--- Réactiver la gestion de la main
-function CardStandbyPlay.enableHandManagement()
-    CardStandbyPlay.state.handManagementDisabled = false
-    _log("info", "✅ GESTION MAIN RÉACTIVÉE")
-
-    -- Notifier les autres systèmes si nécessaire
-    local interaction = _safeRequire("my-librairie/card-librairie/interaction")
-    if interaction and interaction.enableDrag then
-        interaction.enableDrag("CardStandbyPlay terminé")
+    local card = CardStandbyPlay.state.cardInStandby
+    if not card or not card.self_only then
+        _log("warn", "⚠️ Carte non valide pour auto-play: " .. tostring(card.name or "<unknown>"))
+        return false
     end
-end
 
--- Vérifier si la gestion de la main est désactivée
-function CardStandbyPlay.isHandManagementDisabled()
-    return CardStandbyPlay.state.handManagementDisabled
+    _log("info", "⏳ Tentative d'auto-play self-only pour: " .. tostring(card.name or "<unknown>"))
+
+    --[[ -- Rendre temporairement visible pour le rendu/validation
+    card.isVisible = true ]]
+
+    local ok = false
+
+    local CardMod = _G.Card or require("my-librairie/card-librairie/card")
+
+    if CardMod and CardMod.Play and type(CardMod.Play._cardPlaySelf) == "function" then
+        -- Déterminer la source selon actorTag
+        local source = nil
+        if card.actorTag == 'Hero' then
+            source = _G.Hero and _G.Hero.actor
+        else
+            _log("warn", "⚠️ ActorTag non-Hero soit l'actor est vide soit elle pas le type Hero")
+            return false
+        end
+
+        ok = CardMod.Play._cardPlaySelf(card, source)
+    else
+        _log("error", "Card.Play._cardPlaySelf non disponible pour auto-play")
+    end
+
+    if ok then
+        _log("info", "✅ Auto-play réussi pour: " .. tostring(card.name or "<unknown>"))
+        CardStandbyPlay.confirmCardPlay()
+        return true
+    else
+        _log("warn", "❌ Auto-play échoué pour: " .. tostring(card.name or "<unknown>") .. " — remise en main")
+        card.isVisible = false
+        CardStandbyPlay.returnCardToHand()
+        return false
+    end
 end
 
 -- Nettoyer l'état de standby
@@ -231,7 +258,7 @@ function CardStandbyPlay.clearStandby()
     CardStandbyPlay.state.isActive = false
 end
 
--- Gérer les clics pour annulation ou jeu de carte (NOUVEAU SYSTÈME)
+-- Gérer les clics pour annulation ou joueur de carte (NOUVEAU SYSTÈME)
 function CardStandbyPlay.handleClick(x, y, button)
     if not CardStandbyPlay.hasCardInStandby() then
         return false -- Pas en mode standby
@@ -310,6 +337,16 @@ function CardStandbyPlay.update(dt)
         card.position.y = gf and gf.lerp and gf.lerp(card.position.y, card.targetPosition.y, speed) or
             card.targetPosition.y
     end
+
+    -- Gestion du timer d'auto-play pour les cartes self-only
+    if CardStandbyPlay.state.autoTimer then
+        CardStandbyPlay.state.autoTimer = CardStandbyPlay.state.autoTimer - (dt or 0)
+        if CardStandbyPlay.state.autoTimer <= 0 then
+            -- Tenter l'auto-play
+            CardStandbyPlay.state.autoTimer = nil
+            CardStandbyPlay.autoPlaySelfOnly()
+        end
+    end
 end
 
 -- Rendu de la carte en standby
@@ -340,18 +377,6 @@ function CardStandbyPlay.draw()
         love.graphics.pop()
         love.graphics.setColor(1, 1, 1, 1) -- Reset couleur
     end
-end
-
--- Debug: afficher l'état
-function CardStandbyPlay.dumpState()
-    local state = CardStandbyPlay.state
-    print("=== ÉTAT CARDSTANDBYPLAY ===")
-    print("Actif:", state.isActive)
-    print("Carte en standby:", state.cardInStandby and state.cardInStandby.name or "Aucune")
-    print("Index original:", state.originalHandIndex)
-    print("Position standby:", state.standbyPosition.x .. ", " .. state.standbyPosition.y)
-    print("Gestion main désactivée:", state.handManagementDisabled)
-    print("===========================")
 end
 
 return CardStandbyPlay

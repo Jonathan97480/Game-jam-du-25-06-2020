@@ -23,6 +23,82 @@ local function getTour() return rawget(_G, "Tour") end
 
 local M = {}
 
+-- Jouer une carte qui n'affecte que son lanceur (self-only)
+function M._cardPlaySelf(_card, source)
+    if not _card then
+        _log("_cardPlaySelf appelé sans carte")
+        return false
+    end
+    if not source then
+        _log("_cardPlaySelf: source manquante pour " .. tostring(_card.name or "<unknown>"))
+        return false
+    end
+
+    _log("🔁 _cardPlaySelf: exécution de la carte self-only -> " .. tostring(_card.name or "<unknown>"))
+
+    -- Pour les effets on réutilise la fonction existante Common.playCard
+    -- en forçant la cible sur le lanceur (source).
+    -- Gérer coût comme dans _tryPlay
+    local cost = tonumber(_card.PowerBlow or 0) or 0
+    if (source and source.tag == 'Hero') then
+        if source.state and source.state.power then
+            if source.state.power < cost then
+                _log("_cardPlaySelf: énergie insuffisante pour " .. tostring(_card.name or "<unknown>"))
+                return false
+            end
+            -- Déduction du coût
+            source.state.power = source.state.power - cost
+            local hud = getHud()
+            if hud and type(hud.updateLabel) == "function" then
+                hud.updateLabel('energy_text', tostring(source.state.power))
+            elseif hud and hud.object and hud.object.energie and hud.object.energie.value then
+                hud.object.energie.value.text = tostring(source.state.power)
+            end
+        end
+    end
+
+    _log("_cardPlaySelf: avant Common.playCard - nom=" ..
+    tostring(_card.name or "<unknown>") ..
+    ", visible=" .. tostring(_card.isVisible) .. ", inHand=" .. tostring((function()
+        for i = 1, #Common.hand.cards do if Common.hand.cards[i] == _card then return true end end
+        return false
+    end)()))
+    local ok, err = pcall(function()
+        Common.playCard(_card, source, source)
+    end)
+    if not ok then
+        _log("_cardPlaySelf: erreur lors de l'appel Common.playCard -> " .. tostring(err))
+        return false
+    end
+
+    _log("_cardPlaySelf: après Common.playCard - _playing=" ..
+    tostring(_card._playing) .. ", _anim=" .. tostring(_card._anim and _card._anim.kind))
+
+    -- Appeler onPlay si présent
+    if type(_card.onPlay) == "function" and not _card._suppressOnPlay then
+        local user = (_card.actorTag == 'Hero') and getHero() or getEnemies()
+        local prev_card = rawget(_G, "card")
+        local prev_Card = rawget(_G, "Card")
+        rawset(_G, "card", _G.Card or {})
+        rawset(_G, "Card", _G.Card or {})
+        pcall(_card.onPlay, user)
+        rawset(_G, "card", prev_card)
+        rawset(_G, "Card", prev_Card)
+    end
+    _card._suppressOnPlay = nil
+
+    -- Notification CardManager du début de jeu et animation comme dans _tryPlay
+    CardManager.onCardPlayStart(_card, "_cardPlaySelf - play.lua")
+    _card._playing = true
+    _card._anim = { kind = "jump", t = 0, d = 0.35, startX = _card.vector2.x, startY = _card.vector2.y }
+    _card._safetyTimer = 0.6
+
+    -- S'assurer que l'état resolving est nettoyé
+    _card._resolving = false
+
+    return true
+end
+
 function M.cardToGraveyard(c)
     local cardRemoved = false
 
@@ -151,7 +227,16 @@ local function _tryPlay(_card, free)
     _log("🚀 TOUTES CONDITIONS REMPLIES - Exécution effet carte...")
 
     if _card.Effect then
-        Common.playCard(_card, source, target)
+        -- Si carte self-only, déléguer au gestionnaire dédié
+        if _card.self_only then
+            local ok = M._cardPlaySelf(_card, source)
+            if not ok then
+                _log("❌ _cardPlaySelf a échoué pour: " .. tostring(_card.name or "<unknown>"))
+                _card._resolving = false; M._currentPlaying = prevCurrent; return false
+            end
+        else
+            Common.playCard(_card, source, target)
+        end
     end
 
     if type(_card.onPlay) == "function" and not _card._suppressOnPlay then
