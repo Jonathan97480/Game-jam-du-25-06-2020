@@ -484,16 +484,126 @@ end
 
 -- Fonction unifiée qui essaie modern puis legacy
 local function callCardSystem(c, enemyActor, heroActor)
-  -- 1. Tentative moderne en priorité
-  local okModern, labelModern = modernCardSystem(c, enemyActor, heroActor)
-  if okModern then
-    return true, labelModern
+  -- AMÉLIORATION #6: Validation préalable robuste
+  if not c then
+    logf("[AI][ERROR] callCardSystem: carte nil")
+    return false, "carte_nil"
   end
 
-  -- 2. Fallback vers système legacy
+  if not enemyActor then
+    logf("[AI][ERROR] callCardSystem: enemyActor nil")
+    return false, "enemy_nil"
+  end
+
+  if not heroActor then
+    logf("[AI][ERROR] callCardSystem: heroActor nil")
+    return false, "hero_nil"
+  end
+
+  -- 1. Tentative moderne en priorité avec protection
+  local okModern, labelModern = false, nil
+  local success = pcall(function()
+    okModern, labelModern = modernCardSystem(c, enemyActor, heroActor)
+  end)
+
+  if success and okModern then
+    logf("[AI] SYSTEM: API moderne réussie (%s)", labelModern)
+    return true, labelModern
+  elseif not success then
+    logf("[AI][WARN] SYSTEM: API moderne a crashé")
+  end
+
+  -- 2. Fallback vers système legacy avec protection
   logf("[AI] SYSTEM: API moderne échouée → tentative legacy")
-  local okLegacy, labelLegacy = callCardSystemLegacy(c, enemyActor, heroActor)
-  return okLegacy, labelLegacy
+  local okLegacy, labelLegacy = false, nil
+  success = pcall(function()
+    okLegacy, labelLegacy = callCardSystemLegacy(c, enemyActor, heroActor)
+  end)
+
+  if success and okLegacy then
+    logf("[AI] SYSTEM: API legacy réussie (%s)", labelLegacy)
+    return true, labelLegacy
+  elseif not success then
+    logf("[AI][WARN] SYSTEM: API legacy a crashé")
+  end
+
+  -- 3. Dernier recours : fallback minimal
+  logf("[AI][WARN] SYSTEM: Tous les systèmes ont échoué → fallback minimal")
+  return false, "all_systems_failed"
+end
+
+-- ---------- VALIDATION ROBUSTE (AMÉLIORATION #6) ----------
+local function validateCardParameters(card, enemy, hero)
+  local errors = {}
+
+  -- Validation carte
+  if not card then
+    table.insert(errors, "Carte manquante (nil)")
+  elseif type(card) ~= "table" then
+    table.insert(errors, "Carte n'est pas une table")
+  else
+    if not card.name or card.name == "" then
+      table.insert(errors, "Carte sans nom")
+    end
+    if not card.actorTag then
+      table.insert(errors, "Carte sans actorTag")
+    end
+  end
+
+  -- Validation ennemi
+  if not enemy then
+    table.insert(errors, "Ennemi manquant (nil)")
+  elseif type(enemy) ~= "table" then
+    table.insert(errors, "Ennemi n'est pas une table")
+  else
+    if not enemy.life and not enemy.health then
+      table.insert(errors, "Ennemi sans vie/santé")
+    end
+  end
+
+  -- Validation héros
+  if not hero then
+    table.insert(errors, "Héros manquant (nil)")
+  elseif type(hero) ~= "table" then
+    table.insert(errors, "Héros n'est pas une table")
+  end
+
+  return #errors == 0, errors
+end
+
+local function detectInconsistentState(beforeEnemy, afterEnemy, beforeHero, afterHero, card)
+  local issues = {}
+
+  -- Vérification santé négative
+  if afterEnemy and afterEnemy.life and afterEnemy.life < 0 then
+    table.insert(issues, "Ennemi avec vie négative: " .. afterEnemy.life)
+  end
+
+  if afterHero and afterHero.life and afterHero.life < 0 then
+    table.insert(issues, "Héros avec vie négative: " .. afterHero.life)
+  end
+
+  -- Vérification changements impossibles (guérison massive suspecte)
+  if beforeEnemy and afterEnemy and beforeEnemy.life and afterEnemy.life then
+    if afterEnemy.life > beforeEnemy.life + 100 then -- seuil guérison suspecte
+      table.insert(issues, "Guérison ennemi suspecte: +" .. (afterEnemy.life - beforeEnemy.life))
+    end
+  end
+
+  if beforeHero and afterHero and beforeHero.life and afterHero.life then
+    if afterHero.life > beforeHero.life + 100 then -- seuil guérison suspecte
+      table.insert(issues, "Guérison héros suspecte: +" .. (afterHero.life - beforeHero.life))
+    end
+  end
+
+  if #issues > 0 then
+    logf("[AI][WARN] États incohérents détectés pour carte '%s':", tostring(card and card.name or "Unknown"))
+    for _, issue in ipairs(issues) do
+      logf("[AI][WARN]   - %s", issue)
+    end
+  end
+
+  return #issues == 0, issues
 end
 
 -- ---------- onPlay (cartes scriptées) ----------
@@ -503,12 +613,12 @@ local function runOnPlay(c, enemyActor, heroActor)
   logf("[AI] onPlay détecté sur '%s' -> essais de signatures…", tostring(c.name))
 
   -- 1) c:onPlay(enemy, hero)
-  if globalFunction.safecall("onPlay(self,enemy,hero)", function() return c:onPlay(enemyActor, heroActor) end) then
+  if globalFunction.safecall(function() return c:onPlay(enemyActor, heroActor) end) then
     logf("[AI] onPlay OK: self,enemy,hero")
     return true
   end
   -- 2) c:onPlay({ctx})
-  if globalFunction.safecall("onPlay({ctx})", function()
+  if globalFunction.safecall(function()
         return c:onPlay({
           self = c,
           source = enemyActor,
@@ -524,12 +634,17 @@ local function runOnPlay(c, enemyActor, heroActor)
     return true
   end
   -- 3) c:onPlay(enemy)
-  if globalFunction.safecall("onPlay(enemy)", function() return c:onPlay(enemyActor) end) then
+  if globalFunction.safecall(function() return c:onPlay(enemyActor) end) then
     logf("[AI] onPlay OK: enemy-only")
     return true
   end
-  -- 4) onPlay(c, enemy, hero)
-  if globalFunction.safecall("onPlay(c,enemy,hero)", function() return c.onPlay(c, enemyActor, heroActor) end) then
+  -- 4) c:onPlay(hero/target) - pour Effect.action(target)
+  if globalFunction.safecall(function() return c:onPlay(heroActor) end) then
+    logf("[AI] onPlay OK: target-only")
+    return true
+  end
+  -- 5) onPlay(c, enemy, hero)
+  if globalFunction.safecall(function() return c.onPlay(c, enemyActor, heroActor) end) then
     logf("[AI] onPlay OK: plain(c,enemy,hero)")
     return true
   end
@@ -538,16 +653,30 @@ local function runOnPlay(c, enemyActor, heroActor)
   return false
 end
 
--- ---------- APPLICATION ----------
+-- ---------- APPLICATION AMÉLIORÉE (PROBLÈME #6) ----------
 local function applyCard(c)
-  if not c then return end
-  Hero             = Hero or rawget(_G, "Hero")
-  EnemiesManager   = EnemiesManager or rawget(_G, "EnemiesManager")
+  if not c then
+    logf("[AI][ERROR] applyCard: carte nil")
+    return false
+  end
 
-  local enemyActor = currentEnemy
-  local heroActor  = Hero and Hero.actor
+  Hero                = Hero or rawget(_G, "Hero")
+  EnemiesManager      = EnemiesManager or rawget(_G, "EnemiesManager")
 
-  local eff        = getEffects(c)
+  local enemyActor    = currentEnemy
+  local heroActor     = Hero and Hero.actor
+
+  -- AMÉLIORATION #6: Validation préalable
+  local valid, errors = validateCardParameters(c, enemyActor, heroActor)
+  if not valid then
+    logf("[AI][ERROR] Validation échouée pour carte '%s':", tostring(c.name))
+    for _, error in ipairs(errors) do
+      logf("[AI][ERROR]   - %s", error)
+    end
+    return false
+  end
+
+  local eff = getEffects(c)
 
   logf("[AI] applyCard '%s' eff.hero=%s eff.enemy=%s", tostring(c.name), globalFunction.tstr(eff.hero),
     globalFunction.tstr(eff.enemy))
@@ -581,8 +710,26 @@ local function applyCard(c)
     applyGeneric(heroActor, enemyActor, eff)
   end
 
-  -- 5) Logs de diff
+  -- 5) AMÉLIORATION #6: Vérification cohérence des états finaux
   local aE, aH = snap(enemyActor), snap(heroActor)
+  local consistent, stateIssues = detectInconsistentState(bE, aE, bH, aH, c)
+
+  if not consistent then
+    logf("[AI][WARN] États incohérents détectés - application de corrections si possible")
+    -- Correction automatique des vies négatives
+    if aE.life and aE.life < 0 then
+      logf("[AI][FIX] Correction vie ennemi négative: %d → 0", aE.life)
+      aE.life = 0
+      if enemyActor then enemyActor.life = 0 end
+    end
+    if aH.life and aH.life < 0 then
+      logf("[AI][FIX] Correction vie héros négative: %d → 0", aH.life)
+      aH.life = 0
+      if heroActor then heroActor.life = 0 end
+    end
+  end
+
+  -- 6) Logs de diff
   logf("[AI] enemy  %s", delta(bE, aE))
   logf("[AI] hero   %s", delta(bH, aH))
 

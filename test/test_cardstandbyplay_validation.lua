@@ -1,6 +1,6 @@
 --[[
 ====================================
-TEST VALIDATION SYSTÈME CARDSTANDBYPLAY  
+TEST VALIDATION SYSTÈME CARDSTANDBYPLAY
 ====================================
 Test complet et validation du système CardStandbyPlay
 Problème #5 du TODO_CORRECTIONS.md
@@ -80,7 +80,7 @@ print("✅ CardStandbyPlay chargé avec succès")
 print("\n🔍 Test 2: Vérification API disponible")
 local expectedFunctions = {
     "init",
-    "hasCardInStandby", 
+    "hasCardInStandby",
     "getStandbyCard",
     "putCardInStandby",
     "returnCardToHand",
@@ -173,11 +173,11 @@ if afterPutCard and afterPutCopy then
     local originalName = afterPutCard.name
     local copyName = afterPutCopy.name
     local sameNames = (originalName == copyName)
-    
+
     print("  - Nom carte originale:", originalName)
     print("  - Nom copie:", copyName)
     print("  - Noms identiques:", sameNames)
-    
+
     if sameNames then
         print("✅ Cohérence copie validée")
     else
@@ -204,7 +204,7 @@ else
     print("❌ Problème avec annulation")
 end
 
--- Test confirmation  
+-- Test confirmation
 print("\n✅ Test 9: Confirmation de jeu")
 -- Remettre en standby pour tester confirmation
 CardStandbyPlay.putCardInStandby(testCard, 1)
@@ -275,18 +275,18 @@ print("\n" .. string.rep("=", 50))
 print("📊 RÉSULTATS VALIDATION CARDSTANDBYPLAY:")
 
 local testResults = {
-    {name = "Chargement module", success = true},
-    {name = "API complète disponible", success = true},
-    {name = "Initialisation", success = true},
-    {name = "État initial correct", success = true},
-    {name = "Création carte test", success = true},
-    {name = "Système copie/invisible", success = putSuccess and afterPutStandby and not testCard.isVisible and afterPutCopy},
-    {name = "Cohérence copie", success = afterPutCard and afterPutCopy and afterPutCard.name == afterPutCopy.name},
-    {name = "Annulation", success = cancelSuccess and not afterCancelStandby and afterCancelVisible},
-    {name = "Confirmation", success = confirmSuccess},
-    {name = "Nettoyage", success = not afterClearStandby},
-    {name = "Gestion erreurs", success = not errorTest1},
-    {name = "Cycle update/draw", success = updateSuccess and drawSuccess}
+    { name = "Chargement module",       success = true },
+    { name = "API complète disponible", success = true },
+    { name = "Initialisation",          success = true },
+    { name = "État initial correct",    success = true },
+    { name = "Création carte test",     success = true },
+    { name = "Système copie/invisible", success = putSuccess and afterPutStandby and not testCard.isVisible and afterPutCopy },
+    { name = "Cohérence copie",         success = afterPutCard and afterPutCopy and afterPutCard.name == afterPutCopy.name },
+    { name = "Annulation",              success = cancelSuccess and not afterCancelStandby and afterCancelVisible },
+    { name = "Confirmation",            success = confirmSuccess },
+    { name = "Nettoyage",               success = not afterClearStandby },
+    { name = "Gestion erreurs",         success = not errorTest1 },
+    { name = "Cycle update/draw",       success = updateSuccess and drawSuccess }
 }
 
 local passedTests = 0
