@@ -8,8 +8,8 @@
 
 ## 🎯 Statut Global
 - [x] ✅ Optimisations principales terminées (13/13 problèmes résolus)
-- [x] 🔥 Régressions critiques détectées (5 nouveaux problèmes)
-- [ ] 🚨 Stabilisation production en cours (4/5 résolus - 80% complet)
+- [x] 🔥 Régressions critiques détectées (6 nouveaux problèmes)
+- [ ] 🚨 Stabilisation production en cours (5/6 résolus - 83% complet)
 
 ---
 
@@ -187,3 +187,21 @@ Chaque correction doit être validée par :
 **Criticité**: 🔥 **URGENTE** - Production instable  
 **Responsable**: Équipe développement  
 **Suivi**: Monitoring continu logs post-corrections
+
+---
+
+## 🆕 NOUVEAU PROBLÈME DÉTECTÉ - Post-Corrections
+
+### 6. Échec Exécution Effets Cartes IA 🆕 **EN ATTENTE**
+- [ ] **Problème**: `onPlay` fonctions détectées mais non exécutées par l'IA
+- [ ] **Symptôme**: `"onPlay présent mais aucune signature n'a abouti"` répétitif
+- [ ] **Impact**: Cartes IA validées mais effets non appliqués - gameplay cassé
+- [ ] **Source**: Système signatures d'appel IA controller
+- [ ] **Cartes affectées**: `j'ais d'encre`, `Attaque Rapide`, `Fil d'Ariane`, `j'ais de couteau`
+- [ ] **Urgence**: 🔥 **HAUTE** - Gameplay IA non fonctionnel
+- [ ] **Contexte**: Révélé après corrections Problème #4 (getCurrentEnemy fix)
+- [ ] **Next Action**: Investigation système `applyEffect` + signatures IA
+- [ ] **Status**: 🕒 **REPORTÉ** - Analyse prévue demain
+- [ ] **Note**: Le Problème #4 a fonctionné (validation cible OK) mais révèle ce nouveau bug masqué
+
+**⚠️ Impact Gameplay**: L'IA sélectionne et "joue" les cartes mais les effets ne s'appliquent pas réellement.
