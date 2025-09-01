@@ -168,7 +168,27 @@ function love.mousepressed(x, y, bouton)
     end
   end
 
-  -- Propager aux scènes seulement si pas géré par CardStandbyPlay
+  -- DÉSACTIVÉ: Le HUD doit être géré par les scènes, pas directement par main.lua
+  -- Le design correct: main.lua fait hud.update() pour le hover, les scènes font hud.hover("click")
+  --[[
+  -- Vérifier le HUD global AVANT les scènes
+  if _G.hud and _G.hud.hover then
+    local gere_par_hud = _G.hud.hover("click", x, y)
+    pcall(function()
+      local fichier_log = io.open("gameLogs/hud_clicks.log", "a")
+      if fichier_log then
+        fichier_log:write(os.date("%Y-%m-%d %H:%M:%S") ..
+          " - HUD appelé, résultat: " .. tostring(gere_par_hud) .. "\n")
+        fichier_log:close()
+      end
+    end)
+    if gere_par_hud then
+      return -- Arrêter la propagation si le HUD a géré le clic
+    end
+  end
+  --]]
+
+  -- Propager aux scènes seulement si pas géré par CardStandbyPlay ou HUD
   scene:emit("mousepressed", x, y, bouton)
 end
 

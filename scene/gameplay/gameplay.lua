@@ -2,17 +2,23 @@
 -- Ce module orchestre le cycle de tour, la pioche, l’IA ennemie, le HUD et la transition combat.
 -- @module scene.gameplay.gameplay
 
-local hud_gameplay = require("scene.gameplay.HUD.hud_gameplay")
+local hud_gameplay_ok, hud_gameplay = pcall(require, "scene.gameplay.HUD.hud_gameplay")
+if not hud_gameplay_ok then
+    print("[ERROR] Failed to load hud_gameplay:", hud_gameplay)
+    hud_gameplay = nil
+else
+    print("[SUCCESS] hud_gameplay loaded successfully")
+end
 
 ----------------------------------------------------------------------
 -- Autres dépendances de gameplay
 ----------------------------------------------------------------------
-local cardsPlayer  = require("ressources/cards_data_player")
-local Hero         = _G.Hero or require("my-librairie/entities/player/Hero")
-local Enemies      = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
-local AI           = require("my-librairie/ai/controller")
-local actor        = _G.actorManager or require("my-librairie/managers/actorManager")
-local res          = require("my-librairie.managers.resource_cache")
+local cardsPlayer = require("ressources/cards_data_player")
+local Hero        = _G.Hero or require("my-librairie/entities/player/Hero")
+local Enemies     = _G.Enemies or require("my-librairie.entities.Enemy.Enemies")
+local AI          = require("my-librairie/ai/controller")
+local actor       = _G.actorManager or require("my-librairie/managers/actorManager")
+local res         = require("my-librairie.managers.resource_cache")
 
 ----------------------------------------------------------------------
 -- Diagnostics initiaux (permet de distinguer un require qui échoue d’un crash plus tard)
@@ -397,7 +403,19 @@ function gameplay.load(self, params)
             end
         end
 
-        if hud_gameplay and hud_gameplay.load then hud_gameplay.load() end
+        log("[DEBUG] hud_gameplay check: " .. tostring(hud_gameplay ~= nil))
+        if hud_gameplay then
+            log("[DEBUG] hud_gameplay.load check: " .. tostring(hud_gameplay.load ~= nil))
+            if hud_gameplay.load then
+                log("[DEBUG] Calling hud_gameplay.load()")
+                hud_gameplay.load()
+                log("[DEBUG] hud_gameplay.load() completed")
+            else
+                log("[DEBUG] hud_gameplay.load is nil!")
+            end
+        else
+            log("[DEBUG] hud_gameplay is nil!")
+        end
         log("[gameplay.load]")
     end
 
@@ -598,6 +616,25 @@ function gameplay.mousepressed(self, x, y, button)
             logf("[gameplay] Clic géré par système de ciblage: (%d,%d) button=%d", x, y, button)
             return true
         end
+    end
+
+    -- Si le clic n'est pas géré par le système de cartes, essayer le HUD
+    local hud = rawget(_G, "hud")
+    logf("[gameplay] DEBUG: hud=%s", tostring(hud))
+    if hud then
+        logf("[gameplay] DEBUG: hud.hover=%s", tostring(hud.hover))
+    end
+    if hud and hud.hover then
+        logf("[gameplay] Transmission du clic au HUD: (%d,%d) button=%d", x, y, button)
+        logf("[gameplay] DEBUG: Avant appel hud.hover(click, %d, %d)", x, y)
+        local hudHandled = hud.hover("click", x, y)
+        logf("[gameplay] DEBUG: Après appel hud.hover, résultat: %s", tostring(hudHandled))
+        logf("[gameplay] HUD a géré le clic: %s", tostring(hudHandled))
+        if hudHandled then
+            return true
+        end
+    else
+        logf("[gameplay] ERREUR: HUD non disponible ou hud.hover manquant")
     end
 
     return false

@@ -475,11 +475,36 @@ end
 -- Met à jour le HUD
 -- @param dt : delta time
 function hud.update(dt)
+  -- Debug: Log les éléments interactifs trouvés
+  pcall(function()
+    local count = 0
+    for id, el in pairs(elements) do
+      if el and el.interactive then count = count + 1 end
+    end
+    if count > 0 then
+      local f = io.open("gameLogs/hud_update_debug.log", "a")
+      if f then
+        f:write(string.format("%s - hud.update() trouvé %d éléments interactifs\n",
+          os.date("%Y-%m-%d %H:%M:%S"), count))
+        f:close()
+      end
+    end
+  end)
+
   for id, el in pairs(elements) do
     if el and el.interactive and el.type == "button" then
-      local isInside = _G.globalFunction.mouse.hover(el.x, el.y, el.w, el.h)
+      -- Utiliser dimsFrom() comme dans hud.hover() pour obtenir les bonnes dimensions
+      local w, h = dimsFrom(el)
+      local isInside = false
+
+      -- Vérifier que globalFunction.mouse.hover existe et fonctionne
+      if _G.globalFunction and _G.globalFunction.mouse and _G.globalFunction.mouse.hover then
+        isInside = _G.globalFunction.mouse.hover(el.x or 0, el.y or 0, w, h)
+      end
+
       el._isHovered = isInside
-      el._isPressed = isInside and _G.globalFunction.mouse.click()
+      -- Ne plus utiliser globalFunction.mouse.click() ici - les clics sont gérés via hud.hover("click") depuis les événements love.mousepressed
+      el._isPressed = false
     end
   end
 end
@@ -500,6 +525,16 @@ end
 -- @param c : nil ou y si coords fournies
 -- @return : true si interaction
 function hud.hover(a, b, c)
+  -- DEBUG: Log tout appel à hover()
+  pcall(function()
+    local f = io.open("gameLogs/hud_hover_calls.log", "a")
+    if f then
+      f:write(string.format("%s - hud.hover appelé avec: a=%s, b=%s, c=%s\n",
+        os.date("%Y-%m-%d %H:%M:%S"), tostring(a), tostring(b), tostring(c)))
+      f:close()
+    end
+  end)
+
   local action, x, y
   if type(a) == "string" then
     action = a
@@ -514,12 +549,37 @@ function hud.hover(a, b, c)
     x, y = _getCursor()
   end
 
+  -- Récupérer le ratio de scaling pour transformer les positions des boutons
+  local sx = (screen and screen.ratioScreen and screen.ratioScreen.width) or
+      (responsive and responsive.ratioScreen and responsive.ratioScreen.width) or 1
+  local sy = (screen and screen.ratioScreen and screen.ratioScreen.height) or
+      (responsive and responsive.ratioScreen and responsive.ratioScreen.height) or 1
+
   pcall(function()
     if action == "click" then
-      local f = io.open("gameLogs/hud_clicks.log", "a")
+      local f = io.open("gameLogs/hud_hover_debug.log", "a")
       if f then
-        f:write(string.format("CLICK -> action=%s x=%.1f y=%.1f\n", tostring(action), tostring(x), tostring(y))); f
-            :close()
+        f:write(string.format("CLICK -> action=%s x=%.1f y=%.1f sx=%.3f sy=%.3f\n",
+          tostring(action), tostring(x), tostring(y), tostring(sx), tostring(sy)));
+        -- Debug: lister tous les éléments interactifs
+        f:write("Éléments interactifs:\n")
+        for layer_name, layer_list in pairs(layers) do
+          f:write(string.format("  Couche %s: %d éléments\n", layer_name, #layer_list))
+          for i, id in ipairs(layer_list) do
+            local el = elements[id]
+            if el and el.interactive then
+              local w, h = dimsFrom(el)
+              -- Calcul positions transformées
+              local transformed_x = (el.x or 0) * sx
+              local transformed_y = (el.y or 0) * sy
+              local transformed_w = w * sx
+              local transformed_h = h * sy
+              f:write(string.format("    - %s: original(%.1f,%.1f,%.1f,%.1f) -> transformed(%.1f,%.1f,%.1f,%.1f)\n",
+                id, el.x or 0, el.y or 0, w, h, transformed_x, transformed_y, transformed_w, transformed_h))
+            end
+          end
+        end
+        f:close()
       end
     end
   end)
@@ -531,10 +591,29 @@ function hud.hover(a, b, c)
       local el = elements[lst[i]]
       if el and el.interactive then
         local w, h = dimsFrom(el)
-        local hit = hud.pointInRect(x, y, el.x or 0, el.y or 0, w, h)
+
+        -- Appliquer la transformation responsive pour cohérence avec coordonnées souris
+        local transformed_x = (el.x or 0) * sx
+        local transformed_y = (el.y or 0) * sy
+        local transformed_w = w * sx
+        local transformed_h = h * sy
+
+        local hit = hud.pointInRect(x, y, transformed_x, transformed_y, transformed_w, transformed_h)
         el._hover = hit
         if hit then
           if action == "click" then
+            -- Logging pour debug callbacks de boutons
+            pcall(function()
+              local f = io.open("gameLogs/hud_button_clicks.log", "a")
+              if f then
+                f:write(string.format(
+                  "BUTTON CLICKED -> id=%s hasCallback=%s x=%.1f y=%.1f transformed_bounds=(%.1f,%.1f,%.1f,%.1f)\n",
+                  tostring(lst[i]), tostring(el.onClick ~= nil), tostring(x), tostring(y),
+                  transformed_x, transformed_y, transformed_w, transformed_h))
+                f:close()
+              end
+            end)
+
             if el.sfx and el.sfx.click then play("click", el.sfx.click) else play("click") end
             if el.onClick then el.onClick(el) end
             return true
