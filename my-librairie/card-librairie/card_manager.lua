@@ -38,7 +38,9 @@ end
 local _state = {
     -- Protection contre repositionnement
     repositioning_locked = false,
+    repositioning_lock_time = 0, -- Timestamp du verrouillage
     targeting_active = false,
+    targeting_start_time = 0,    -- Timestamp début ciblage
 
     -- Cartes en cours de manipulation
     cards_being_played = {},
@@ -46,6 +48,10 @@ local _state = {
 
     -- Historique des positions
     position_history = {},
+
+    -- Configuration timeout
+    max_repositioning_lock_time = 5, -- 5 secondes max
+    max_targeting_time = 10,         -- 10 secondes max pour ciblage
 
     -- Flags de debug
     debug_enabled = rawget(_G, "DEBUG_CARD_MANAGER") or false
@@ -73,25 +79,81 @@ local function _logInfo(fmt, ...) _log("info", fmt, ...) end
 local function _logWarn(fmt, ...) _log("warn", fmt, ...) end
 local function _logError(fmt, ...) _log("error", fmt, ...) end
 
+-- === GESTION DES TIMEOUTS ===
+
+-- Fonction pour vérifier et débloquer les timeouts
+function CardManager.checkTimeouts()
+    local current_time = os.time()
+    local any_timeout = false
+
+    -- Vérifier timeout repositionnement
+    if _state.repositioning_locked and _state.repositioning_lock_time > 0 then
+        local lock_duration = current_time - _state.repositioning_lock_time
+        if lock_duration > _state.max_repositioning_lock_time then
+            _logWarn("⏰ TIMEOUT REPOSITIONNEMENT - Déverrouillage automatique après %ds", lock_duration)
+            CardManager.unlockRepositioning("timeout automatique")
+            any_timeout = true
+        end
+    end
+
+    -- Vérifier timeout ciblage
+    if _state.targeting_active and _state.targeting_start_time > 0 then
+        local targeting_duration = current_time - _state.targeting_start_time
+        if targeting_duration > _state.max_targeting_time then
+            _logWarn("⏰ TIMEOUT CIBLAGE - Nettoyage automatique après %ds", targeting_duration)
+            _state.targeting_active = false
+            _state.targeting_start_time = 0
+            -- Nettoyer toutes les cartes en cours de ciblage
+            for name, data in pairs(_state.cards_being_targeted) do
+                if data.card then
+                    CardManager.restoreCardPosition(data.card, "timeout ciblage")
+                end
+            end
+            _state.cards_being_targeted = {}
+            CardManager.unlockRepositioning("timeout ciblage")
+            any_timeout = true
+        end
+    end
+
+    return any_timeout
+end
+
+-- Fonction d'urgence pour débloquer manuellement
+function CardManager.emergencyUnlock(reason)
+    _logWarn("🚨 DÉBLOCAGE D'URGENCE: %s", reason or "manuel")
+    _state.repositioning_locked = false
+    _state.repositioning_lock_time = 0
+    _state.targeting_active = false
+    _state.targeting_start_time = 0
+    _state.cards_being_targeted = {}
+    _logInfo("🆘 État réinitialisé - Repositionnement libre")
+end
+
 -- === UTILITAIRES DE PROTECTION ===
 
 function CardManager.isTargetingActive()
+    -- Vérifier timeout avant de retourner l'état
+    CardManager.checkTimeouts()
     local CardTargetSelection = rawget(_G, "CardTargetSelection")
     return CardTargetSelection and CardTargetSelection.isSelectingTarget
 end
 
 function CardManager.isRepositioningLocked()
+    -- Vérifier timeout avant de retourner l'état
+    CardManager.checkTimeouts()
     return _state.repositioning_locked or CardManager.isTargetingActive()
 end
 
 function CardManager.lockRepositioning(reason)
     _logWarn("🔒 REPOSITIONNEMENT VERROUILLÉ: %s", reason or "raison non spécifiée")
     _state.repositioning_locked = true
+    _state.repositioning_lock_time = os.time() -- Timestamp du verrouillage
 end
 
 function CardManager.unlockRepositioning(reason)
     _logInfo("🔓 REPOSITIONNEMENT DÉVERROUILLÉ: %s", reason or "raison non spécifiée")
     _state.repositioning_locked = false
+    _state.repositioning_lock_time = 0 -- Reset timestamp
 end
 
 -- === GESTION DES CARTES EN JEU ===
@@ -178,6 +240,12 @@ function CardManager.updateHandTargets(caller, force)
 
     _logInfo("🎯 DEMANDE updateHandTargets de: %s (force=%s)", caller_info, tostring(force))
 
+    -- Vérification automatique des timeouts à chaque appel
+    local timeout_occurred = CardManager.checkTimeouts()
+    if timeout_occurred then
+        _logInfo("⏰ Timeout détecté et traité automatiquement")
+    end
+
     -- Vérifications de protection
     if not force and CardManager.isRepositioningLocked() then
         _logWarn("🛡️  REPOSITIONNEMENT BLOQUÉ - Raison: %s",
@@ -244,6 +312,7 @@ end
 function CardManager.onTargetingStart(card)
     _logInfo("🎯 CIBLAGE DÉMARRÉ pour: %s", card.name or "carte")
     _state.targeting_active = true
+    _state.targeting_start_time = os.time() -- Timestamp début ciblage
     CardManager.saveCardPosition(card, "avant ciblage")
     CardManager.lockRepositioning("ciblage en cours")
 
@@ -258,6 +327,7 @@ function CardManager.onTargetingEnd(card, success)
         card.name or "carte", tostring(success))
 
     _state.targeting_active = false
+    _state.targeting_start_time = 0 -- Reset timestamp
     _state.cards_being_targeted[card.name or tostring(card)] = nil
 
     if success then
