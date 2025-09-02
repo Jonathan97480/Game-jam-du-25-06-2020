@@ -125,6 +125,41 @@ end
 _G.t = translateFunction
 
 
+--[[ =====================================================================
+Système de Sauvegarde (NOUVEAU - 3 sept 2025)
+===================================================================== ]]
+
+-- SaveManager (gestion sauvegarde/chargement)
+local okSave, saveManager = pcall(require, "my-librairie/save-system/saveManager")
+_G.saveManager = okSave and saveManager or nil
+
+-- SaveUI (interface utilisateur pour sauvegardes)
+local okSaveUI, saveUI = pcall(require, "my-librairie/save-system/saveUI")
+_G.saveUI = okSaveUI and saveUI or nil
+
+-- Initialiser le système de sauvegarde
+if _G.saveManager then
+    local saveInitSuccess = _G.saveManager.initialize()
+    if saveInitSuccess then
+        print("[globals] ✅ SaveManager initialisé avec succès")
+
+        -- Démarrer auto-save si disponible
+        if _G.saveManager.startAutoSave then
+            _G.saveManager.startAutoSave()
+            print("[globals] 🔄 Auto-save démarré")
+        end
+    else
+        print("[globals] ❌ Échec initialisation SaveManager")
+    end
+else
+    print("[globals] ⚠️ SaveManager non disponible")
+end
+
+if _G.saveUI then
+    print("[globals] ✅ SaveUI chargé avec succès")
+else
+    print("[globals] ⚠️ SaveUI non disponible")
+end
 
 --[[ =====================================================================
 Phase 3 : Fonctionnalités avancées et UX (NOUVEAU - 2 sept 2025)

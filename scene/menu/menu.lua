@@ -196,11 +196,54 @@ menu.button = {
         end
     },
 
+    save_demo = {
+        texte = 'Save System Demo',
+        width = 320,
+        height = 60,
+        vector2 = { x = 60, y = screen.gameReso.height / 2 + (4 * 80) },
+        color = {
+            curent = { 1, 1, 1 },
+            hover  = { 0, 1, 0 },
+            normal = { 1, 1, 1 },
+            click  = { 1, 0, 0 },
+        },
+        action = function(_)
+            _log("[menu] Save System Demo cliqué → switch vers demo_save")
+
+            if not scene then
+                _log("[menu] ERREUR: scene global n'est pas disponible")
+                return
+            end
+
+            -- Chargement de la scène de démonstration sauvegarde
+            local ok, result = pcall(function()
+                return scene:switch("scene.demo_save.demo_save")
+            end)
+
+            if not ok then
+                -- Essayer avec le chemin alternatif
+                local ok2, result2 = pcall(function()
+                    return scene:switch("scene/demo_save/demo_save")
+                end)
+
+                if not ok2 then
+                    _log("[menu] ERREUR: Impossible de charger la scène de démonstration sauvegarde")
+                    _log("[menu] Erreur 1: " .. tostring(result))
+                    _log("[menu] Erreur 2: " .. tostring(result2))
+                else
+                    _log("[menu] Scène démonstration sauvegarde chargée avec succès (chemin 2)")
+                end
+            else
+                _log("[menu] Scène démonstration sauvegarde chargée avec succès (chemin 1)")
+            end
+        end
+    },
+
     quit = {
         texte = 'Quit',
         width = 180,
         height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (4 * 80) },
+        vector2 = { x = 60, y = screen.gameReso.height / 2 + (5 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
