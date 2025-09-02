@@ -81,6 +81,23 @@ _G.CardTargetSelection = okCTS and cardTargetSelection or nil
 
 
 --[[ =====================================================================
+Phase 3 : Fonctionnalités avancées et UX (NOUVEAU - 2 sept 2025)
+===================================================================== ]]
+
+-- Phase 3 Integration Module (charge et coordonne tous les modules Phase 3)
+local okPhase3, phase3Integration = pcall(require, "my-librairie/phase3/phase3_integration")
+if okPhase3 and phase3Integration then
+    _G.phase3Integration = phase3Integration
+    if _G.globalFunction and _G.globalFunction.log then
+        _G.globalFunction.log.info("🚀 Phase 3 modules loaded and integrated successfully")
+    end
+else
+    if _G.globalFunction and _G.globalFunction.log then
+        _G.globalFunction.log.warn("⚠️ Phase 3 modules not available - continuing with base system")
+    end
+end
+
+--[[ =====================================================================
 Actors Scripts - Chargés à la demande
 ===================================================================== ]]
 
