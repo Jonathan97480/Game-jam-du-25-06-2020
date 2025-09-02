@@ -3,7 +3,7 @@
 local screen = _G.screen or require("my-librairie/utils/responsive")
 
 -- Formerly required 'applyEffect'. After refactor effects live under `effects/cardEffect_shim`.
-local ok, applyEffect = pcall(require, "my-librairie/card-librairie/effects/cardEffect_shim")
+local ok, applyEffect = pcall(require, "my-librairie/card-librairie/core/card_effects")
 if not ok then
     -- fallback: try legacy path to keep backward compatibility
     local status, mod = pcall(require, "my-librairie/card-librairie/applyEffect")

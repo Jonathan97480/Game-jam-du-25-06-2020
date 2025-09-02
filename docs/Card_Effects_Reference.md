@@ -298,4 +298,4 @@ CardActions.spawnProjectileEffect({ caster=player, target=enemy, sprite='img/eff
 
 ---
 
-Ajout terminé. Voulez-vous que j'implémente l'un de ces modules (`card_actions.lua` ou `card_effects.lua`) maintenant ?
+

@@ -1,0 +1,287 @@
+{
+    "effects": {
+        "attack": {
+            "visual": {
+                "path": "img/effect/Attaque-base/",
+                "frames": 8,
+                "duration": 0.5,
+                "loop": false,
+                "scale": 1.0
+            },
+            "audio": {
+                "path": "audio/effects/attack.ogg",
+                "volume": 0.8,
+                "pitch": 1.0
+            },
+            "description": "Effet d'attaque de base - utilise les 8 frames existantes"
+        },
+        "heal": {
+            "visual": {
+                "path": "img/effect/heal/",
+                "frames": 5,
+                "duration": 0.8,
+                "loop": false,
+                "scale": 1.2
+            },
+            "audio": {
+                "path": "audio/effects/heal.ogg",
+                "volume": 0.7,
+                "pitch": 1.0
+            },
+            "description": "Effet de soin - utilise les 5 frames existantes"
+        },
+        "shield": {
+            "visual": {
+                "path": "img/effect/shield/",
+                "frames": 1,
+                "duration": 0.6,
+                "loop": false,
+                "scale": 1.0
+            },
+            "audio": {
+                "path": "audio/effects/shield.ogg",
+                "volume": 0.9,
+                "pitch": 1.0
+            },
+            "description": "Effet de bouclier - utilise assets existants"
+        },
+        "epine": {
+            "visual": {
+                "path": "img/effect/epine/",
+                "frames": 1,
+                "duration": 0.4,
+                "loop": false,
+                "scale": 1.0
+            },
+            "audio": {
+                "path": "audio/effects/thorns.ogg",
+                "volume": 0.8,
+                "pitch": 1.0
+            },
+            "description": "Effet d'épines - utilise assets existants"
+        },
+        "bleeding": {
+            "visual": {
+                "path": "img/effect/degat/",
+                "frames": 1,
+                "duration": 0.3,
+                "loop": true,
+                "scale": 0.8
+            },
+            "audio": {
+                "path": "audio/effects/bleeding.ogg",
+                "volume": 0.6,
+                "pitch": 0.9
+            },
+            "description": "Effet de saignement - temporaire avec dégâts"
+        },
+        "chancePassedTour": {
+            "visual": {
+                "path": "img/effect/heal/",
+                "frames": 5,
+                "duration": 1.0,
+                "loop": false,
+                "scale": 1.5,
+                "color_tint": [
+                    0.8,
+                    0.8,
+                    1.0,
+                    0.8
+                ]
+            },
+            "audio": {
+                "path": "audio/effects/sleep.ogg",
+                "volume": 0.5,
+                "pitch": 0.7
+            },
+            "description": "Effet stun/sommeil - placeholder avec heal teinté bleu"
+        },
+        "AttackReduction": {
+            "visual": {
+                "path": "img/effect/degat/",
+                "frames": 1,
+                "duration": 0.5,
+                "loop": false,
+                "scale": 1.2,
+                "color_tint": [
+                    1.0,
+                    0.5,
+                    0.5,
+                    0.7
+                ]
+            },
+            "audio": {
+                "path": "audio/effects/weakness.ogg",
+                "volume": 0.7,
+                "pitch": 0.8
+            },
+            "description": "Effet affaiblissement - placeholder avec dégâts teinté rouge"
+        },
+        "force_augmented": {
+            "visual": {
+                "path": "img/effect/Attaque-base/",
+                "frames": 8,
+                "duration": 0.7,
+                "loop": false,
+                "scale": 1.3,
+                "color_tint": [
+                    1.2,
+                    1.0,
+                    0.8,
+                    1.0
+                ]
+            },
+            "audio": {
+                "path": "audio/effects/buff.ogg",
+                "volume": 0.8,
+                "pitch": 1.2
+            },
+            "description": "Effet de buff force - placeholder avec attaque teinté doré"
+        }
+    },
+    "projectiles": {
+        "ink_projectile": {
+            "visual": {
+                "path": "img/effect/degat/",
+                "frames": 1,
+                "duration": 0.2,
+                "loop": true,
+                "scale": 0.8,
+                "color_tint": [
+                    0.2,
+                    0.1,
+                    0.4,
+                    1.0
+                ]
+            },
+            "audio": {
+                "launch": "audio/projectiles/ink_launch.ogg",
+                "impact": "audio/projectiles/ink_splat.ogg"
+            },
+            "speed": 300,
+            "description": "Projectile d'encre - placeholder avec dégâts teinté violet"
+        },
+        "knife_projectile": {
+            "visual": {
+                "path": "img/effect/Attaque-base/",
+                "frames": 8,
+                "duration": 0.1,
+                "loop": true,
+                "scale": 0.6,
+                "rotation_speed": 720
+            },
+            "audio": {
+                "launch": "audio/projectiles/knife_launch.ogg",
+                "impact": "audio/projectiles/knife_hit.ogg"
+            },
+            "speed": 500,
+            "description": "Projectile couteau - placeholder avec attaque qui tourne"
+        },
+        "web_projectile": {
+            "visual": {
+                "path": "img/effect/heal/",
+                "frames": 5,
+                "duration": 0.3,
+                "loop": true,
+                "scale": 1.0,
+                "color_tint": [
+                    0.9,
+                    0.9,
+                    0.9,
+                    0.8
+                ]
+            },
+            "audio": {
+                "launch": "audio/projectiles/web_launch.ogg",
+                "impact": "audio/projectiles/web_hit.ogg"
+            },
+            "speed": 250,
+            "description": "Projectile toile - placeholder avec heal teinté blanc"
+        },
+        "sword_slash": {
+            "visual": {
+                "path": "img/effect/Attaque-base/",
+                "frames": 8,
+                "duration": 0.4,
+                "loop": false,
+                "scale": 1.5,
+                "color_tint": [
+                    1.2,
+                    1.2,
+                    0.8,
+                    1.0
+                ]
+            },
+            "audio": {
+                "launch": "audio/projectiles/sword_slash.ogg",
+                "impact": "audio/projectiles/energy_impact.ogg"
+            },
+            "speed": 400,
+            "description": "Lame d'énergie - placeholder avec attaque élargie et dorée"
+        }
+    },
+    "aoe_effects": {
+        "fire_explosion": {
+            "visual": {
+                "path": "img/effect/Attaque-base/",
+                "frames": 8,
+                "duration": 1.0,
+                "loop": false,
+                "scale": 2.0,
+                "color_tint": [
+                    1.5,
+                    0.8,
+                    0.3,
+                    1.0
+                ]
+            },
+            "audio": {
+                "path": "audio/aoe/explosion.ogg",
+                "volume": 1.0,
+                "pitch": 0.8
+            },
+            "radius": 150,
+            "description": "Explosion de feu AOE - placeholder avec attaque agrandie et orange"
+        },
+        "healing_wave": {
+            "visual": {
+                "path": "img/effect/heal/",
+                "frames": 5,
+                "duration": 1.5,
+                "loop": false,
+                "scale": 3.0,
+                "color_tint": [
+                    0.8,
+                    1.2,
+                    0.8,
+                    0.8
+                ]
+            },
+            "audio": {
+                "path": "audio/aoe/healing_wave.ogg",
+                "volume": 0.8,
+                "pitch": 1.1
+            },
+            "radius": 200,
+            "description": "Onde de soin AOE - placeholder avec heal agrandi et vert"
+        }
+    },
+    "meta": {
+        "version": "1.0.0",
+        "description": "Configuration temporaire utilisant les assets existants",
+        "placeholder_note": "Cette configuration utilise les assets déjà présents avec des teintes et échelles différentes. Remplacer par les vrais assets plus tard.",
+        "existing_assets": [
+            "img/effect/Attaque-base/ (8 frames)",
+            "img/effect/heal/ (5 frames)",
+            "img/effect/shield/",
+            "img/effect/epine/",
+            "img/effect/degat/"
+        ],
+        "assets_to_create": 65,
+        "priority_1_assets": [
+            "Projectiles IA: ink, knife, web, sword",
+            "Effets d'état: sleep, weakness, buff",
+            "Audio de base pour tous les effets"
+        ]
+    }
+}
