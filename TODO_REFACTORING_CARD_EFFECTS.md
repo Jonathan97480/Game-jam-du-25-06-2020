@@ -10,9 +10,17 @@
 
 **Problème actuel** : Le système d'application des effets est fragmenté, les `onPlay` ne s'exécutent pas, les effets `caster`/`target` ne s'appliquent pas correctement pour le joueur et l'IA.
 
+**Architecture existante analysée** :
+- `Common.playCard()` appelle `applyEffect.applyCardEffect()` mais le module `applyEffect` est manquant
+- Modules `cardEffect/` (attack.lua, heal.lua, etc.) existent mais ne sont pas intégrés
+- `play.lua` contient `_tryPlay()` qui appelle `Common.playCard()` et exécute `onPlay`
+- `CardStandbyPlay` gère le système copie/invisible mais pas les effets
+- `card_target_selection.lua` appelle `Card.Play.tryPlay()` pour exécuter les cartes
+
 **Solution** : Créer un système centralisé, robuste et testable avec :
-- Module `card_effects` central pour toute application d'effets
+- Module `card_effects` central pour remplacer le `applyEffect` manquant
 - Module `card_actions` avec utilitaires pour les fonctions `action`
+- Intégration avec les modules `cardEffect/` existants (attack, heal, etc.)
 - Support complet du `multiTarget` (AOE)
 - Gestion sécurisée des erreurs avec `pcall`
 - Tests unitaires exhaustifs
@@ -24,9 +32,19 @@
 ### 1.1 Créer le module `card_effects` central
 **Fichier** : `my-librairie/card-librairie/core/card_effects.lua`
 
+**Remplace** : Le module `applyEffect` manquant appelé par `Common.playCard()`
+
+**Intégration avec l'existant** :
+- Réutiliser les modules `cardEffect/attack.lua`, `heal.lua`, `giveSheld.lua`, `giveEpine.lua`
+- Se connecter à `actorManager.applyEffect()` pour les effets sur acteurs
+- Remplacer l'appel `applyEffect.applyCardEffect()` dans `Common.playCard()`
+
 **API principale à implémenter** :
 ```lua
 local card_effects = {}
+
+-- ⭐ FONCTION PRINCIPALE - remplace applyEffect.applyCardEffect
+function card_effects.applyCardEffect(card, source, target)
 
 -- Application single-target (carte normale)
 function card_effects.applyToTarget(card, targetActor, casterActor)
@@ -50,13 +68,14 @@ return card_effects
 ```
 
 **Checklist 1.1** :
-- [ ] Créer la structure de base du module
-- [ ] Implémenter `applyNumericEffects` (heal, shield, attack, Epine, etc.)
+- [ ] Créer la structure de base du module avec `applyCardEffect` comme point d'entrée
+- [ ] Implémenter `applyNumericEffects` en réutilisant `cardEffect/attack.lua`, `heal.lua`, etc.
 - [ ] Implémenter `applyTemporalEffects` (bleeding, force_augmented avec number_turns)
-- [ ] Implémenter `applyCasterEffects` et `applyToTarget`
+- [ ] Implémenter `applyCasterEffects` et `applyToTarget` avec dispatch vers sous-effets
 - [ ] Implémenter `applyToAllTargets` pour le support multiTarget
-- [ ] Implémenter `executeAction` avec pcall et gestion d'erreurs
+- [ ] Implémenter `executeAction` avec pcall pour exécuter `card.Effect.action`
 - [ ] Ajouter validation et logs détaillés
+- [ ] Remplacer l'import manquant dans `Common.playCard()` : `require("my-librairie/card-librairie/core/card_effects")`
 - [ ] Intégrer avec le système de globals (`_G.card_effects`)
 
 ### 1.2 Créer le module `card_actions` utilitaires
@@ -120,23 +139,42 @@ return card_actions
 ### 2.1 Identifier et remplacer les anciens points d'application
 **Localiser tous les endroits où les effets sont appliqués actuellement** :
 
+**Points d'application identifiés** :
+- `my-librairie/card-librairie/core/common.lua:289` : `applyEffect.applyCardEffect(card, source, target)` ⚠️ MODULE MANQUANT
+- `my-librairie/card-librairie/play/play.lua:78` et `242` : Exécution `card.onPlay()` dans `_tryPlay` et `_cardPlaySelf`
+- `my-librairie/card-librairie/ui/card_target_selection.lua:821` : Appel `Card.Play.tryPlay()` 
+- `my-librairie/card-librairie/ui/interaction.lua:474,487` : Appels directs `Card.Play.tryPlay()`
+- `my-librairie/card-librairie/cardEffect/` : Modules isolés (attack, heal, giveSheld, giveEpine) non intégrés
+
 **Checklist 2.1** :
-- [ ] Analyser `Card.Play.tryPlay` et remplacer par `card_effects.applyToTarget`
-- [ ] Analyser l'IA controller et remplacer par le nouveau système
+- [ ] **PRIORITÉ 1** : Créer `card_effects.lua` et remplacer l'import manquant dans `common.lua`
+- [ ] Analyser et centraliser les appels `_tryPlay()` dans `play.lua`
+- [ ] Intégrer les modules `cardEffect/` existants dans le nouveau système
+- [ ] Auditer `card_target_selection.lua` et `interaction.lua` pour utiliser le nouveau système
 - [ ] Chercher tous les appels directs à `_user.actor.state.*` et les centraliser
 - [ ] Remplacer les `onPlay` manuels par `card_effects.executeAction`
 - [ ] Vérifier `CardManager` et intégrer le nouveau système
-- [ ] Audit complet avec grep_search pour trouver tous les points d'application
+- [ ] Audit complet avec grep_search pour trouver tous les points d'application cachés
 
 ### 2.2 Restructurer CardStandbyPlay
-**Modifications** :
+**Fichier existant** : `my-librairie/card-librairie/cardStandbyPlay.lua`
+
+**Architecture actuelle analysée** :
+- Système copie/invisible fonctionnel : `cardInStandby` (originale invisible) + `standbyCopy` (visible)
+- État géré dans `CardStandbyPlay.state`
+- Position de standby configurée : `standbyX = 50, standbyY = 400`
+- Intégration avec `card_target_selection.lua` qui appelle `Card.Play.tryPlay()`
+
+**Modifications requises** :
 
 **Checklist 2.2** :
-- [ ] Modifier `putCardInStandby` pour détecter `multiTarget`
-- [ ] Créer `playStandbyCardAOE` pour cartes multi-target
-- [ ] Intégrer `card_effects.applyToTarget` et `applyToAllTargets`
-- [ ] Assurer cohérence avec CardTargetSelection
+- [ ] Analyser `putCardInStandby()` pour détecter `card.multiTarget`
+- [ ] Créer `playStandbyCardAOE()` pour cartes multi-target (bypass sélection cible)
+- [ ] Modifier la logique de confirmation pour appeler `card_effects.applyToTarget/applyToAllTargets`
+- [ ] Remplacer l'appel `Card.Play.tryPlay()` dans `card_target_selection.lua` par le nouveau système
+- [ ] Assurer cohérence entre `CardStandbyPlay.state` et `CardTargetSelection`
 - [ ] Tests de régression pour standby normal et AOE
+- [ ] Vérifier que les animations standby fonctionnent avec multiTarget
 
 ### 2.3 Restructurer l'IA
 **Modifications** :
@@ -256,20 +294,24 @@ return card_actions
 
 ## 🚨 Priorités et ordre d'exécution
 
-### Priorité CRITIQUE (à faire en premier)
-1. **Phase 1.1** : Créer `card_effects` avec API de base
-2. **Phase 2.1** : Identifier et remplacer anciens points d'application
-3. **Phase 4.4** : Tests de régression pour s'assurer que ça marche
+### Priorité CRITIQUE (à faire EN PREMIER - BLOCAGE TOTAL)
+1. **Phase 1.1** : Créer `card_effects.lua` avec `applyCardEffect()` pour réparer `Common.playCard()`
+2. **Phase 2.1** : Remplacer l'import manquant dans `common.lua` ligne 289
+3. **Test immédiat** : Vérifier qu'une carte simple (attaque de base) s'exécute sans erreur
 
-### Priorité HAUTE (pour demo 4 mois)
-1. **Phase 1.2** : `card_actions` complet
-2. **Phase 1.3** : Support `multiTarget`
-3. **Phase 2.2** et **2.3** : Intégration CardStandbyPlay et IA
+### Priorité HAUTE (pour déblocage gameplay)
+1. **Phase 1.2** : `card_actions` complet pour fonctions `action` des cartes
+2. **Phase 2.1** : Intégrer modules `cardEffect/` existants dans le nouveau système  
+3. **Phase 2.2** et **2.3** : Intégration CardStandbyPlay et IA avec nouveau système
+4. **Phase 4.4** : Tests de régression pour s'assurer que les cartes s'exécutent
 
-### Priorité MOYENNE (features avancées)
-1. **Phase 3** : Projectiles, localisation, sauvegarde
-2. **Phase 4.1-4.3** : Tests unitaires complets
-3. **Phase 5** : Documentation
+### Priorité MOYENNE (pour demo 4 mois)
+1. **Phase 1.3** : Support `multiTarget` complet
+2. **Phase 3** : Projectiles, localisation, sauvegarde
+3. **Phase 4.1-4.3** : Tests unitaires complets
+4. **Phase 5** : Documentation
+
+**URGENCE ABSOLUE** : Le module `applyEffect` manquant empêche TOUTE exécution d'effet de carte. C'est la cause racine des Problèmes #6 et #7.
 
 ---
 
@@ -288,7 +330,7 @@ return card_actions
 ## 🔗 Fichiers impactés (liste préliminaire)
 
 ### À créer :
-- `my-librairie/card-librairie/core/card_effects.lua`
+- `my-librairie/card-librairie/core/card_effects.lua` ⭐ **REMPLACE applyEffect manquant**
 - `my-librairie/card-librairie/core/card_actions.lua`
 - `test/card_effects_test.lua`
 - `test/card_actions_test.lua`
@@ -297,17 +339,27 @@ return card_actions
 - `localization/en.json`
 
 ### À modifier :
-- `my-librairie/card-librairie/cardStandbyPlay.lua`
-- `my-librairie/ai/controller.lua`
-- `my-librairie/card-librairie/card.lua`
-- `my-librairie/card-librairie/play/*.lua`
-- `ressources/cards_data_player.lua` (pour multiTarget)
+- `my-librairie/card-librairie/core/common.lua` ⚠️ **URGENT - ligne 289 import applyEffect manquant**
+- `my-librairie/card-librairie/play/play.lua` (intégrer nouveau système dans _tryPlay)
+- `my-librairie/card-librairie/cardStandbyPlay.lua` (support multiTarget)
+- `my-librairie/card-librairie/ui/card_target_selection.lua` (remplacer tryPlay)
+- `my-librairie/card-librairie/ui/interaction.lua` (remplacer tryPlay)
+- `my-librairie/ai/controller.lua` (utiliser nouveau système)
+- `my-librairie/card-librairie/core/generator.lua` (ajouter multiTarget flag)
+- `ressources/cards_data_player.lua` (pour multiTarget sur cartes AOE)
 - `my-librairie/core/globals.lua` (ajout modules)
 
+### À intégrer (existants) :
+- `my-librairie/card-librairie/cardEffect/attack.lua` → dans card_effects
+- `my-librairie/card-librairie/cardEffect/heal.lua` → dans card_effects  
+- `my-librairie/card-librairie/cardEffect/giveSheld.lua` → dans card_effects
+- `my-librairie/card-librairie/cardEffect/giveEpine.lua` → dans card_effects
+
 ### À analyser/audit :
-- Tous les fichiers avec `grep_search` pour trouver application d'effets existante
-- `my-librairie/card-librairie/` complet
-- `scene/gameplay/` pour intégration
+- Tous les fichiers avec `grep_search` pour `applyEffect|onPlay|tryPlay|_user\.actor\.state`
+- `my-librairie/card-librairie/` complet pour points d'application cachés
+- `scene/gameplay/` pour intégration runtime
+- Tests existants `test/test_cardstandbyplay.lua` pour validation
 
 ---
 
