@@ -363,4 +363,151 @@ return card_actions
 
 ---
 
-**Prochaine étape recommandée** : Commencer Phase 1.1 - Créer le module `card_effects` de base avec l'API principale.
+---
+
+## 📦 ANALYSE COMPLÈTE DES CARTES ET ASSETS REQUIS
+
+### 🎮 **Cartes Joueur Analysées** (cards_data_player.lua)
+
+| Carte | Effets utilisés | Assets visuels requis | Assets audio requis |
+|-------|----------------|----------------------|-------------------|
+| **A demain** | `chancePassedTour: 25%` | Sleep/Stun effect, Particle stars | Sleep.ogg, MagicCast.ogg |
+| **Coup puissant** | `attack: 12` | Impact slash, Blood splatter | SwordHit.ogg, MeleeImpact.ogg |
+| **Aide moi mon ami** | `shield: 4, shield: +4 (jumelle)` | Shield bubble, Shield particles | ShieldUp.ogg, MagicShield.ogg |
+| **Bouclier depines** | `shield: 8, Epine: 50` | Thorn shield, Spiky barrier | ThornShield.ogg, SpikeActivate.ogg |
+| **Griffure** | `attack: 8` | Claw marks, Small blood | ClawScratch.ogg, AnimalAttack.ogg |
+| **Ca va piquer** | Graveyard→Deck, Deck→Hand | Card recycling, Draw effect | CardShuffle.ogg, CardDraw.ogg |
+| **Toi et moi** | `heal: 10, free play (jumelle)` | Healing light, Heart particles | Heal.ogg, LoveSpell.ogg |
+| **Double frappe** | `attack: 5, AttackReduction: 25%` | Double hit, Weakness debuff | DoubleStrike.ogg, WeaknessDebuff.ogg |
+| **Deux soeurs** | `attack: 2, deck draw` | Twin connection, Card draw | TwinMagic.ogg, CardDraw.ogg |
+| **A** | `attack: 10, deck search` | Letter glow, Search effect | PowerStrike.ogg, CardSearch.ogg |
+
+### 🤖 **Cartes IA Analysées** (EnemySceneDemo.lua)
+
+| Ennemi | Carte | Effets | Assets projectiles requis | Assets impact requis |
+|--------|-------|--------|-------------------------|-------------------|
+| **Pouplpie** | j'ais d'encre | `caster.attack: 5` | Ink projectile (dark blob) | Ink splatter effect |
+| **Assasin Crue** | j'ais de couteau | `caster.attack: 5` | Knife projectile sprites | Knife impact, metallic sound |
+| **Spider** | Fil d'Ariane | `caster.attack: 5` | Web projectile animation | Web impact, entangle effect |
+| **Chevalier Noir** | Attaque Rapide | `caster.attack: 5` | Sword slash trail | Sword impact, sparks |
+
+### 🎨 **Assets existants détectés** :
+- `img/effect/Attaque-base/` : 8 frames (frame-0 à frame-7) ✅
+- `img/effect/heal/` : 5 frames (bonuss-heal-1 à bonuss-heal-5) ✅
+- `img/effect/shield/`, `img/effect/epine/`, `img/effect/degat/` ✅
+
+---
+
+## 📋 **LISTE COMPLÈTE DES ASSETS À CRÉER**
+
+### 🖼️ **Assets Visuels - Effets de cartes joueur**
+
+#### **Effets d'état et buffs/debuffs** :
+- [ ] **Sleep/Stun effect** : Animation particules dorées + "Zzz" (chancePassedTour)
+- [ ] **Shield bubble** : Bulle de protection bleue translucide (shield)
+- [ ] **Thorn shield** : Bouclier avec épines rouges qui brillent (Epine)
+- [ ] **Weakness debuff** : Aura rouge/grise autour de l'ennemi (AttackReduction)
+- [ ] **Healing light** : Rayons verts/dorés descendant du ciel (heal)
+- [ ] **Twin connection** : Effet magique reliant deux cartes (cartes jumelles)
+
+#### **Effets d'attaque et dégâts** :
+- [ ] **Impact slash** : Effet de tranchant pour attaques puissantes
+- [ ] **Claw marks** : Traces de griffes pour "Griffure"
+- [ ] **Double hit effect** : Animation double impact synchronisé
+- [ ] **Blood splatter** : Éclaboussures de sang pour dégâts critiques
+- [ ] **Letter glow** : Effet lumineux pour la carte "A"
+
+#### **Effets de manipulation cartes** :
+- [ ] **Card recycling** : Animation cartes voltigeant du cimetière au deck
+- [ ] **Card draw effect** : Effet magique de tirage de carte
+- [ ] **Card search** : Lueur dorée parcourant le deck
+
+### 🎯 **Assets Visuels - Projectiles IA**
+
+#### **Projectiles par ennemi** :
+- [ ] **Ink projectile** : Boule d'encre noire avec traînée (Pouplpie)
+  - Sprite : `ink_projectile.png` (32x32)
+  - Animation : 4 frames de rotation
+  - Traînée : Particules noires qui s'estompent
+
+- [ ] **Knife projectile** : Couteau tournoyant (Assasin Crue)
+  - Sprite : `knife_projectile.png` (24x48)  
+  - Animation : 8 frames de rotation
+  - Traînée : Éclat métallique
+
+- [ ] **Web projectile** : Toile d'araignée (Spider)
+  - Sprite : `web_projectile.png` (40x40)
+  - Animation : 6 frames d'expansion
+  - Traînée : Fils argentés
+
+- [ ] **Sword slash** : Lame d'énergie (Chevalier Noir)
+  - Sprite : `sword_slash.png` (48x16)
+  - Animation : 5 frames d'allongement
+  - Traînée : Lumière dorée
+
+#### **Effets d'impact projectiles** :
+- [ ] **Ink splatter** : Explosion d'encre (4 frames)
+- [ ] **Knife impact** : Étincelles métalliques + son métallique
+- [ ] **Web impact** : Toile qui s'étend + effet collant
+- [ ] **Sword impact** : Explosion d'énergie + étincelles
+
+### 🔊 **Assets Audio**
+
+#### **Effets de cartes joueur** :
+- [ ] **Sleep.ogg** : Son doux de sommeil/étourdissement
+- [ ] **SwordHit.ogg** : Impact d'épée métallique
+- [ ] **ShieldUp.ogg** : Activation de bouclier (whoosh + clang)
+- [ ] **ThornShield.ogg** : Crépitement d'épines
+- [ ] **ClawScratch.ogg** : Grattement de griffes
+- [ ] **Heal.ogg** : Son magique de guérison
+- [ ] **DoubleStrike.ogg** : Double impact rapide
+- [ ] **CardShuffle.ogg** : Brassage de cartes
+- [ ] **CardDraw.ogg** : Tirage de carte
+
+#### **Projectiles et impacts IA** :
+- [ ] **InkLaunch.ogg** : Lancement de projectile visqueux
+- [ ] **InkSplat.ogg** : Impact d'encre
+- [ ] **KnifeLaunch.ogg** : Sifflement de couteau
+- [ ] **KnifeHit.ogg** : Impact métallique
+- [ ] **WebLaunch.ogg** : Lancement de toile
+- [ ] **WebHit.ogg** : Impact collant
+- [ ] **SwordSlash.ogg** : Tranchant d'épée énergétique
+- [ ] **EnergyImpact.ogg** : Impact d'énergie
+
+### 🎭 **Effets AOE (pour multiTarget)**
+
+#### **Visuels AOE à créer** :
+- [ ] **Fire explosion** : Explosion de feu avec onde de choc
+- [ ] **Ice blast** : Explosion de glace avec cristaux
+- [ ] **Lightning storm** : Éclairs multiples frappant plusieurs cibles
+- [ ] **Poison cloud** : Nuage toxique s'étendant
+- [ ] **Healing wave** : Onde dorée de guérison de groupe
+
+#### **Audio AOE** :
+- [ ] **Explosion.ogg** : Explosion puissante
+- [ ] **IceShatter.ogg** : Fracas de glace
+- [ ] **Thunder.ogg** : Grondement de tonnerre
+- [ ] **PoisonHiss.ogg** : Sifflement toxique
+- [ ] **HealingWave.ogg** : Onde harmonique
+
+---
+
+## 📊 **Résumé par priorité**
+
+### **PRIORITÉ 1 - Effets de base** (pour démo fonctionnelle) :
+- Attaque de base (existant ✅)
+- Heal (existant ✅) 
+- Shield (existant ✅)
+- Projectiles IA simples (4 types)
+
+### **PRIORITÉ 2 - Effets avancés** (pour gameplay complet) :
+- Sleep/Stun, AttackReduction, Epine
+- Effets de cartes jumelles
+- Manipulation deck/hand/graveyard
+
+### **PRIORITÉ 3 - Polish et AOE** (pour démo finale) :
+- Effets AOE multiTarget
+- Animations avancées
+- Audio polish
+
+**Total estimé** : ~45 assets visuels + ~20 assets audio = **65 assets à créer**
