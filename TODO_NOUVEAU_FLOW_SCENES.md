@@ -1,0 +1,338 @@
+# 🎮 TODO NOUVEAU FLOW DES SCÈNES
+**Date de création**: 2 septembre 2025  
+**Objectif**: Implémentation complète du nouveau système de navigation  
+**Priorité**: PRINCIPALE - Refonte architecture jeu  
+**🎯 OBJECTIF DÉMO**: Un étage complet fonctionnel en 4 mois (décembre 2025)  
+
+## 📋 TÂCHES EN COURS DEPUIS HIER
+
+### 🔧 Problème #6 - Échec Exécution Effets Cartes IA ⚠️ **EN COURS**
+- [ ] **Investigation**: Système signatures d'appel IA controller
+- [ ] **Analyse**: Coordination `applyEffect` + `onPlay` functions
+- [ ] **Debug**: Pourquoi signatures ne correspondent pas
+- [ ] **Test**: Validation exécution effets cartes IA
+- [ ] **Cartes à corriger**: `j'ais d'encre`, `Attaque Rapide`, `Fil d'Ariane`, `j'ais de couteau`
+- [ ] **Impact**: Gameplay IA non fonctionnel - priorité haute
+- [ ] **Status**: Reporté d'hier - **À terminer aujourd'hui**
+
+---
+
+## 🚀 NOUVEAU FLOW DES SCÈNES - ARCHITECTURE COMPLÈTE
+
+### 🎯 PHASE 1 - Scènes de Base et Navigation
+
+#### 1.1 Scène Start & Logos ⭐ **NOUVEAU**
+- [ ] **Créer** `scene/start_studio/` - Logo studio initial
+- [ ] **Implémentation**: Transition automatique vers menu après 3-5s
+- [ ] **🎨 Assets**: 
+  - [ ] Logo studio (1920x1080) - format PNG/SVG
+  - [ ] Animation fade in/out
+  - [ ] Son de démarrage (optionnel)
+- [ ] **Transition**: Fade out → Menu principal
+- [ ] **Skip**: Possibilité d'appuyer sur une touche pour passer
+
+#### 1.2 Menu Principal Étendu ⭐ **NOUVEAU**
+- [ ] **Améliorer** `scene/menu/` existant
+- [ ] **🎨 Assets Menu**:
+  - [ ] Background menu principal (1920x1080)
+  - [ ] Boutons UI redesignés (Play, Options, Crédits, Quitter, Charger)
+  - [ ] Hover effects et animations boutons
+  - [ ] Logo du jeu principal
+  - [ ] Musique d'ambiance menu
+- [ ] **Nouveaux boutons**:
+  - [ ] 🎮 **Play** (nouveau jeu ou continuer)
+  - [ ] 💾 **Charger une partie** (save system)
+  - [ ] ⚙️ **Options** (paramètres jeu)
+  - [ ] 🏆 **Crédits** (équipe développement)
+  - [ ] ❌ **Quitter** (fermeture jeu)
+- [ ] **UI/UX**: Disposition claire et responsive
+- [ ] **Navigation**: Support clavier/manette + souris
+
+#### 1.3 Système de Sauvegarde JSON ⭐ **NOUVEAU**
+- [ ] **Créer** `my-librairie/save-system/`
+- [ ] **Architecture JSON**:
+  - [ ] `saveManager.lua` - Gestionnaire principal save/load
+  - [ ] `saveData.lua` - Structure données et validation
+  - [ ] `saveSerializer.lua` - Conversion Lua ↔ JSON
+- [ ] **Format JSON Structure**:
+  ```json
+  {
+    "version": "1.0",
+    "player": {
+      "name": "string",
+      "level": 1,
+      "experience": 0
+    },
+    "deck": {
+      "cards": ["carte_001", "carte_002"],
+      "upgrades": {}
+    },
+    "progression": {
+      "current_floor": 1,
+      "completed_floors": [1, 2],
+      "current_zone": "entrance",
+      "village_unlocks": []
+    },
+    "inventory": {
+      "items": {},
+      "currency": 0
+    },
+    "settings": {
+      "first_time": false,
+      "intro_seen": true
+    },
+    "timestamp": "2025-09-02T10:30:00Z"
+  }
+  ```
+- [ ] **Fonctionnalités JSON**:
+  - [ ] **Validation schéma**: Vérifier intégrité données chargées
+  - [ ] **Migration versions**: Compatibilité saves anciennes
+  - [ ] **Compression**: Optimisation taille fichiers
+  - [ ] **Backup automatique**: Copies de sécurité
+- [ ] **Fichiers sauvegarde**:
+  - [ ] `saves/slot1.json`, `saves/slot2.json`, `saves/slot3.json`
+  - [ ] `saves/autosave.json` - Sauvegarde automatique
+  - [ ] `saves/backup/` - Dossier copies sécurité
+- [ ] **API Save System**:
+  - [ ] `saveManager.save(slotId, data)` - Sauvegarder
+  - [ ] `saveManager.load(slotId)` - Charger
+  - [ ] `saveManager.exists(slotId)` - Vérifier existence
+  - [ ] `saveManager.delete(slotId)` - Supprimer save
+  - [ ] `saveManager.autoSave()` - Sauvegarde auto
+- [ ] **Interface utilisateur**:
+  - [ ] **Menu Load/Save**: Liste des saves avec preview
+  - [ ] **Informations slot**: Date, niveau, progression
+  - [ ] **Confirmation**: Dialogue avant écrasement
+  - [ ] **Gestion erreurs**: Messages d'erreur si corruption
+- [ ] **Intégration jeu**:
+  - [ ] **Points de sauvegarde**: Après chaque étage, au village
+  - [ ] **Auto-save**: Toutes les 5 minutes en jeu
+  - [ ] **Persistence**: État jeu restauré exactement
+  - [ ] **Recovery**: Récupération en cas de crash
+
+### 🎯 PHASE 2 - Scènes d'Introduction et Village
+
+#### 2.1 Scène d'Intro ⭐ **NOUVEAU**
+- [ ] **Créer** `scene/intro/`
+- [ ] **🎨 Assets Intro**:
+  - [ ] Images narration (5-8 images story)
+  - [ ] Textes story localisés (français)
+  - [ ] Musique dramatique introduction
+  - [ ] SFX transitions entre images
+  - [ ] Bouton skip stylisé
+- [ ] **Narration**: Histoire/contexte du jeu
+- [ ] **Cinématique**: Séquence d'introduction (texte + images)
+- [ ] **Skip**: Bouton pour les joueurs expérimentés
+- [ ] **Condition**: Affiché uniquement première partie
+- [ ] **Transition**: Vers village après intro
+
+#### 2.2 Scène Village - Hub Principal ⭐ **NOUVEAU**
+- [ ] **Créer** `scene/village/`
+- [ ] **🎨 Assets Village**:
+  - [ ] Background village principal (1920x1080)
+  - [ ] Château interactif avec zones cliquables
+  - [ ] Bâtiments village (boutique, maison, statistiques)
+  - [ ] Animations particules (fumée, oiseaux, vent)
+  - [ ] Musique ambiance village paisible
+  - [ ] SFX clicks et interactions
+  - [ ] UI overlay village responsive
+- [ ] **Background**: Vue d'ensemble du village
+- [ ] **Éléments interactifs**:
+  - [ ] 🏰 **Château** (accès donjons)
+  - [ ] 🏪 **Boutique** (future expansion)
+  - [ ] 🏠 **Maison joueur** (future expansion)
+  - [ ] 📊 **Statistiques** (progression)
+- [ ] **UI Village**: HUD spécialisé pour la navigation
+- [ ] **Micromanagement**: Base pour futures fonctionnalités
+
+### 🎯 PHASE 3 - Système Château et Donjons
+
+#### 3.1 Scène Préparation Château ⭐ **NOUVEAU**
+- [ ] **Créer** `scene/castle_preparation/`
+- [ ] **🎨 Assets Préparation**:
+  - [ ] Background salle préparation château
+  - [ ] Interface deck builder stylisée
+  - [ ] Cartes preview avec animations
+  - [ ] Liste étages avec difficultés visuelles
+  - [ ] Portraits ennemis par étage
+  - [ ] Musique tension pré-combat
+  - [ ] Boutons validation/retour stylisés
+- [ ] **Deck Builder**: Interface construction deck
+- [ ] **Sélection Étage**: Liste des étages disponibles
+- [ ] **Preview Étage**: Aperçu difficulté et récompenses
+- [ ] **Validation**: Deck minimum requis pour entrer
+- [ ] **Retour**: Possibilité retour village
+
+#### 3.2 Système Étages du Château ⭐ **NOUVEAU**
+- [ ] **Créer** `my-librairie/dungeon-system/`
+- [ ] **Structure étage**: Plan avec zones interconnectées
+- [ ] **Types de zones**:
+  - [ ] ⚔️ **Combat** (bataille tactique)
+  - [ ] 💤 **Repos** (récupération HP/cartes)
+  - [ ] 🎁 **Trésor** (récompenses)
+  - [ ] 🔮 **Événement** (choix narratifs)
+  - [ ] 🚪 **Boss** (fin d'étage)
+- [ ] **Navigation**: Choix multiple selon sorties zones
+- [ ] **Progression**: Sauvegarde position dans étage
+
+#### 3.3 Scène Plan d'Étage ⭐ **NOUVEAU**
+- [ ] **Créer** `scene/floor_map/`
+- [ ] **🎨 Assets Plan Étage**:
+  - [ ] Carte étage détaillée avec zones distinctes
+  - [ ] Icônes zones (combat, repos, trésor, boss, événement)
+  - [ ] Chemins et connexions entre zones
+  - [ ] Indicateur position joueur animé
+  - [ ] Zones visitées grisées/colorées différemment
+  - [ ] Overlay choix avec preview zone
+  - [ ] Musique exploration mystérieuse
+  - [ ] SFX clic zones et navigation
+- [ ] **Carte interactive**: Plan étage avec zones
+- [ ] **Position joueur**: Indicateur position actuelle
+- [ ] **Zones visitées**: Marquage zones explorées
+- [ ] **Sorties disponibles**: Highlight choix possibles
+- [ ] **Menu Échap**: Quitter étage → retour village
+- [ ] **Persistence**: Sauvegarde état exploration
+
+### 🎯 PHASE 4 - Mécaniques de Progression
+
+#### 4.1 Système de Progression ⭐ **NOUVEAU**
+- [ ] **Créer** `my-librairie/progression-system/`
+- [ ] **Étages terminés**: Marquage complétion
+- [ ] **Re-jouabilité**: Possibilité refaire étages
+- [ ] **Récompenses**: Cartes/items manqués récupérables
+- [ ] **Déblocage**: Nouveaux étages selon progression
+- [ ] **Statistiques**: Tracking performances joueur
+
+#### 4.2 Système d'Inventaire ⭐ **NOUVEAU**
+- [ ] **Items persistants**: Objets gardés entre runs
+- [ ] **Cartes collectées**: Collection permanente
+- [ ] **Upgrade system**: Amélioration équipement
+- [ ] **UI Inventaire**: Interface gestion objets
+
+### 🎯 PHASE 5 - Intégration et Polish
+
+#### 5.1 Transitions Entre Scènes ⭐ **NOUVEAU**
+- [ ] **Améliorer** `my-librairie/transitions/`
+- [ ] **Transitions spécialisées**:
+  - [ ] Village ↔ Château
+  - [ ] Plan étage ↔ Combat
+  - [ ] Étage ↔ Village (escape)
+- [ ] **Loading screens**: Pour les changements complexes
+- [ ] **Continuité**: Musique et ambiance
+
+#### 5.2 Système Audio ⭐ **NOUVEAU**
+- [ ] **🎵 Assets Audio Complets**:
+  - [ ] **Musiques** (format OGG/MP3):
+    - [ ] Thème menu principal (boucle 2-3min)
+    - [ ] Musique village paisible (boucle 4-5min)
+    - [ ] Tension pré-combat château (1-2min)
+    - [ ] Exploration étage mystérieuse (boucle 3-4min)
+    - [ ] Combat tactique énergique (boucle 2-3min)
+    - [ ] Victoire/défaite (stinger 10-20s)
+  - [ ] **SFX** (format WAV/OGG):
+    - [ ] Clicks UI et boutons
+    - [ ] Interactions village/château
+    - [ ] Navigation plan étage
+    - [ ] Cartes (tirage, jeu, effets)
+    - [ ] Feedback combat (dégâts, heal, shield)
+- [ ] **Musiques**: Thèmes par zone (village, château, combat)
+- [ ] **SFX**: Sons d'interface et d'actions
+- [ ] **Ambiance**: Sons d'atmosphère par scène
+
+#### 5.3 Tests et Validation ⭐ **NOUVEAU**
+- [ ] **Tests flow complet**: Start → Village → Château → Combat
+- [ ] **Tests sauvegarde**: Load/Save à tous les points
+- [ ] **Tests navigation**: Tous les chemins possibles
+- [ ] **Tests escape**: Retour village depuis tous les points
+- [ ] **Tests re-jouabilité**: Refaire étages terminés
+
+---
+
+## 📊 PLANNING ESTIMÉ - DÉMO 4 MOIS
+
+### **🎯 OBJECTIF RÉALISTE**: ✅ **FAISABLE EN 4 MOIS**
+
+**Scope Démo**: 1 étage complet + flow complet start→village→château→combat
+**Assets minimum**: Prototypes fonctionnels, polish final optionnel
+
+### **MOIS 1** (Septembre 2025) - Fondations
+- **Semaine 1** (2-8 sept): Problème #6 + Start/Menu + Save JSON
+- **Semaine 2** (9-15 sept): Village + Préparation château + Assets de base
+- **Semaine 3** (16-22 sept): Plan étage + Navigation + Assets cartes étage
+- **Semaine 4** (23-29 sept): Intégration systèmes + Tests alpha
+
+### **MOIS 2** (Octobre 2025) - Contenu et Assets
+- **Semaine 1** (30 sept-6 oct): **🎨 Sprint Assets** - Tous les visuels
+- **Semaine 2** (7-13 oct): **🎵 Sprint Audio** - Musiques et SFX
+- **Semaine 3** (14-20 oct): **⚔️ Contenu Étage 1** - 5 zones complètes
+- **Semaine 4** (21-27 oct): **🃏 Équilibrage** - Cartes et ennemis
+
+### **MOIS 3** (Novembre 2025) - Polish et Optimisation
+- **Semaine 1** (28 oct-3 nov): **🐛 Debug intensif** - Tous les bugs
+- **Semaine 2** (4-10 nov): **✨ Polish UI/UX** - Finitions interface
+- **Semaine 3** (11-17 nov): **🎮 Playtests** - Feedback et ajustements
+- **Semaine 4** (18-24 nov): **🔧 Optimisations** - Performance finale
+
+### **MOIS 4** (Décembre 2025) - Finalisation Démo
+- **Semaine 1** (25 nov-1 déc): **📦 Build démo** - Version stable
+- **Semaine 2** (2-8 déc): **🎥 Trailer/Screenshots** - Communication
+- **Semaine 3** (9-15 déc): **🚀 Release candidate** - Version finale
+- **Semaine 4** (16-22 déc): **🎉 DÉMO RELEASE** - Publication
+
+### **Semaine 1** (2-8 septembre)
+- ✅ Finir Problème #6 (cartes IA)
+- 🚀 Phase 1: Scènes de base (Start, Menu)
+- 💾 **Système JSON**: Architecture save complète
+
+### **Semaine 2** (9-15 septembre)  
+- 💾 **Finaliser Save System**: Tests et intégration
+- 🏘️ Phase 2: Intro + Village + **🎨 Assets village**
+- 🏰 Phase 3.1: Préparation château + **🎨 Assets château**
+
+### **Semaine 3** (16-22 septembre)
+- 🗺️ Phase 3.2-3.3: Système étages + plan + **🎨 Assets plan/zones**
+- 📈 Phase 4.1: Progression + **🎨 Assets UI progression**
+
+### **Semaine 4** (23-29 septembre)
+- 🎒 Phase 4.2: Inventaire + **🎨 Assets items/inventaire**
+- 🎨 Phase 5: Intégration + **🎵 Audio de base**
+
+---
+
+## 🎯 PRIORITÉS IMMÉDIATES (AUJOURD'HUI)
+
+1. **🔥 URGENT**: Terminer Problème #6 - Effets cartes IA
+2. **⭐ START**: Créer scène start_studio (logo)
+3. **📋 MENU**: Étendre menu principal (nouveaux boutons)
+4. **💾 JSON SAVE**: Commencer architecture système sauvegarde JSON
+5. **🗂️ STRUCTURE**: Créer dossiers `my-librairie/save-system/` et `saves/`
+6. **🎨 ASSETS START**: Préparer liste assets prioritaires pour semaine 1
+
+---
+
+## 📝 NOTES IMPORTANTES
+
+### Architecture SceneManager
+- Utiliser le système existant `my-librairie/sceneManager.lua`
+- Pattern push/pop pour overlays (ex: menu pause sur village)
+- Transitions fluides entre toutes les scènes
+
+### Compatibilité Existant
+- Garder scène gameplay actuelle comme base combat
+- Intégrer système cartes existant dans nouveau flow
+- Préserver système HUD centralisé
+
+### Données Persistantes JSON
+- Structure save JSON complète avec validation schéma
+- Séparation données temporaires (run) vs permanentes (progression)
+- Backup automatique et migration versions pour éviter perte progression
+- API unifiée save/load avec gestion erreurs robuste
+- Compression et optimisation pour performances
+
+---
+
+**Estimation Temps Total**: 4 mois pour démo complète  
+**Complexité**: HAUTE - Refonte complète navigation + assets  
+**Impact**: MAJEUR - Nouvelle expérience joueur complète  
+**Responsable**: Équipe développement complet  
+**🎯 FAISABILITÉ DÉMO 4 MOIS**: ✅ **RÉALISTE** avec planning structuré et assets progressifs
