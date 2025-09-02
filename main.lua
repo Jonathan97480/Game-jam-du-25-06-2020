@@ -5,11 +5,68 @@ if arg[#arg] == "vsc_debug" then require("lldebugger").start() end
 -- ***********Configuration de la Fenêtre de Jeu*************
 love.window.setTitle("Tactique Cards")
 
+-- ============================================================================
+-- EARLY LOADING SCREEN - Affichage immédiat pendant chargement des systèmes
+-- ============================================================================
+local loadingPhase = "systems" -- "systems", "ready", "done"
+local loadingStartTime = love.timer.getTime()
+local loadingFont = nil
+
+-- Fonction pour dessiner l'écran de chargement précoce
+local function drawEarlyLoading()
+  love.graphics.setColor(0.1, 0.1, 0.2, 1) -- Fond bleu foncé
+  love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+
+  love.graphics.setColor(1, 1, 1, 1) -- Texte blanc
+
+  -- Police par défaut si pas encore chargée
+  if not loadingFont then
+    loadingFont = love.graphics.newFont(24)
+  end
+  love.graphics.setFont(loadingFont)
+
+  local elapsed = love.timer.getTime() - loadingStartTime
+  local loadingText = "Chargement des systèmes..."
+  local dots = string.rep(".", math.floor(elapsed * 2) % 4)
+
+  if loadingPhase == "systems" then
+    loadingText = "Chargement des systèmes" .. dots
+  elseif loadingPhase == "ready" then
+    loadingText = "Initialisation" .. dots
+  end
+
+  local textWidth = loadingFont:getWidth(loadingText)
+  local x = (love.graphics.getWidth() - textWidth) / 2
+  local y = love.graphics.getHeight() / 2
+
+  love.graphics.print(loadingText, x, y)
+
+  -- Barre de progression simple
+  local barWidth = 300
+  local barHeight = 20
+  local barX = (love.graphics.getWidth() - barWidth) / 2
+  local barY = y + 50
+
+  love.graphics.setColor(0.3, 0.3, 0.3, 1) -- Fond barre
+  love.graphics.rectangle("fill", barX, barY, barWidth, barHeight)
+
+  love.graphics.setColor(0.2, 0.8, 0.2, 1)  -- Barre verte
+  local progress = math.min(1, elapsed / 3) -- Progression estimée sur 3 secondes
+  love.graphics.rectangle("fill", barX, barY, barWidth * progress, barHeight)
+
+  love.graphics.setColor(1, 1, 1, 1) -- Reset couleur
+end
+
 -- Chargement centralisé de toutes les globales AVANT tout require de scène
+loadingPhase = "systems"
 local globales = require("my-librairie.core.globals")
 
 -- Modules locaux (non-globaux) - chargés APRÈS les globales
 local scene_menu = require("scene.menu.menu")
+local scene_start_studio = require("scene.start_studio.start_studio")
+
+-- Systèmes chargés, passage en phase ready
+loadingPhase = "ready"
 
 -- Calcule la distance euclidienne entre deux points
 ---
@@ -50,13 +107,21 @@ function love.load()
   -- Log d'initialisation
   globalFunction.log.info("[main.lua] love.load() appelé - début initialisation")
 
-  -- Ajout de la scène menu au gestionnaire de scènes
-  globalFunction.log.info("[main.lua] Ajout de la scène menu")
-  scene:add(scene_menu) -- Utilisation de deux-points pour la méthode
+  -- Vider la pile de scènes pour partir proprement
+  globalFunction.log.info("[main.lua] Nettoyage pile de scènes")
+  scene:clear()
 
-  -- Chargement des scènes
-  globalFunction.log.info("[main.lua] Appel de scene:load()")
-  scene:load() -- Pas besoin de dt ici
+  -- ÉTAPE 1: D'abord initialiser le système de scènes
+  globalFunction.log.info("[main.lua] Initialisation du système de scènes")
+  scene:load() -- Initialise le système AVANT d'ajouter des scènes
+
+  -- ÉTAPE 2: Ajouter seulement le menu (pas start_studio ici)
+  globalFunction.log.info("[main.lua] Ajout de la scène menu")
+  scene:add(scene_menu) -- Menu sera ajouté par start_studio plus tard
+
+  -- ÉTAPE 3: Créer et pousser directement la scène start_studio
+  globalFunction.log.info("[main.lua] Push de la scène start_studio")
+  scene:push(scene_start_studio) -- Push au lieu de add+switch
 
   globalFunction.log.info("[main.lua] love.load() terminé")
 
@@ -66,6 +131,9 @@ function love.load()
       _G.hud.load()
     end
   end)
+
+  -- Chargement terminé, permettre l'affichage normal
+  loadingPhase = "done"
 end
 
 -- MISE À JOUR DU JEU À CHAQUE FRAME
@@ -75,6 +143,11 @@ end
 -- @param dt number Temps écoulé depuis la dernière frame (delta time)
 -- @return nil
 function love.update(dt)
+  -- Pendant le chargement, ne pas exécuter la logique normale
+  if loadingPhase ~= "done" then
+    return
+  end
+
   -- Stockage du delta time dans une globale pour accès facile
   _G.deltaTime = dt
   -- Mise à jour du ratio d'écran
@@ -107,6 +180,12 @@ end
 -- Gère le rendu des scènes, transitions, effets et HUD.
 -- @return nil
 function love.draw()
+  -- Pendant le chargement, afficher l'écran de chargement
+  if loadingPhase ~= "done" then
+    drawEarlyLoading()
+    return
+  end
+
   -- Sauvegarde de la matrice de transformation
   love.graphics.push()
   -- Application du ratio d'écran
