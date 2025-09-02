@@ -113,7 +113,8 @@
     },
     "settings": {
       "first_time": false,
-      "intro_seen": true
+      "intro_seen": true,
+      "language": "fr"
     },
     "timestamp": "2025-09-02T10:30:00Z"
   }
@@ -143,6 +144,82 @@
   - [ ] **Auto-save**: Toutes les 5 minutes en jeu
   - [ ] **Persistence**: État jeu restauré exactement
   - [ ] **Recovery**: Récupération en cas de crash
+
+#### 1.5 Système Multi-Langue JSON ⭐ **NOUVEAU**
+- [ ] **Créer** `my-librairie/localization-system/`
+- [ ] **Architecture Localisation**:
+  - [ ] `localizationManager.lua` - Gestionnaire principal langues
+  - [ ] `textLoader.lua` - Chargeur fichiers JSON langues
+  - [ ] `textFormatter.lua` - Formatage textes avec variables
+- [ ] **Fichiers Langues JSON**:
+  - [ ] `localization/fr.json` - Français (défaut)
+  - [ ] `localization/en.json` - Anglais
+  - [ ] Structure extensible pour futures langues
+- [ ] **Structure JSON Localisation**:
+  ```json
+  {
+    "meta": {
+      "language": "fr",
+      "version": "1.0",
+      "name": "Français"
+    },
+    "ui": {
+      "menu": {
+        "play": "Jouer",
+        "load": "Charger",
+        "options": "Options", 
+        "credits": "Crédits",
+        "quit": "Quitter"
+      },
+      "gameplay": {
+        "end_turn": "Fin de Tour",
+        "health": "Vie",
+        "energy": "Énergie"
+      }
+    },
+    "cards": {
+      "names": {
+        "carte_001": "Attaque Rapide",
+        "carte_002": "Boule de Feu"
+      },
+      "descriptions": {
+        "carte_001": "Inflige {damage} dégâts à l'ennemi ciblé",
+        "carte_002": "Inflige {damage} dégâts à tous les ennemis"
+      }
+    },
+    "story": {
+      "intro": {
+        "title": "Le Château Maudit",
+        "text1": "Il était une fois...",
+        "text2": "Un héros courageux..."
+      }
+    },
+    "errors": {
+      "save_failed": "Échec de la sauvegarde",
+      "load_failed": "Échec du chargement"
+    }
+  }
+  ```
+- [ ] **API Localisation**:
+  - [ ] `t(key, variables)` - Fonction globale traduction
+  - [ ] `setLanguage(lang)` - Changer langue runtime
+  - [ ] `getAvailableLanguages()` - Liste langues disponibles
+  - [ ] `formatText(text, vars)` - Formatage avec variables
+- [ ] **Intégration Interface**:
+  - [ ] **Menu Options**: Sélecteur langue FR/EN
+  - [ ] **Application immédiate**: Changement sans redémarrage
+  - [ ] **Persistance**: Langue sauvée dans settings
+  - [ ] **Fallback**: Français si traduction manquante
+- [ ] **Gestion Cartes Localisées**:
+  - [ ] **Noms cartes**: Traduction automatique via ID
+  - [ ] **Descriptions**: Support variables {damage}, {target}
+  - [ ] **Générateur cartes**: Intégration système localisation
+  - [ ] **Preview**: Affichage langue sélectionnée
+- [ ] **Assets Textuels**:
+  - [ ] **Polices**: Support caractères spéciaux (accents)
+  - [ ] **Textures UI**: Boutons avec texte localisé
+  - [ ] **Longueurs variables**: Adaptation UI selon langue
+  - [ ] **Test complet**: Validation toutes chaînes traduites
 
 ### 🎯 PHASE 2 - Scènes d'Introduction et Village
 
@@ -290,10 +367,10 @@
 **Assets minimum**: Prototypes fonctionnels, polish final optionnel
 
 ### **MOIS 1** (Septembre 2025) - Fondations
-- **Semaine 1** (2-8 sept): Problème #6 + Start/Menu + Save JSON
-- **Semaine 2** (9-15 sept): Village + Préparation château + Assets de base
-- **Semaine 3** (16-22 sept): Plan étage + Navigation + Assets cartes étage
-- **Semaine 4** (23-29 sept): Intégration systèmes + Tests alpha
+- **Semaine 1** (2-8 sept): Problème #6 + #7 + Start/Menu + Save JSON + **Localisation FR/EN**
+- **Semaine 2** (9-15 sept): Village + Préparation château + Assets de base + **Intégration multi-langue**
+- **Semaine 3** (16-22 sept): Plan étage + Navigation + Assets cartes étage + **Tests localisation**
+- **Semaine 4** (23-29 sept): Intégration systèmes + Tests alpha + **Validation langues complète**
 
 ### **MOIS 2** (Octobre 2025) - Contenu et Assets
 - **Semaine 1** (30 sept-6 oct): **🎨 Sprint Assets** - Tous les visuels
@@ -317,9 +394,11 @@
 - ✅ Finir Problème #6 (cartes IA)
 - 🚀 Phase 1: Scènes de base (Start, Menu)
 - 💾 **Système JSON**: Architecture save complète
+- 🌍 **Localisation**: Architecture multi-langue FR/EN JSON
 
 ### **Semaine 2** (9-15 septembre)  
 - 💾 **Finaliser Save System**: Tests et intégration
+- 🌍 **Intégration Localisation**: Menu + UI + Cartes
 - 🏘️ Phase 2: Intro + Village + **🎨 Assets village**
 - 🏰 Phase 3.1: Préparation château + **🎨 Assets château**
 
@@ -339,10 +418,11 @@
 2. **🏷️ TAGS**: Implémenter système tags `multiTarget` dans générateur
 3. **⚔️ AUTO-PLAY**: Modifier CardStandbyPlay pour cartes multi-cibles
 4. **🎨 ASSETS EFFETS**: Créer nouveaux effets visuels étendus
-5. **⭐ START**: Créer scène start_studio (logo) 
-6. **📋 MENU**: Étendre menu principal (nouveaux boutons)
-7. **💾 JSON SAVE**: Commencer architecture système sauvegarde JSON
-8. **🗂️ STRUCTURE**: Créer dossiers `my-librairie/save-system/` et `saves/`
+5. **🌍 LOCALISATION**: Créer système multi-langue FR/EN JSON
+6. **⭐ START**: Créer scène start_studio (logo) 
+7. **📋 MENU**: Étendre menu principal (nouveaux boutons + sélecteur langue)
+8. **💾 JSON SAVE**: Commencer architecture système sauvegarde JSON
+9. **🗂️ STRUCTURE**: Créer dossiers `my-librairie/save-system/`, `my-librairie/localization-system/`, `saves/`, `localization/`
 
 ---
 
@@ -360,19 +440,39 @@
 
 #### **Structure générateur cartes étendue** :
 ```lua
--- Exemple structure carte avec tag multiTarget
+-- Exemple structure carte avec tag multiTarget + localisation
 {
-  name = "Boule de Feu",
+  id = "carte_fireball",
+  name_key = "cards.names.carte_fireball",  -- Clé localisation
   effect = "damage",
   power = 25,
   multiTarget = true,  -- NOUVEAU TAG
-  description = "Inflige 25 dégâts à TOUS les ennemis"
+  description_key = "cards.descriptions.carte_fireball",  -- Clé localisation
+  variables = { damage = 25 }  -- Variables pour formatage
 }
 
--- Logique auto-détection
+-- Logique auto-détection + localisation
 if card.multiTarget == nil then
   card.multiTarget = false  -- Défaut
 end
+
+-- Récupération texte localisé
+local name = t(card.name_key)
+local description = t(card.description_key, card.variables)
+```
+
+#### **API Localisation Exemples** :
+```lua
+-- Utilisation basique
+local playText = t("ui.menu.play")  -- "Jouer" ou "Play"
+
+-- Avec variables
+local damageText = t("cards.descriptions.fireball", {damage = 25})
+-- FR: "Inflige 25 dégâts à tous les ennemis"
+-- EN: "Deals 25 damage to all enemies"
+
+-- Changement langue
+setLanguage("en")  -- Passage anglais immédiat
 ```
 
 ### Données Persistantes JSON
