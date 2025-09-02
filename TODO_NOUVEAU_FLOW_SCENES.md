@@ -15,13 +15,47 @@
 - [ ] **Impact**: Gameplay IA non fonctionnel - priorité haute
 - [ ] **Status**: Reporté d'hier - **À terminer aujourd'hui**
 
+### 🆕 Problème #7 - Effets Cartes Joueur Non Appliqués ⚠️ **NOUVEAU**
+- [ ] **Problème**: Cartes joueur validées mais effets/dégâts non appliqués
+- [ ] **Symptôme**: Animation carte OK mais pas d'impact sur ennemi
+- [ ] **Impact**: Gameplay joueur cassé - combat non fonctionnel
+- [ ] **Root cause**: Système `applyEffect` défaillant global
+- [ ] **Urgence**: 🔥 **CRITIQUE** - Jeu non jouable
+- [ ] **Next**: Investigation parallèle avec Problème #6
+- [ ] **Status**: 🆕 **DÉTECTÉ** - Investigation immédiate requise
+
 ---
 
 ## 🚀 NOUVEAU FLOW DES SCÈNES - ARCHITECTURE COMPLÈTE
 
 ### 🎯 PHASE 1 - Scènes de Base et Navigation
 
-#### 1.1 Scène Start & Logos ⭐ **NOUVEAU**
+#### 1.1 Système Effets Cartes - Refonte Complète ⭐ **PRIORITÉ URGENTE**
+- [ ] **🔧 Fix Core Effects System**:
+  - [ ] Investigation système `applyEffect` global
+  - [ ] Correction exécution effets joueur ET IA
+  - [ ] Validation damage/heal/shield appliqués
+  - [ ] Tests complets toutes cartes existantes
+- [ ] **🎨 Nouveaux Assets Effets**:
+  - [ ] Effets visuels dégâts étendus (slash, pierce, magic)
+  - [ ] Effets heal améliorés (particles, glow)
+  - [ ] Effets shield renforcés (barriers, absorption)
+  - [ ] Effets debuff/buff (poison, strength, weakness)
+  - [ ] Effets multi-cible (AOE circles, chain lightning)
+  - [ ] Animations impact synchronisées avec dégâts
+- [ ] **🏷️ Système Tags Cartes**:
+  - [ ] Tag `multiTarget` dans générateur cartes
+  - [ ] Logique auto-détection cartes multi-cibles
+  - [ ] Valeur par défaut `multiTarget = false`
+  - [ ] Override manuel `multiTarget = true` si spécifié
+- [ ] **⚔️ Auto-Play Multi-Cibles**:
+  - [ ] Modification `CardStandbyPlay` pour auto-play
+  - [ ] Détection tag `multiTarget` avant ciblage
+  - [ ] Bypass sélection cible si multi-target
+  - [ ] Application effets à tous ennemis vivants
+  - [ ] Animation simultanée tous targets
+
+#### 1.2 Scène Start & Logos ⭐ **NOUVEAU**
 - [ ] **Créer** `scene/start_studio/` - Logo studio initial
 - [ ] **Implémentation**: Transition automatique vers menu après 3-5s
 - [ ] **🎨 Assets**: 
@@ -31,7 +65,7 @@
 - [ ] **Transition**: Fade out → Menu principal
 - [ ] **Skip**: Possibilité d'appuyer sur une touche pour passer
 
-#### 1.2 Menu Principal Étendu ⭐ **NOUVEAU**
+#### 1.3 Menu Principal Étendu ⭐ **NOUVEAU**
 - [ ] **Améliorer** `scene/menu/` existant
 - [ ] **🎨 Assets Menu**:
   - [ ] Background menu principal (1920x1080)
@@ -48,7 +82,7 @@
 - [ ] **UI/UX**: Disposition claire et responsive
 - [ ] **Navigation**: Support clavier/manette + souris
 
-#### 1.3 Système de Sauvegarde JSON ⭐ **NOUVEAU**
+#### 1.4 Système de Sauvegarde JSON ⭐ **NOUVEAU**
 - [ ] **Créer** `my-librairie/save-system/`
 - [ ] **Architecture JSON**:
   - [ ] `saveManager.lua` - Gestionnaire principal save/load
@@ -301,12 +335,14 @@
 
 ## 🎯 PRIORITÉS IMMÉDIATES (AUJOURD'HUI)
 
-1. **🔥 URGENT**: Terminer Problème #6 - Effets cartes IA
-2. **⭐ START**: Créer scène start_studio (logo)
-3. **📋 MENU**: Étendre menu principal (nouveaux boutons)
-4. **💾 JSON SAVE**: Commencer architecture système sauvegarde JSON
-5. **🗂️ STRUCTURE**: Créer dossiers `my-librairie/save-system/` et `saves/`
-6. **🎨 ASSETS START**: Préparer liste assets prioritaires pour semaine 1
+1. **🔥 URGENT**: Terminer Problème #6 ET #7 - Système effets cartes complet
+2. **🏷️ TAGS**: Implémenter système tags `multiTarget` dans générateur
+3. **⚔️ AUTO-PLAY**: Modifier CardStandbyPlay pour cartes multi-cibles
+4. **🎨 ASSETS EFFETS**: Créer nouveaux effets visuels étendus
+5. **⭐ START**: Créer scène start_studio (logo) 
+6. **📋 MENU**: Étendre menu principal (nouveaux boutons)
+7. **💾 JSON SAVE**: Commencer architecture système sauvegarde JSON
+8. **🗂️ STRUCTURE**: Créer dossiers `my-librairie/save-system/` et `saves/`
 
 ---
 
@@ -322,7 +358,29 @@
 - Intégrer système cartes existant dans nouveau flow
 - Préserver système HUD centralisé
 
+#### **Structure générateur cartes étendue** :
+```lua
+-- Exemple structure carte avec tag multiTarget
+{
+  name = "Boule de Feu",
+  effect = "damage",
+  power = 25,
+  multiTarget = true,  -- NOUVEAU TAG
+  description = "Inflige 25 dégâts à TOUS les ennemis"
+}
+
+-- Logique auto-détection
+if card.multiTarget == nil then
+  card.multiTarget = false  -- Défaut
+end
+```
+
 ### Données Persistantes JSON
+- Structure save JSON complète avec validation schéma
+- Séparation données temporaires (run) vs permanentes (progression)
+- Backup automatique et migration versions pour éviter perte progression
+- API unifiée save/load avec gestion erreurs robuste
+- Compression et optimisation pour performances
 - Structure save JSON complète avec validation schéma
 - Séparation données temporaires (run) vs permanentes (progression)
 - Backup automatique et migration versions pour éviter perte progression
