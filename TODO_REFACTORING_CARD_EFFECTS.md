@@ -297,44 +297,294 @@ return card_actions
 - **Temps total** : ~1 jour (développement ultra-efficace)
 ---
 
-## 🌟 Phase 3 & 4 : Fonctionnalités avancées (FUTURES)
+## 🚀 Phase 3 : Fonctionnalités avancées et expérience utilisateur (EN ATTENTE)
 
-> **✅ ÉTAT** : Infrastructure prête pour extensions futures
+**Objectif** : Améliorer l'expérience de jeu avec des fonctionnalités avancées et du polish  
+**Priorité** : Optionnelle - Selon besoins du projet  
+**Dépendances** : Phases 1 & 2 complètes ✅
 
-Les phases suivantes sont maintenant des **améliorations optionnelles** qui peuvent être développées selon les besoins :
+### 3.1 🎨 Système de projectiles et effets visuels avancés
+**État** : 🟡 Planifié
 
-### 3.1 🎨 Système de projectiles avancé
-**Potentiel** : Animations, trajectoires, collisions pour effets visuels
+**Objectifs** :
+- [ ] Système de projectiles avec trajectoires réalistes
+- [ ] Effets de collision et particules avancés  
+- [ ] Animations fluides pour cartes AOE
+- [ ] Effets visuels synchronisés avec audio
+- [ ] Système de shaders pour effets spéciaux
 
-### 3.2 🌍 Localisation multi-langue  
-**Potentiel** : Support FR/EN avec variables dynamiques
+**API cible** :
+```lua
+-- Projectiles avancés
+card_actions.createProjectile({
+    type = "fireball",
+    from = {x = 100, y = 200},
+    to = {x = 400, y = 300},
+    speed = 500,
+    trail = true,
+    onHit = function(target) end
+})
 
-### 3.3 💾 Système de sauvegarde JSON
-**Potentiel** : Persistance des effets temporels et états
+-- Effets de zone avec particules
+card_actions.createAreaEffect({
+    center = {x = 400, y = 300},
+    radius = 150,
+    effect = "lightning_storm",
+    duration = 2.0,
+    particles = 50
+})
+```
 
-### 4.1 🧪 Tests avancés
-**État actuel** : ✅ Tests de base validés, infrastructure extensible
+### 3.2 🎵 Système audio intégré
+**État** : 🟡 Planifié
+
+**Objectifs** :
+- [ ] Mapping audio automatique depuis `effect_assets.json`
+- [ ] Système de volume et mixage par catégorie
+- [ ] Audio spatialisé pour effets de cartes
+- [ ] Feedback audio pour interactions UI
+- [ ] Musiques adaptatives selon situation de combat
+
+**API cible** :
+```lua
+-- Audio automatique depuis assets
+card_effects.playEffectAudio(card, "cast") -- Auto-mapping
+audio.setVolumeCategory("effects", 0.8)
+audio.spatialSound("explosion", x, y, radius)
+```
+
+### 3.3 🌍 Localisation et accessibilité
+**État** : 🟡 Planifié
+
+**Objectifs** :
+- [ ] Support multi-langue (FR/EN minimum)
+- [ ] Variables dynamiques dans descriptions cartes
+- [ ] Système de tooltips contextuels
+- [ ] Support daltonisme (couleurs alternatives)
+- [ ] Raccourcis clavier avancés
+
+**API cible** :
+```lua
+-- Localisation dynamique
+local desc = i18n.translate("card.attack.description", {damage = card.Effect.target.attack})
+-- "Inflige {damage} points de dégâts" / "Deals {damage} damage"
+```
+
+### 3.4 💾 Système de persistance et sauvegarde  
+**État** : 🟡 Planifié
+
+**Objectifs** :
+- [ ] Sauvegarde états de combat complexes
+- [ ] Persistance effets temporels multi-tours
+- [ ] Système d'achievements/succès
+- [ ] Historique des parties jouées
+- [ ] Export/import configurations cartes
+
+**API cible** :
+```lua
+-- Sauvegarde états complexes
+saveData.saveGameState({
+    hero = Hero.actor.state,
+    effects = temporalEffects.getActive(),
+    turnHistory = combat.getTurnHistory()
+})
+```
+
+### 3.5 🔧 Optimisations performance avancées
+**État** : 🟡 Planifié
+
+**Objectifs** :
+- [ ] Pooling objets pour effets visuels
+- [ ] Cache intelligent pour calculs cartes
+- [ ] Optimisation boucles multi-target
+- [ ] Profiling et métriques performance
+- [ ] Mode de compatibilité matériel faible
+
+**Métriques cibles** :
+- 60 FPS stable même avec 10+ cartes AOE simultanées
+- Temps de chargement < 2 secondes
+- Mémoire utilisée < 100MB
 
 ---
 
-## 🎯 RECOMMANDATIONS ACTUELLES
+## 🛠️ Phase 4 : Outils de développement et extensibilité (FUTUR)
 
-### 🥇 **PRIORITÉ 1 : Développer nouvelles cartes**
-Le système est **prêt pour la production** ! Profitez de l'infrastructure robuste pour créer :
-- 🔥 Cartes AOE spectaculaires avec `multiTarget = true`
-- ⚡ Cartes de combo complexes avec `card_actions`
-- 🛡️ Cartes défensives avec effets temporels
-- 🎮 Mécaniques innovantes avec `onPlay` personnalisés
+**Objectif** : Faciliter la création de contenu et la maintenance  
+**Priorité** : Optionnelle - Pour développement à long terme
 
-### 🥈 **PRIORITÉ 2 : Améliorer l'expérience**
-- Polir effets visuels existants
-- Ajouter sons et animations
-- Optimiser interface utilisateur
+### 4.1 🎮 Éditeur de cartes intégré
+**État** : 🔵 Conceptuel
 
-### 🥉 **PRIORITÉ 3 : Phase 2 optionnelle**
-- Optimisations de performance
-- Nettoyage code legacy
-- Tests de régression approfondis
+**Objectifs** :
+- [ ] Interface graphique pour créer cartes
+- [ ] Prévisualisation effets en temps réel
+- [ ] Validation automatique équilibrage
+- [ ] Export vers format jeu
+- [ ] Système de templates cartes
+
+### 4.2 🧪 Framework de tests étendu
+**État** : 🔵 Conceptuel
+
+**Objectifs** :
+- [ ] Tests d'intégration automatisés
+- [ ] Simulation parties complètes
+- [ ] Tests de performance/stress
+- [ ] Validation équilibrage automatique
+- [ ] Couverture de code complète
+
+### 4.3 � Outils d'analyse et métriques
+**État** : 🔵 Conceptuel
+
+**Objectifs** :
+- [ ] Collecte métriques gameplay
+- [ ] Analyse équilibrage cartes
+- [ ] Détection bugs automatique
+- [ ] Dashboards performance
+- [ ] A/B testing mécaniques
+
+---
+
+## 📋 PHASE 3 - PLANIFICATION DÉTAILLÉE
+
+### 🎯 Critères de démarrage Phase 3
+**Prérequis** :
+- [x] ✅ Phases 1 & 2 complètement terminées
+- [x] ✅ Système de base stable en production
+- [x] ✅ Tests complets validés
+- [ ] Décision projet : priorités UI/UX vs nouvelles mécaniques
+- [ ] Ressources disponibles : assets visuels/audio
+- [ ] Timeline projet : au moins 2-3 jours disponibles
+
+### 📊 Estimation Phase 3
+**Temps estimé** : 3-5 jours (selon scope)
+**Complexité** : Moyenne à élevée
+**Impact** : Polish et expérience utilisateur améliorée
+**Risques** : Assets manquants, complexité audio/visuel
+
+### 🎬 Phase 3.1 - Quick Start (1 jour)
+**Objectif** : Améliorations rapides avec impact visible
+
+**Tâches prioritaires** :
+- [ ] Améliorer animations cartes existantes (utiliser assets disponibles)
+- [ ] Ajouter feedback audio basique (utiliser assets `img/effect/`)
+- [ ] Optimiser transitions standby → play
+- [ ] Tooltips cartes avec descriptions détaillées
+- [ ] Raccourcis clavier (E = fin tour, Space = confirmer)
+
+**Livrable** : Version polish avec UX améliorée
+
+---
+
+## 🎯 RECOMMANDATIONS ACTUELLES - MISE À JOUR
+
+### 🥇 **PRIORITÉ 1 : Exploiter le système complet (IMMÉDIAT)**
+Le système est **entièrement opérationnel** avec Phases 1 & 2 terminées ! 
+- 🎮 **Créer nouvelles cartes** avec mécaniques complexes et système énergétique
+- 🔥 **Utiliser cartes AOE** avec `multiTarget = true` 
+- ⚡ **Développer combos** avec `card_actions` (manipulation deck/hand)
+- 🛡️ **Cartes défensives** avec effets temporels et coûts variables
+- 💎 **Mécaniques innovantes** avec actions `onPlay` personnalisées
+
+### 🥈 **PRIORITÉ 2 : Phase 3 - Polish et expérience (OPTIONNEL)**
+Selon les priorités projet :
+- 🎨 **Phase 3.1 Quick Start** : Améliorer UX avec assets existants (1 jour)
+- 🎵 **Système audio** : Feedback sonore pour actions cartes
+- 🌟 **Effets visuels** : Animations projectiles et particules
+- 🌍 **Accessibilité** : Tooltips, raccourcis, localisation
+
+### 🥉 **PRIORITÉ 3 : Phase 4 - Outils développement (FUTUR)**
+Pour projets à long terme :
+- 🛠️ **Éditeur cartes** : Interface graphique création
+- 📊 **Métriques gameplay** : Analyse équilibrage
+- 🧪 **Tests avancés** : Automation et performance
+
+---
+
+## 🎮 GUIDE DE DÉMARRAGE PHASE 3
+
+### ✅ **Prêt à commencer** si :
+- [x] Phases 1 & 2 validées (système énergétique fonctionnel)
+- [x] Infrastructure stable (0 crash en production)
+- [x] Tests complets (12/12 réussis)
+- [ ] **Décision projet** : priorité sur expérience utilisateur
+- [ ] **Ressources** : temps disponible (3+ jours) + assets visuels/audio
+- [ ] **Objectif clair** : quel aspect améliorer en premier
+
+### 🚀 **Quick Start Phase 3.1** (Recommandé - 1 jour)
+Si vous voulez un impact immédiat :
+
+**Matin** : Améliorations visuelles
+- Utiliser assets `img/effect/` existants pour animations cartes
+- Améliorer transitions standby → confirmation → jeu
+- Ajouter feedback visuel coût énergie (couleur rouge si insuffisant)
+
+**Après-midi** : Améliorations UX  
+- Tooltips descriptions cartes détaillées
+- Raccourcis clavier intuitifs (E=fin tour, Space=confirmer)
+- Messages informatifs système énergie ("Énergie insuffisante", "Carte jouée")
+
+**Soir** : Polish
+- Optimiser responsiveness interface
+- Tester expérience globale
+- Documentation changements
+
+**Livrable jour 1** : Version avec UX nettement améliorée prête pour démonstration
+
+---
+
+## 📋 TEMPLATES PHASE 3
+
+### 🎨 Template amélioration visuelle
+```lua
+-- Exemple animation carte améliorée
+local cardAnimation = {
+    onStandby = function(card)
+        -- Animation mise en évidence
+        card.scale = 1.1
+        card.glow = true
+    end,
+    onConfirm = function(card)
+        -- Animation de confirmation
+        playEffect("card_confirm", card.x, card.y)
+        audio.play("card_play.ogg")
+    end
+}
+```
+
+### 🎵 Template système audio
+```lua
+-- Exemple feedback audio automatique
+local audioSystem = {
+    playCardEffect = function(card)
+        local soundFile = effect_assets.audio[card.name] or "default_card.ogg"
+        audio.play(soundFile, {volume = 0.8, category = "effects"})
+    end,
+    playEnergyFeedback = function(sufficient)
+        local sound = sufficient and "energy_ok.ogg" or "energy_fail.ogg"
+        audio.play(sound, {volume = 0.6})
+    end
+}
+```
+
+### 🌟 Template tooltips
+```lua
+-- Exemple tooltip dynamique
+local tooltipSystem = {
+    generateCardTooltip = function(card)
+        local cost = card.PowerBlow or card.cost or 0
+        local desc = string.format("%s\nCoût: %d énergie", 
+            card.description or "Carte sans description", cost)
+        
+        if card.multiTarget then
+            desc = desc .. "\n🎯 Affecte tous les ennemis"
+        end
+        
+        return desc
+    end
+}
+```
+
+---
 
 **Checklist 4.1** :
 - [ ] Test `applyNumericEffects` (heal, shield, attack)
