@@ -153,11 +153,54 @@ menu.button = {
         end
     },
 
+    multilingual = {
+        texte = 'Multilingual Demo',
+        width = 320,
+        height = 60,
+        vector2 = { x = 60, y = screen.gameReso.height / 2 + (3 * 80) },
+        color = {
+            curent = { 1, 1, 1 },
+            hover  = { 0, 1, 0 },
+            normal = { 1, 1, 1 },
+            click  = { 1, 0, 0 },
+        },
+        action = function(_)
+            _log("[menu] Multilingual Demo cliqué → switch vers example_multilingual")
+
+            if not scene then
+                _log("[menu] ERREUR: scene global n'est pas disponible")
+                return
+            end
+
+            -- Chargement de la scène de démonstration multilingue
+            local ok, result = pcall(function()
+                return scene:switch("scene.example_multilingual")
+            end)
+
+            if not ok then
+                -- Essayer avec le chemin alternatif
+                local ok2, result2 = pcall(function()
+                    return scene:switch("scene/example_multilingual")
+                end)
+
+                if not ok2 then
+                    _log("[menu] ERREUR: Impossible de charger la scène multilingue")
+                    _log("[menu] Erreur 1: " .. tostring(result))
+                    _log("[menu] Erreur 2: " .. tostring(result2))
+                else
+                    _log("[menu] Scène multilingue chargée avec succès (chemin 2)")
+                end
+            else
+                _log("[menu] Scène multilingue chargée avec succès (chemin 1)")
+            end
+        end
+    },
+
     quit = {
         texte = 'Quit',
         width = 180,
         height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (3 * 80) },
+        vector2 = { x = 60, y = screen.gameReso.height / 2 + (4 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },

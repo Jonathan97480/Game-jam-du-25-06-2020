@@ -78,6 +78,52 @@ package.loaded["my-librairie/card-librairie/ui/card_target_selection"] = nil
 local okCTS, cardTargetSelection = pcall(require, "my-librairie/card-librairie/ui/card_target_selection")
 _G.CardTargetSelection = okCTS and cardTargetSelection or nil
 
+--[[ =====================================================================
+Système de Localisation Multi-Langue
+===================================================================== ]]
+
+-- LocalizationManager (système principal)
+local okLoc, localizationManager = pcall(require, "my-librairie/localization-system/localizationManager")
+_G.localizationManager = okLoc and localizationManager or nil
+
+-- TextFormatter (formatage avec variables)
+local okFormatter, textFormatter = pcall(require, "my-librairie/localization-system/textFormatter")
+_G.textFormatter = okFormatter and textFormatter or nil
+
+-- TextLoader (chargement JSON)
+local okLoader, textLoader = pcall(require, "my-librairie/localization-system/textLoader")
+_G.textLoader = okLoader and textLoader or nil
+
+-- Initialiser le système de localisation
+local translateFunction
+if _G.localizationManager then
+    local initSuccess = _G.localizationManager.initialize()
+    if initSuccess then
+        print("[globals] ✅ LocalizationManager initialisé avec succès")
+
+        -- Définir fonction de traduction avec LocalizationManager
+        translateFunction = function(key, variables)
+            return _G.localizationManager.t(key, variables)
+        end
+    else
+        print("[globals] ❌ Échec initialisation LocalizationManager")
+        -- Fallback si initialisation échoue
+        translateFunction = function(key, variables)
+            return "[LOCALIZATION_INIT_FAILED:" .. (key or "nil") .. "]"
+        end
+    end
+else
+    print("[globals] ⚠️ LocalizationManager non disponible")
+
+    -- Fallback si système de localisation non disponible
+    translateFunction = function(key, variables)
+        return "[LOCALIZATION_UNAVAILABLE:" .. (key or "nil") .. "]"
+    end
+end
+
+-- Assigner la fonction globale t()
+_G.t = translateFunction
+
 
 
 --[[ =====================================================================
@@ -176,6 +222,8 @@ function globals.list()
         "inputManager", "actorManager", "globalFunction",
         -- Actor scripts
         "Hero", "Enemies",
+        -- Localization system
+        "localizationManager", "textFormatter", "textLoader", "t",
         -- Configuration
         "GameFlags", "HUD_BOTTOM_BG_PATH"
     }
