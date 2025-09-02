@@ -89,6 +89,12 @@ function card_effects.applyCardEffect(card, source, target)
     _log("info", "   Source: " .. (source.tag or source.name or "inconnu"))
     _log("info", "   Target: " .. (target.tag or target.name or "inconnu"))
 
+    -- ⭐ NOUVEAU: Détection multiTarget
+    if card.multiTarget then
+        _log("info", "💥 Carte AOE détectée - application sur tous les ennemis")
+        return card_effects.applyCardEffectAOE(card, source)
+    end
+
     local success = true
 
     -- Appliquer les effets caster sur source
@@ -110,6 +116,61 @@ function card_effects.applyCardEffect(card, source, target)
     end
 
     _log("info", "✅ Application effet terminée: " .. tostring(success))
+    return success
+end
+
+-- ⭐ NOUVELLE FONCTION: Application AOE sur tous les ennemis
+function card_effects.applyCardEffectAOE(card, source)
+    if not card or not source then
+        _log("error", "applyCardEffectAOE: paramètres manquants")
+        return false
+    end
+
+    _log("info", "💥 Application effet AOE: " .. (card.name or "sans nom"))
+
+    local success = true
+    local enemiesAffected = 0
+
+    -- Appliquer les effets caster sur source
+    if card.Effect and card.Effect.caster then
+        local casterSuccess = card_effects.applyCasterEffects(card, source)
+        success = success and casterSuccess
+    end
+
+    -- Obtenir tous les ennemis
+    local enemies = {}
+    if actorManager and actorManager.getAllEnemies then
+        enemies = actorManager.getAllEnemies()
+    elseif _G.actorManager and _G.actorManager.getAllEnemies then
+        enemies = _G.actorManager.getAllEnemies()
+    else
+        _log("warn", "actorManager.getAllEnemies non disponible pour AOE")
+    end
+
+    -- Appliquer les effets target sur tous les ennemis
+    if card.Effect and card.Effect.target and #enemies > 0 then
+        for _, enemy in ipairs(enemies) do
+            if enemy and enemy.state and (enemy.state.life or 0) > 0 then
+                local targetSuccess = card_effects.applyToTarget(card, enemy, source)
+                if targetSuccess then
+                    enemiesAffected = enemiesAffected + 1
+                end
+                success = success and targetSuccess
+            end
+        end
+    end
+
+    -- Exécuter l'action personnalisée si présente
+    if card.Effect and card.Effect.action then
+        local actionSuccess = card_effects.executeAction(card, {
+            source = source,
+            targets = enemies,
+            enemiesAffected = enemiesAffected
+        })
+        success = success and actionSuccess
+    end
+
+    _log("info", "💥 AOE terminé: " .. enemiesAffected .. " ennemis affectés, succès: " .. tostring(success))
     return success
 end
 
@@ -355,7 +416,7 @@ function card_effects.executeAction(card, context)
         _G._target = context.target
     end
 
-    local success, err = pcall(card.Effect.action)
+    local success, err = pcall(card.Effect.action, context) -- ⭐ PASSE LE CONTEXTE
 
     -- Restaurer contexte global
     _G._user = oldUser

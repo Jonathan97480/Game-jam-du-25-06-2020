@@ -79,11 +79,18 @@ function CardStandbyPlay.putCardInStandby(card, originalHandIndex)
         return false
     end
 
-
     -- Vérifier qu'aucune carte n'est déjà en standby
     if CardStandbyPlay.hasCardInStandby() then
         _log("warn", "⚠️ Une carte est déjà en standby, annulation automatique")
         CardStandbyPlay.returnCardToHand()
+    end
+
+    -- 🎯 DÉTECTION MULTITARGET POUR AOE
+    local isAOE = card.multiTarget == true
+    if isAOE then
+        _log("info", "💥 CARTE AOE DÉTECTÉE: " .. (card.name or "Inconnue") .. " - Bypass sélection cible")
+        -- Pour les cartes AOE, jouer immédiatement sans standby
+        return CardStandbyPlay.playCardAOE(card, originalHandIndex)
     end
 
     _log("info", "🎯 NOUVEAU SYSTÈME STANDBY: " .. (card.name or "Inconnue"))
@@ -176,17 +183,53 @@ function CardStandbyPlay.confirmCardPlay()
     end
 
     local card = CardStandbyPlay.state.cardInStandby
-    _log("info", "✅ NOUVEAU JEU DE CARTE: " .. (card.name or "Inconnue"))
+    local originalIndex = CardStandbyPlay.state.originalHandIndex
+    _log("info", "✅ CONFIRMATION JEU DE CARTE: " .. (card.name or "Inconnue"))
 
-    -- 1. APPLIQUER LES EFFETS de la carte invisible (ici elle reste dans la main pour l'instant)
-    -- L'effet sera appliqué par le système de ciblage
+    -- 1. RETIRER LA CARTE DE LA MAIN
+    local Card = _G.Card
+    if Card and Card.hand and Card.hand.removeCard then
+        -- Trouver l'index de la carte dans la main
+        local handIndex = nil
+        for i, handCard in ipairs(Card.hand.cards) do
+            if handCard == card then
+                handIndex = i
+                break
+            end
+        end
 
-    -- 2. DÉTRUIRE LA COPIE STANDBY
+        if handIndex then
+            Card.hand:removeCard(handIndex)
+            _log("info", "🚮 Carte retirée de la main (index: " .. handIndex .. ")")
+        else
+            _log("warn", "⚠️ Carte non trouvée dans la main pour suppression")
+        end
+    end
+
+    -- 2. ENVOYER LA CARTE AU CIMETIÈRE
+    if Card and Card.graveyard and Card.graveyard.addCard then
+        Card.graveyard:addCard(card)
+        _log("info", "⚰️ Carte envoyée au cimetière: " .. (card.name or "Inconnue"))
+    end
+
+    -- 3. DÉTRUIRE LA COPIE STANDBY
     CardStandbyPlay.state.standbyCopy = nil
     _log("info", "🗑️ Copie standby détruite après jeu")
 
-    -- 3. GARDER LA CARTE INVISIBLE (elle sera gérée par le système normal de jeu)
-    -- Elle sera envoyée au cimetière par le système normal après application de l'effet
+    -- 4. NETTOYER LE FLAG D'APPLICATION D'EFFETS
+    if card._effectsAlreadyApplied then
+        card._effectsAlreadyApplied = nil
+        _log("info", "🔓 Flag _effectsAlreadyApplied nettoyé")
+    end
+
+    -- 5. REPOSITIONNER LES CARTES RESTANTES EN MAIN
+    local CardManager = _G.CardManager
+    if CardManager and CardManager.updateHandTargets then
+        CardManager.updateHandTargets("confirmCardPlay", false)
+        _log("info", "🔄 Repositionnement des cartes en main après jeu")
+    else
+        _log("warn", "⚠️ CardManager.updateHandTargets non disponible")
+    end
 
     -- Nettoyer l'état standby
     CardStandbyPlay.clearStandby()
@@ -196,6 +239,42 @@ end
 -- Nouvelle fonction : obtenir la copie standby pour le rendu
 function CardStandbyPlay.getStandbyCopy()
     return CardStandbyPlay.state.standbyCopy
+end
+
+-- 💥 NOUVELLE FONCTION : Jouer carte AOE directement sans standby
+function CardStandbyPlay.playCardAOE(card, originalHandIndex)
+    if not card or not card.multiTarget then
+        _log("error", "❌ playCardAOE appelé sur carte non-AOE")
+        return false
+    end
+
+    _log("info", "💥 JEU DIRECT CARTE AOE: " .. (card.name or "Inconnue"))
+
+    -- Utiliser le nouveau système card_effects pour AOE
+    local card_effects = _G.card_effects
+    if not card_effects then
+        _log("error", "❌ Module card_effects non disponible pour AOE")
+        return false
+    end
+
+    -- Déterminer la source (joueur)
+    local source = _G.Hero and _G.Hero.actor
+    if not source then
+        _log("error", "❌ Source Hero non disponible pour AOE")
+        return false
+    end
+
+    -- Appliquer les effets AOE sur tous les ennemis
+    local success = card_effects.applyCardEffectAOE(card, source)
+
+    if success then
+        _log("info", "✅ Carte AOE jouée avec succès: " .. (card.name or "Inconnue"))
+        -- La carte sera gérée par le système normal (envoi au cimetière, etc.)
+        return true
+    else
+        _log("error", "❌ Échec application effets AOE")
+        return false
+    end
 end
 
 -- Fonction d'auto-play pour les cartes self-only

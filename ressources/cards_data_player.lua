@@ -547,6 +547,69 @@ local cards = {
             }
         },
         Cards = {}
+    },
+
+    --[[ CARTE 11 - 🎮 Joueur - CARTE AOE TEST ]]
+    {
+        name = 'Explosion de feu',
+        ImgIlustration = 'img/cards/carte_001.png',
+        Description = 'Inflige 8 dégâts à TOUS les ennemis. Effet de zone.',
+        PowerBlow = 4,
+        Rarete = 'rare',
+        Type = { 'magie', 'aoe' },
+        multiTarget = true, -- ⭐ NOUVEAU FLAG MULTITARGET
+        Effect = {
+            caster = { heal = 0, shield = 0, Epine = 0, attack = 0, AttackReduction = 0, shield_pass = 0, bleeding = { value = 0, number_turns = 0 }, force_augmented = { value = 0, number_turns = 0 }, chancePassedTour = 0, energyCostIncrease = 0, energyCostDecrease = 0 },
+            target = { heal = 0, attack = 8, AttackReduction = 0, Epine = 0, shield = 0, shield_pass = 0, bleeding = { value = 0, number_turns = 0 }, force_augmented = { value = 0, number_turns = 0 }, chancePassedTour = 0, energyCostIncrease = 0, energyCostDecrease = 0 },
+            action = function()
+                print("🔥 Explosion de feu déclenchée!")
+                if _G.card_actions then
+                    -- Utilise le système AOE
+                    _G.card_actions.playAOEEffect(
+                        { x = 400, y = 300 }, -- Position centrale
+                        150,                -- Rayon
+                        "fire_explosion",   -- Type d'effet
+                        function(actor)
+                            print("💥 Ennemi brûlé:", actor.name or "?")
+                        end
+                    )
+                end
+            end
+        },
+        TextFormatting = {
+            card = {
+                width = 280,
+                height = 392,
+                scale = 1.0
+            },
+            title = {
+                x = 80,
+                y = 45,
+                font = 'Cambria.ttc',
+                size = 14,
+                color = '#000000'
+            },
+            text = {
+                x = 56,
+                y = 306,
+                width = 168,
+                height = 42,
+                font = 'Cambria.ttc',
+                size = 9,
+                color = '#000000',
+                align = 'center',
+                line_spacing = 1.2,
+                wrap = true
+            },
+            energy = {
+                x = 19,
+                y = 26,
+                font = 'Cambria.ttc',
+                size = 11,
+                color = '#FFFFFF'
+            }
+        },
+        Cards = {}
     }
 }
 

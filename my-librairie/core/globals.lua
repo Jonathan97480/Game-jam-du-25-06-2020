@@ -35,6 +35,9 @@ _G.Card = require("my-librairie/card-librairie/card")
 -- Card Effects System (nouveau système centralisé)
 _G.card_effects = require("my-librairie/card-librairie/core/card_effects")
 
+-- Card Actions System (utilitaires pour fonctions action)
+_G.card_actions = require("my-librairie/card-librairie/core/card_actions")
+
 -- Card Standby Play System
 _G.CardStandbyPlay = require("my-librairie/card-librairie/cardStandbyPlay")
 

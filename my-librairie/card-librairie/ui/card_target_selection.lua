@@ -58,8 +58,8 @@ CardTargetSelection.config = {
 }
 
 -- Debug et logging avec niveaux de verbosité (Problem #4 Fix)
-CardTargetSelection.DEBUG = rawget(_G, "DEBUG_TARGET_SELECTION") or false       -- Configurable via globale
-CardTargetSelection.DEBUG_VERBOSE = rawget(_G, "DEBUG_TARGET_VERBOSE") or false -- Logs ultra-détaillés
+CardTargetSelection.DEBUG = true          -- TEMPORAIRE: Activer debug pour diagnostic
+CardTargetSelection.DEBUG_VERBOSE = false -- TEMPORAIRE: Logs ultra-détaillés désactivés pour lisibilité
 CardTargetSelection.stats = {
     selectionsStarted = 0,
     selectionsCompleted = 0,
@@ -635,6 +635,13 @@ function CardTargetSelection.handleMouseClick(x, y, button)
         return false
     end
 
+    -- NOUVEAU: Forcer animationCompleted si en mode standby (correction bug Phase 2)
+    local CardStandbyPlay = _G.CardStandbyPlay
+    if CardStandbyPlay and CardStandbyPlay.hasCardInStandby and CardStandbyPlay.hasCardInStandby() then
+        CardTargetSelection.animationCompleted = true
+        print("[URGENT DEBUG] Force animationCompleted=true car en mode standby")
+    end
+
     -- NOUVEAU: Vérifier que l'animation de la carte est terminée
     if not CardTargetSelection.animationCompleted then
         print("[URGENT DEBUG] Animation non terminée - clic ignoré!")
@@ -813,33 +820,55 @@ function CardTargetSelection._executeCardPlay()
             _logf("Confirmation du jeu via CardStandbyPlay")
             _logf("✅ [_EXECUTECARDPLAY] Carte correspondante en standby")
 
-            -- CORRECTION: D'abord jouer les effets de la carte, PUIS l'envoyer au cimetière
-            local Card = rawget(_G, "Card")
-            if Card and Card.Play and Card.Play.tryPlay then
-                _logf("Appel tryPlay AVANT confirmCardPlay")
-                _logf("🎮 [_EXECUTECARDPLAY] APPEL Card.Play.tryPlay...")
-                local playSuccess = Card.Play.tryPlay(card, false) -- false = coût normal
-                _logf("📊 [_EXECUTECARDPLAY] Résultat tryPlay: %s", tostring(playSuccess))
+            -- NOUVEAU SYSTÈME Phase 2: Appliquer effets via card_effects ET confirmer standby
+            local card_effects = _G.card_effects
+            local source = _G.Hero and _G.Hero.actor
+            local playSuccess = false
 
-                if playSuccess then
-                    _logf("tryPlay réussi - maintenant confirmer CardStandbyPlay")
-                    local success = CardStandbyPlay.confirmCardPlay()
-                    if success then
-                        _logf("Carte confirmée et envoyée au cimetière via CardStandbyPlay")
-                        card.selectedTarget = nil
-                        return true
-                    else
-                        _logError("Échec confirmation CardStandbyPlay après tryPlay réussi")
-                        card.selectedTarget = nil
-                        return false
-                    end
+            if card_effects and source then
+                _logf("🎯 [_EXECUTECARDPLAY] UTILISATION card_effects...")
+
+                -- Vérifier si c'est une carte AOE (déjà gérée par CardStandbyPlay.playCardAOE)
+                if card.multiTarget then
+                    _logf("💥 Carte AOE détectée, application via applyCardEffectAOE")
+                    playSuccess = card_effects.applyCardEffectAOE(card, source)
                 else
-                    _logError("Échec tryPlay - pas de confirmation CardStandbyPlay")
+                    _logf("🎯 Carte single-target, application via applyCardEffect")
+                    playSuccess = card_effects.applyCardEffect(card, source, target)
+                end
+
+                _logf("📊 [_EXECUTECARDPLAY] Résultat card_effects: %s", tostring(playSuccess))
+
+                -- Si card_effects réussit, marquer la carte comme déjà traitée pour éviter double application
+                if playSuccess then
+                    card._effectsAlreadyApplied = true
+                    _logf("🔒 Effets marqués comme appliqués pour éviter double traitement")
+                end
+            else
+                _logf("⚠️ card_effects ou source non disponible, fallback vers tryPlay")
+                -- Fallback vers l'ancien système si nouveau non disponible
+                local Card = rawget(_G, "Card")
+                if Card and Card.Play and Card.Play.tryPlay then
+                    _logf("🎮 [_EXECUTECARDPLAY] FALLBACK Card.Play.tryPlay...")
+                    playSuccess = Card.Play.tryPlay(card, false) -- false = coût normal
+                    _logf("📊 [_EXECUTECARDPLAY] Résultat tryPlay: %s", tostring(playSuccess))
+                end
+            end
+
+            if playSuccess then
+                _logf("✅ Effets appliqués avec succès - confirmer CardStandbyPlay")
+                local success = CardStandbyPlay.confirmCardPlay()
+                if success then
+                    _logf("Carte confirmée et envoyée au cimetière via CardStandbyPlay")
+                    card.selectedTarget = nil
+                    return true
+                else
+                    _logError("Échec confirmation CardStandbyPlay après effets réussis")
                     card.selectedTarget = nil
                     return false
                 end
             else
-                _logError("Module Card.Play.tryPlay non disponible")
+                _logError("Échec application effets - pas de confirmation CardStandbyPlay")
                 card.selectedTarget = nil
                 return false
             end

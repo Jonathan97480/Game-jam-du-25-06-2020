@@ -277,16 +277,52 @@ function Common.playCard(card, source, target)
     if type(card) ~= "table" then return false end
     if type(source) ~= "table" then return false end
     if type(target) ~= "table" then return false end
-    if not applyEffect then
-        dprint("[card.play] applyEffect requis")
+
+    -- Vérifier si les effets ont déjà été appliqués (Phase 2 Protection)
+    if card._effectsAlreadyApplied then
+        dprint("[card.play] Effets déjà appliqués, passage à la gestion de fin de carte")
+        return true
+    end
+
+    -- Vérifier et déduire l'énergie AVANT de jouer la carte
+    local cardCost = card.PowerBlow or card.cost or card.power or 0
+    local Hero = _G.Hero or require("my-librairie/entities/player/Hero")
+
+    if Hero and Hero.actor and Hero.actor.state then
+        local currentEnergy = Hero.actor.state.power or 0
+
+        -- Vérifier si on a assez d'énergie
+        if currentEnergy < cardCost then
+            dprint(string.format("[card.play] Énergie insuffisante: %d/%d", currentEnergy, cardCost))
+            _gf_log('warn', string.format("Énergie insuffisante pour jouer %s (coût: %d, disponible: %d)",
+                card.name or "Carte", cardCost, currentEnergy))
+            return false
+        end
+
+        -- Déduire l'énergie
+        Hero.actor.state.power = currentEnergy - cardCost
+        dprint(string.format("[card.play] Énergie déduite: %d -> %d (coût: %d)",
+            currentEnergy, Hero.actor.state.power, cardCost))
+        _gf_log('info', string.format("Énergie déduite: %d -> %d pour %s",
+            currentEnergy, Hero.actor.state.power, card.name or "Carte"))
+    else
+        _gf_log('warn', "[card.play] Hero.actor.state non disponible pour déduction énergie")
+    end
+
+    -- Utiliser le nouveau système card_effects
+    local card_effects = _G.card_effects
+    if card_effects and card_effects.applyCardEffect then
+        card_effects.applyCardEffect(card, source, target)
+    else
+        dprint("[card.play] Module card_effects non disponible")
         return false
     end
+
     if not card then return false end
     if not (source and target) then
         dprint("[card.play] source et target requis")
         return false
     end
-    if applyEffect.applyCardEffect then applyEffect.applyCardEffect(card, source, target) end
     dprint(string.format("[card.play] %s joué par %s contre %s",
         card.name or "Carte inconnue",
         tostring(source.tag or source.name or "Inconnu"),

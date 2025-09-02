@@ -375,16 +375,20 @@ function M.hover(dt)
                 local mx, my = _getCursor()
                 local dropY = my
                 local playLine = rawget(_G, "CARD_PLAY_LINE_Y") or 400
+                local standbyZone = playLine + 100 -- Zone élargie pour permettre le standby
                 local inZone = (dropY <= playLine)
+                local inStandbyZone = (dropY <= standbyZone)
 
-                _logf("[Card.Interaction] 🎯 ZONE DE JEU: dropY=%d, playLine=%d, inZone=%s",
-                    dropY, playLine, tostring(inZone))
+                _logf(
+                    "[Card.Interaction] 🎯 ZONE DE JEU: dropY=%d, playLine=%d, standbyZone=%d, inZone=%s, inStandbyZone=%s",
+                    dropY, playLine, standbyZone, tostring(inZone), tostring(inStandbyZone))
 
                 if DEBUG then
-                    _logf("[Card.Interaction] dropY=%s playLine=%s inZone=%s", tostring(dropY),
-                        tostring(playLine), tostring(inZone))
+                    _logf("[Card.Interaction] dropY=%s playLine=%s standbyZone=%s inZone=%s inStandbyZone=%s",
+                        tostring(dropY), tostring(playLine), tostring(standbyZone), tostring(inZone),
+                        tostring(inStandbyZone))
                 end
-                if inZone then
+                if inStandbyZone then -- Utiliser la zone élargie pour permettre standby
                     -- ===== NOUVEAU SYSTÈME DE CIBLAGE MANUEL =====
                     -- Si la carte est dans la zone de jeu, on tente de l'activer
                     _logf("[Card.Interaction] ✅ CARTE EN ZONE DE JEU - Tentative d'activation")
@@ -427,7 +431,23 @@ function M.hover(dt)
 
                     _logf("[DEBUG] Ennemis vivants: %d", aliveEnemies)
 
-                    if _card.actorTag == 'Hero' and CardTargetSelection and aliveEnemies > 1 then
+                    -- Vérifier si la carte est self-only avant de lancer le ciblage
+                    local isSelfOnly = false
+                    if _card.Effect and _card.Effect.target then
+                        local targetEffects = _card.Effect.target
+                        isSelfOnly = (not targetEffects.attack or targetEffects.attack == 0) and
+                            (not targetEffects.heal or targetEffects.heal == 0) and
+                            (not targetEffects.shield or targetEffects.shield == 0) and
+                            (not targetEffects.Epine or targetEffects.Epine == 0) and
+                            (not targetEffects.AttackReduction or targetEffects.AttackReduction == 0) and
+                            (not targetEffects.chancePassedTour or targetEffects.chancePassedTour == 0)
+                    else
+                        isSelfOnly = true -- Pas d'effets target = self-only
+                    end
+
+                    _logf("[DEBUG] Carte self-only détectée: %s", tostring(isSelfOnly))
+
+                    if _card.actorTag == 'Hero' and CardTargetSelection and aliveEnemies >= 1 and not isSelfOnly then
                         -- Vérifier si le système est déjà actif pour cette carte
                         if CardTargetSelection.isSelectingTarget and
                             CardTargetSelection.cardBeingPlayed and
@@ -478,11 +498,11 @@ function M.hover(dt)
                             end
                         end
                     else
-                        -- Mode traditionnel : jeu direct (1 seul ennemi ou pas de système de ciblage)
+                        -- Mode traditionnel : jeu direct (carte self-only, pas d'ennemis, ou pas de système de ciblage)
                         print("[interaction.lua] ❌ CONDITIONS NON REMPLIES - Jeu direct de carte (", aliveEnemies,
                             "ennemis vivants )")
                         print("[DEBUG] Raison: actorTag=", _card.actorTag, "CardTargetSelection=",
-                            CardTargetSelection ~= nil, "aliveEnemies=", aliveEnemies)
+                            CardTargetSelection ~= nil, "aliveEnemies=", aliveEnemies, "isSelfOnly=", isSelfOnly)
                         local Card = rawget(_G, "Card")
                         local ok = Card and Card.Play and Card.Play.tryPlay and Card.Play.tryPlay(_card, false)
                         if not ok then
@@ -492,8 +512,10 @@ function M.hover(dt)
                     end
                     -- ===== FIN NOUVEAU SYSTÈME DE CIBLAGE =====
                 else
-                    -- ❌ CARTE HORS ZONE DE JEU - RETOUR EN MAIN
-                    _logf("[Card.Interaction] ❌ CARTE HORS ZONE - Retour en main: %s", _card.name or "carte")
+                    -- ❌ CARTE HORS ZONE DE STANDBY - RETOUR EN MAIN
+                    _logf(
+                        "[Card.Interaction] ❌ CARTE HORS ZONE STANDBY (dropY=%d > standbyZone=%d) - Retour en main: %s",
+                        dropY, standbyZone, _card.name or "carte")
                     _card._targetPos.x, _card._targetPos.y = bx, by
                     _card._targetScale.x, _card._targetScale.y = Common.SCALE_BASE, Common.SCALE_BASE
                 end
