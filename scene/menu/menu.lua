@@ -1,13 +1,7 @@
---[[ anbianceanbiance.aambianceanbiance ]]
---anbianceanbiance.aambianceanbiance
---anbianceanbiance.aambianceanbiance
---anbiancemanbiancem.aambianceanbiancem
---anbiancemanbiancem.aambianceanbiancemful
---anbiancemanbiancem.aambianceanbiancemfulfullSound
---anbiancemanbiancem.aambianceanbiancemfulfullSoundambiance
---anbiancemanbiancem.aambianceanbiancemfulfullSoundambianceambiance2
---anbiancemanbiancem.aambianceanbiancemfulfullSoundambianceambiance2fullSound
---anbiancemanbiancem.aambianceanbiancemfulfullSoundambianceambiance2fullSoundambiance2
+--[[
+Menu principal du jeu
+Système modulaire avec panneaux : mainMenu, MultiLangue, options
+]]
 
 local screen         = _G.screen
 local scene          = _G.scene
@@ -17,12 +11,14 @@ local config         = require("scene.menu.config")
 local res            = require("my-librairie.managers.resource_cache")
 
 -- Chargement des panneaux modulaires HUD
+
 local mainMenu   = require("scene.menu.HUD.mainMenu")
 local multiLangue = require("scene.menu.HUD.MultiLangue")
 local options    = require("scene.menu.HUD.options")
 
 
 -- helper de log local : utilise globalFunction.log.info si présent, sinon print
+
 local function _log(...)
     if globalFunction and globalFunction.log and globalFunction.log.info then
         globalFunction.log.info(...)
@@ -36,6 +32,7 @@ menu.name = "menu"  -- IMPORTANT: nom pour le sceneManager
 menu.illustration = {}
 
 -- État du menu et panneaux
+
 menu.currentPanel = "main"  -- Panneau actuel : "main", "multilangue", "options"
 menu.panels = {
     main = mainMenu,
@@ -44,6 +41,7 @@ menu.panels = {
 }
 
 -- Custom transition script for the menu scene (slide + fade)
+
 menu.transition   = {
     durationOut = 0.4,
     durationIn  = 0.45,
@@ -71,6 +69,7 @@ menu.transition   = {
 
 --[[ Arrière-plan & titre ]]
 -- Chargement sécurisé des ressources avec fallback
+
 local resources = config.load() or {}
 
 -- Vérification et chargement sécurisé des images avec valeurs par défaut
