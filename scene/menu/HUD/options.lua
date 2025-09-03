@@ -38,7 +38,8 @@ options.buttons = {
         action = function(_)
             options.settings.volume = math.max(0, options.settings.volume - 10)
             _log("[options] Volume diminué: " .. options.settings.volume)
-            -- TODO: Appliquer le volume au système audio
+            -- Appliquer le volume au système audio
+            options:applyVolumeSettings()
         end
     },
 
@@ -56,7 +57,8 @@ options.buttons = {
         action = function(_)
             options.settings.volume = math.min(100, options.settings.volume + 10)
             _log("[options] Volume augmenté: " .. options.settings.volume)
-            -- TODO: Appliquer le volume au système audio
+            -- Appliquer le volume au système audio
+            options:applyVolumeSettings()
         end
     },
 
@@ -154,6 +156,8 @@ function options:load()
     _log("[options] Panneau options chargé")
     self:loadSettings()
     self:updateButtonTexts()
+    -- Appliquer le volume initial
+    self:applyVolumeSettings()
 end
 
 -- Charger les paramètres sauvegardés
@@ -165,6 +169,9 @@ end
 
 -- Sauvegarder les paramètres
 function options:saveSettings()
+    -- Appliquer les paramètres avant de sauvegarder
+    self:applyVolumeSettings()
+
     -- TODO: Sauvegarder dans fichier
     _log("[options] Paramètres sauvegardés: volume=" .. self.settings.volume ..
         ", fullscreen=" .. tostring(self.settings.fullscreen) ..
@@ -175,6 +182,29 @@ end
 function options:updateButtonTexts()
     self.buttons.fullscreen_toggle.texte = "Plein écran: " .. (self.settings.fullscreen and "ON" or "OFF")
     self.buttons.debug_toggle.texte = "Debug: " .. (self.settings.debug and "ON" or "OFF")
+end
+
+-- Appliquer les paramètres de volume au système audio
+function options:applyVolumeSettings()
+    local volumeRatio = self.settings.volume / 100.0 -- Convertir 0-100 en 0.0-1.0
+
+    _log("[options] Application du volume: " .. volumeRatio .. " (volume=" .. self.settings.volume .. "%)")
+
+    -- Appliquer le volume global dans LÖVE2D
+    if love.audio and love.audio.setVolume then
+        love.audio.setVolume(volumeRatio)
+        _log("[options] ✅ Volume global appliqué: " .. volumeRatio)
+    else
+        _log("[options] ❌ ERREUR: love.audio.setVolume non disponible")
+    end
+
+    -- Optionnel: Appliquer le volume à toutes les sources audio actives
+    local sources = love.audio.getSourceCount and love.audio.getSourceCount() or 0
+    if sources > 0 then
+        _log("[options] 🔊 " .. sources .. " sources audio actives détectées")
+        -- Note: Pour appliquer le volume aux sources individuelles,
+        -- il faudrait maintenir une liste des sources dans le jeu
+    end
 end
 
 -- Fonction de mise à jour
