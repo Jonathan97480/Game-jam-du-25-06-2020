@@ -4,28 +4,40 @@ README — Game Jam (fork)
 
 ### 🎯 Systèmes Principaux
 
-#### HUD (Interface Utilisateur) ⭐ **SYSTÈME CENTRALISÉ**
+#### 🌍 Système Multilingue ⭐ **COMPLET & OPÉRATIONNEL**
+- **[Localization_System_Documentation.md](./Localization_System_Documentation.md)** - Système multilingue FR/EN complet avec LocalizationManager ⭐ **NOUVEAU**
+
+#### 🎮 Menu Modulaire ⭐ **ARCHITECTURE RÉCENTE**
+- **[Menu_Modular_System_Documentation.md](./Menu_Modular_System_Documentation.md)** - Système de menu modulaire avec 3 panneaux (Main, Langues, Options) ⭐ **NOUVEAU**
+
+#### 🖥️ HUD (Interface Utilisateur) ⭐ **SYSTÈME CENTRALISÉ**
 - **[HUD_Centralized_System.md](./HUD_Centralized_System.md)** - Architecture centralisée complète ⭐ **NOUVEAU**
 - **[HUD_Migration_Complete.md](./HUD_Migration_Complete.md)** - Guide de migration et changements effectués ⭐ **NOUVEAU**
 - **[HUD_Documentation.md](./HUD_Documentation.md)** - Documentation détaillée du système HUD
 - **[HUD_Examples.md](./HUD_Examples.md)** - Exemples d'utilisation pratiques
 - **[HUD_Quick_Reference.md](./HUD_Quick_Reference.md)** - Référence rapide API HUD
 
-#### Scene Management
+#### 🎬 Scene Management
 - **[SceneManager_Documentation.md](./SceneManager_Documentation.md)** - Système de gestion des scènes avec pile et lifecycle
 
-#### Card System ⭐ **NOUVEAU**
+#### 🃏 Card System ⭐ **NOUVEAU**
 - **[CardStandbyPlay_Documentation.md](./CardStandbyPlay_Documentation.md)** - Système révolutionnaire copie/invisible ⭐ **NOUVEAU**
 
-#### Transitions & Effects ⭐ **NOUVEAU**  
+#### ✨ Transitions & Effects ⭐ **NOUVEAU**  
 - **[Transitions_System.md](./Transitions_System.md)** - Système de transitions avec anti-spam intelligent ⭐ **NOUVEAU**
 
-#### Input System
+#### 🎯 Input System
 - **[InputSystem_Documentation.md](./InputSystem_Documentation.md)** - Système d'entrées unifié
 - **[InputSystem_Examples.md](./InputSystem_Examples.md)** - Exemples d'utilisation des inputs
 - **[InputSystem_Quick_Reference.md](./InputSystem_Quick_Reference.md)** - Référence rapide API input
 
-### 🔄 Migrations et Overlays
+### � Architecture et Organisation
+
+#### 📁 Structure Projet ⭐ **MIS À JOUR SEPT 2025**
+- **[ORGANIZATION.md](./ORGANIZATION.md)** - Organisation du dossier docs/ (centralisé depuis 3 dossiers) ⭐ **NOUVEAU**
+- **[DOCUMENTATION_AUDIT_REPORT.md](./DOCUMENTATION_AUDIT_REPORT.md)** - Rapport d'audit et mise à jour documentations ⭐ **NOUVEAU**
+
+#### �🔄 Migrations et Overlays
 - **[Overlay_Initiative_HUD_Migration.md](./Overlay_Initiative_HUD_Migration.md)** - Migration spécifique de l'overlay initiative
 
 ### 🚀 Changements Récents (Septembre 2025)
@@ -58,6 +70,49 @@ README — Game Jam (fork)
 - **Smart clearing HUD** seulement quand pile de scènes vide
 - **Logs détaillés** pour debugging et monitoring
 - **Error handling** robuste pour toutes les transitions
+
+### 🚀 Nouveautés Septembre 2025
+
+#### Systèmes Majeurs Ajoutés
+- **Système Multilingue Complet** : LocalizationManager + interface graphique avec drapeaux
+- **Menu Modulaire** : Architecture 3 panneaux avec navigation fluide et sauvegarde auto
+- **Réorganisation Documentation** : Fusion 3 dossiers docs en un seul dossier centralisé
+
+#### Fonctionnalités Clés
+- **200+ traductions FR/EN** : Interface complète, cartes, dialogues
+- **Fonction globale `t()`** : Traduction avec variables `{damage}`, `{level}`
+- **Sauvegarde automatique** : Langue et paramètres dans `settings.json`
+- **Tests complets** : Validation système multilingue (8/8 tests réussis)
+- **Interface graphique** : Drapeaux, notifications avec fadeout, navigation clavier
+
+---
+
+## 🔧 Démarrage Rapide
+
+### Utilisation Système Multilingue
+```lua
+-- Traduction simple
+local playButton = t("ui.menu.play")  -- "Jouer" ou "Play"
+
+-- Traduction avec variables
+local cardDesc = t("cards.descriptions.carte_001", {damage = 5})
+-- "Inflige 5 dégâts" ou "Deal 5 damage"
+
+-- Changer de langue
+_G.localizationManager.setLanguage("en")
+```
+
+### Architecture Menu Modulaire
+```lua
+-- Navigation entre panneaux
+menu.currentPanel = "main"        -- Menu principal
+menu.currentPanel = "multilangue" -- Sélection langue  
+menu.currentPanel = "options"     -- Paramètres
+
+-- Callbacks automatiques
+panel.onSwitchPanel("main")       -- Retour menu principal
+panel.onLanguageChanged()         -- Mise à jour textes
+```
 
 ---
 
