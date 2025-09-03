@@ -58,6 +58,10 @@ multiLangue.buttons = {
             if _G.localization and _G.localization.setLanguage then
                 _G.localization.setLanguage('fr')
                 _log("[multiLangue] Langue changée vers: fr")
+                -- Recharger les textes avec la nouvelle langue
+                multiLangue:updateTexts()
+                -- Actualiser les autres panneaux aussi
+                multiLangue:notifyLanguageChange()
             end
         end
     },
@@ -86,6 +90,10 @@ multiLangue.buttons = {
             if _G.localization and _G.localization.setLanguage then
                 _G.localization.setLanguage('en')
                 _log("[multiLangue] Langue changée vers: en")
+                -- Recharger les textes avec la nouvelle langue
+                multiLangue:updateTexts()
+                -- Actualiser les autres panneaux aussi
+                multiLangue:notifyLanguageChange()
             end
         end
     },
@@ -127,11 +135,7 @@ function multiLangue:load()
     self:loadFlags()
 
     -- Mettre à jour les textes selon la langue actuelle
-    if _G.localization and _G.localization.get then
-        self.buttons.francais.texte = _G.localization.get("menu.language.french") or "Français"
-        self.buttons.english.texte = _G.localization.get("menu.language.english") or "English"
-        self.buttons.retour.texte = _G.localization.get("menu.back") or "Retour"
-    end
+    self:updateTexts()
 end
 
 -- Fonction pour charger les drapeaux depuis resources.json
@@ -254,9 +258,10 @@ function multiLangue:draw(res, fontPath)
     if res and res.font and fontPath then
         love.graphics.setFont(res.font(fontPath, 80))
     end
-    local titre = (_G.localization and _G.localization.get and _G.localization.get("menu.language.title")) or
-        "Sélection de langue"
-    love.graphics.print(titre, 60, screen.gameReso.height / 2 - 150)
+    local titre = (_G.localization and _G.localization.get and _G.localization.get("ui.options.language")) or
+    "Sélection de langue"
+    local titlePos = (positions.title) or { x = 60, y = screen.gameReso.height / 2 - 150 }
+    love.graphics.print(titre, titlePos.x, titlePos.y)
 
     -- Rendu des boutons avec drapeaux
     for key, value in pairs(self.buttons) do
@@ -291,5 +296,28 @@ function multiLangue:draw(res, fontPath)
     end
     love.graphics.setColor(1, 1, 1)
 end
+
+-- Fonction pour mettre à jour les textes selon la langue actuelle
+function multiLangue:updateTexts()
+    if _G.localization and _G.localization.get then
+        -- Mettre à jour les textes des boutons selon la langue actuelle
+        self.buttons.francais.texte = _G.localization.get("ui.menu.options") or "Français"
+        self.buttons.english.texte = "English" -- Toujours en anglais pour clarté
+        self.buttons.retour.texte = _G.localization.get("ui.menu.back") or "Retour"
+
+        _log("[multiLangue] Textes mis à jour selon la langue: " .. (_G.localization.getCurrentLanguage() or "unknown"))
+    end
+end
+
+-- Fonction pour notifier les autres panneaux du changement de langue
+function multiLangue:notifyLanguageChange()
+    -- Si on a accès au panneau parent, on peut notifier les autres panneaux
+    if multiLangue.onLanguageChanged then
+        multiLangue.onLanguageChanged()
+    end
+end
+
+-- Callback pour changement de langue (sera défini par menu.lua)
+multiLangue.onLanguageChanged = nil
 
 return multiLangue

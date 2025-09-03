@@ -89,7 +89,7 @@ mainMenu.buttons = {
         width = (positions.buttons and positions.buttons.options and positions.buttons.options.width) or 180,
         height = (positions.buttons and positions.buttons.options and positions.buttons.options.height) or 60,
         vector2 = (positions.buttons and positions.buttons.options) or
-        { x = 60, y = screen.gameReso.height / 2 + (2 * 80) },
+            { x = 60, y = screen.gameReso.height / 2 + (2 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -109,7 +109,7 @@ mainMenu.buttons = {
         width = (positions.buttons and positions.buttons.languages and positions.buttons.languages.width) or 180,
         height = (positions.buttons and positions.buttons.languages and positions.buttons.languages.height) or 60,
         vector2 = (positions.buttons and positions.buttons.languages) or
-        { x = 60, y = screen.gameReso.height / 2 + (3 * 80) },
+            { x = 60, y = screen.gameReso.height / 2 + (3 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -129,7 +129,7 @@ mainMenu.buttons = {
         width = (positions.buttons and positions.buttons.credits and positions.buttons.credits.width) or 180,
         height = (positions.buttons and positions.buttons.credits and positions.buttons.credits.height) or 60,
         vector2 = (positions.buttons and positions.buttons.credits) or
-        { x = 60, y = screen.gameReso.height / 2 + (4 * 80) },
+            { x = 60, y = screen.gameReso.height / 2 + (4 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -168,6 +168,22 @@ mainMenu.onSwitchPanel = nil
 -- Fonction de chargement
 function mainMenu:load()
     _log("[mainMenu] Panneau principal chargé")
+    -- Mettre à jour les textes selon la langue actuelle
+    self:updateTexts()
+end
+
+-- Fonction pour mettre à jour les textes selon la langue actuelle
+function mainMenu:updateTexts()
+    if _G.localization and _G.localization.get then
+        -- Mettre à jour les textes des boutons selon la langue actuelle
+        self.buttons.play.texte = _G.localization.get("ui.menu.play") or "Jouer"
+        self.buttons.options.texte = _G.localization.get("ui.menu.options") or "Options"
+        self.buttons.multilingual.texte = _G.localization.get("ui.options.language") or "Langues"
+        self.buttons.credit.texte = _G.localization.get("ui.menu.credits") or "Crédits"
+        self.buttons.quit.texte = _G.localization.get("ui.menu.quit") or "Quitter"
+
+        _log("[mainMenu] Textes mis à jour selon la langue: " .. (_G.localization.getCurrentLanguage() or "unknown"))
+    end
 end
 
 -- Fonction de mise à jour avec gestion des interactions

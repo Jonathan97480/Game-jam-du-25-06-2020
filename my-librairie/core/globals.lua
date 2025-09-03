@@ -124,6 +124,39 @@ end
 -- Assigner la fonction globale t()
 _G.t = translateFunction
 
+-- Créer l'alias _G.localization pour compatibilité avec les menus
+if _G.localizationManager then
+    _G.localization = {
+        get = function(key, variables)
+            return _G.localizationManager.t(key, variables)
+        end,
+        setLanguage = function(language)
+            return _G.localizationManager.setLanguage(language)
+        end,
+        getCurrentLanguage = function()
+            return _G.localizationManager.getCurrentLanguage()
+        end,
+        getAvailableLanguages = function()
+            return _G.localizationManager.getAvailableLanguages()
+        end
+    }
+else
+    _G.localization = {
+        get = function(key, variables)
+            return "[LOCALIZATION_UNAVAILABLE:" .. (key or "nil") .. "]"
+        end,
+        setLanguage = function(language)
+            return false
+        end,
+        getCurrentLanguage = function()
+            return "unknown"
+        end,
+        getAvailableLanguages = function()
+            return {}
+        end
+    }
+end
+
 
 --[[ =====================================================================
 Système de Sauvegarde (NOUVEAU - 3 sept 2025)

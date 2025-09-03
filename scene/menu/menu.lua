@@ -107,11 +107,24 @@ local function setupPanelCallbacks()
         menu.currentPanel = panelName or "main"
     end
     
+    -- Fonction de notification de changement de langue
+    local function onLanguageChanged()
+        _log("[menu] Langue changée, mise à jour de tous les panneaux")
+        -- Mettre à jour les textes de tous les panneaux
+        for panelName, panel in pairs(menu.panels) do
+            if panel and panel.updateTexts then
+                panel:updateTexts()
+                _log("[menu] Textes mis à jour pour le panneau: " .. panelName)
+            end
+        end
+    end
+    
     -- Assignation des callbacks
     for panelName, panel in pairs(menu.panels) do
         if panel then
             panel.onSwitchPanel = switchPanel
-            _log("[menu] Callback assigné au panneau: " .. panelName)
+            panel.onLanguageChanged = onLanguageChanged
+            _log("[menu] Callbacks assignés au panneau: " .. panelName)
         end
     end
 end
