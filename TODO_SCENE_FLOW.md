@@ -37,8 +37,41 @@ Intro → VillageHub → Hub → Préparation → Combat. Ajouter aussi les over
 ### Phase 2 — Scènes de flow
 4. Créer `scene/intro/intro.lua` : timeline, skip, à la fin mark `firstRunCompleted` et push `scene.villageHub`.
 5. Créer `scene/villageHub/villageHub.lua` : hub monde, push `scene.hub` ou overlays.
-6. Créer `scene/hub/hub.lua` : interface planification/mission, bouton « Préparer » -> push `scene/gameplay/preparation.lua`.
-7. Créer `scene/gameplay/preparation.lua` : sélection deck/mission -> push `scene/gameplay/gameplay.lua`.
+6. Créer `scene/hub/hub.lua` : interface planification/mission, sélection deck & étage
+   - Permettre la sélection des cartes qui composeront le deck pour l'exploration.
+   - Permettre la sélection d'un étage du château à explorer (liste des étages disponibles).
+   - Bouton « Explorer / Préparer » qui ouvre la scène de carte d'étage (floor map) décrite en 7.
+
+7. Créer `scene/gameplay/preparation.lua` : carte d'étage (floor map) et sélection de zone
+   - Cette scène affiche la carte de l'étage sélectionné (réutilisable pour tous les étages).
+   - L'utilisateur clique sur une zone de la carte :
+       - Si zone == combat : push `scene/gameplay/gameplay.lua` (combat) ET transmettre en paramètres : background à utiliser, liste de monstres à charger, dialogues/événements associés.
+     - Si zone == repos : ouvrir une **scène réutilisable de repos** (ex: `scene/gameplay/rest.lua`) utilisée par toutes les zones de repos du jeu.
+        - `rest.lua` doit être paramétrable : recevoir le `background` de la zone, le type de repos, et les données événementielles.
+        - Fonctionnalités attendues dans la scène de repos :
+           - Récupération PV/ressources (heal/energy) configurable.
+           - Possibilité d'améliorer des cartes via des items trouvés pendant l'exploration (upgrade slot, ajouter effets, augmenter valeurs).
+           - Option de fusionner des cartes (combiner 2 cartes pour créer une nouvelle variante) avec règles/ressources définies.
+           - Récupération de lore / dialogues liés à l'étage (événements narratifs) — stockage dans le profil joueur.
+           - Bouton retour à la carte d'étage (`preparation.lua`) ou retour au hub selon le flow.
+        - La scène de repos doit exposer une API simple pour passer des callbacks et récupérer l'état final (items gagnés, cartes modifiées, choix du joueur).
+      - Si zone == marchand : ouvrir une **scène marchand réutilisable** (ou overlay) paramétrable :
+         - API / paramètres attendus : `background`, `merchantData` (id, sprite, animations, dialogues), `inventory` (cartes, items, reliques), `pricingRules`, `persistState` (bool) et `onComplete` (callback).
+         - Comportement attendu :
+            - Afficher le background et l'apparence/animations du marchand, lancer les dialogues/événements liés à la zone.
+            - Afficher l'inventaire du marchand (catalogue) avec filtres (cartes, reliques, consommables) et prévisualisation/compare pour les cartes.
+            - Permettre les actions : acheter (coût en monnaie), vendre (cards/reliques → monnaie), et échanger/convertir reliques contre cartes selon des règles (barter).
+            - Gestion de confirmation : preview → confirmer → transaction atomique (mise à jour profil, monnaie et inventory).
+            - Supporter l'échange de cartes contre cartes (swap) si défini par `pricingRules` ou par une logique de fusion/upgrade.
+         - API de sortie : invoquer `onComplete(result)` à la fermeture, où `result` contient `{ transactions = {...}, itemsGained = {...}, currencyDelta = n, modifiedCards = {...} }`.
+         - Retour au flow : après fermeture, revenir à `preparation.lua` (carte) en appliquant les changements au profil via `saveManager` ou via le callback `onComplete`.
+         - Notes d'implémentation : la scène doit être réutilisable pour boutiques fixes et commerçants aléatoires ; autoriser la personnalisation des dialogues/animations par zone ; persister l'état du marchand si `persistState=true`.
+   - `preparation.lua` reçoit les métadonnées de l'étage (layout, zones, paramètres) depuis le `hub` ou `saveManager` et doit être paramétrable.
+    - Après validation d'une zone combat, lancer la transition vers `scene/gameplay/gameplay.lua` en lui passant les paramètres nécessaires (background, monsters, dialogues, musique d'ambiance).
+       - À la fin du combat, le jeu doit revenir automatiquement à la carte d'étage (`scene/gameplay/preparation.lua`) pour que le joueur puisse sélectionner la prochaine zone ou se déplacer.
+       - Le `gameplay.lua` doit rendre un résultat de combat structuré (ex: `{ rewards = {...}, losses = {...}, stateChanges = {...}, events = {...} }`) et appeler un callback `onComplete(result)` fourni par `preparation.lua` ou persister via `saveManager`.
+       - Prévoir les cas : victoire → affichage `overlay_reward` puis retour à la carte ; défaite → `overlay_gameover` ou retour au hub selon règles ; arrêt/interruption → revenir proprement à la carte et restaurer l'état.
+       - Implémentation recommandée : `preparation.lua` appelle `sceneManager:push('scene/gameplay/gameplay.lua', params, onComplete)` ou transmet un `onComplete` dans `params`; le gameplay pousse ses overlays internes puis, à la fin, appelle `onComplete(result)` et effectue `sceneManager:pop()` pour retirer la scène de combat, laissant `preparation.lua` afficher la carte et traiter le résultat.
 
 ### Phase 3 — Overlays
 8. Créer overlays stackables :
