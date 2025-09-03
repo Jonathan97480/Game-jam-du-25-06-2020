@@ -3,6 +3,12 @@
 
 local multiLangue = {}
 
+-- Fonction d'importation sécurisée
+local function safeRequire(name)
+    local ok, mod = pcall(require, name)
+    return ok and mod or nil
+end
+
 -- Accès aux globales
 local screen = _G.screen
 local globalFunction = _G.globalFunction
@@ -32,15 +38,15 @@ multiLangue.buttons = {
         texte = 'Français',
         langue = 'fr',
         width = (positions.buttons and positions.buttons.francais and positions.buttons.francais.clickZone and positions.buttons.francais.clickZone.width) or
-        300,
+            300,
         height = (positions.buttons and positions.buttons.francais and positions.buttons.francais.clickZone and positions.buttons.francais.clickZone.height) or
-        80,
+            80,
         vector2 = (positions.buttons and positions.buttons.francais and positions.buttons.francais.clickZone) or
-        { x = 60, y = screen.gameReso.height / 2 + (1 * 120) },
+            { x = 60, y = screen.gameReso.height / 2 + (1 * 120) },
         flagPos = (positions.buttons and positions.buttons.francais and positions.buttons.francais.flag) or
-        { x = 60, y = screen.gameReso.height / 2 + (1 * 120) + 40 },
+            { x = 60, y = screen.gameReso.height / 2 + (1 * 120) + 40 },
         textPos = (positions.buttons and positions.buttons.francais and positions.buttons.francais.text) or
-        { x = 60, y = screen.gameReso.height / 2 + (1 * 120) + 10 },
+            { x = 60, y = screen.gameReso.height / 2 + (1 * 120) + 10 },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -60,15 +66,15 @@ multiLangue.buttons = {
         texte = 'English',
         langue = 'en',
         width = (positions.buttons and positions.buttons.english and positions.buttons.english.clickZone and positions.buttons.english.clickZone.width) or
-        300,
+            300,
         height = (positions.buttons and positions.buttons.english and positions.buttons.english.clickZone and positions.buttons.english.clickZone.height) or
-        80,
+            80,
         vector2 = (positions.buttons and positions.buttons.english and positions.buttons.english.clickZone) or
-        { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 20 },
+            { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 20 },
         flagPos = (positions.buttons and positions.buttons.english and positions.buttons.english.flag) or
-        { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 60 },
+            { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 60 },
         textPos = (positions.buttons and positions.buttons.english and positions.buttons.english.text) or
-        { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 30 },
+            { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 30 },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -87,11 +93,11 @@ multiLangue.buttons = {
     retour = {
         texte = 'Retour',
         width = (positions.buttons and positions.buttons.retour and positions.buttons.retour.clickZone and positions.buttons.retour.clickZone.width) or
-        180,
+            180,
         height = (positions.buttons and positions.buttons.retour and positions.buttons.retour.clickZone and positions.buttons.retour.clickZone.height) or
-        60,
+            60,
         vector2 = (positions.buttons and positions.buttons.retour and positions.buttons.retour.clickZone) or
-        { x = 60, y = screen.gameReso.height / 2 + (4 * 100) },
+            { x = 60, y = screen.gameReso.height / 2 + (4 * 100) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -258,16 +264,16 @@ function multiLangue:draw(res, fontPath)
         if key == "francais" and self.flags.fr then
             love.graphics.setColor(1, 1, 1)
             local scaleX = (positions.buttons and positions.buttons.francais and positions.buttons.francais.flag and positions.buttons.francais.flag.scaleX) or
-            0.2
+                0.2
             local scaleY = (positions.buttons and positions.buttons.francais and positions.buttons.francais.flag and positions.buttons.francais.flag.scaleY) or
-            0.15
+                0.15
             love.graphics.draw(self.flags.fr, value.flagPos.x, value.flagPos.y, 0, scaleX, scaleY)
         elseif key == "english" and self.flags.en then
             love.graphics.setColor(1, 1, 1)
             local scaleX = (positions.buttons and positions.buttons.english and positions.buttons.english.flag and positions.buttons.english.flag.scaleX) or
-            0.2
+                0.2
             local scaleY = (positions.buttons and positions.buttons.english and positions.buttons.english.flag and positions.buttons.english.flag.scaleY) or
-            0.15
+                0.15
             love.graphics.draw(self.flags.en, value.flagPos.x, value.flagPos.y, 0, scaleX, scaleY)
         end
 
