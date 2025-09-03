@@ -73,6 +73,31 @@ Intro → VillageHub → Hub → Préparation → Combat. Ajouter aussi les over
        - Prévoir les cas : victoire → affichage `overlay_reward` puis retour à la carte ; défaite → `overlay_gameover` ou retour au hub selon règles ; arrêt/interruption → revenir proprement à la carte et restaurer l'état.
        - Implémentation recommandée : `preparation.lua` appelle `sceneManager:push('scene/gameplay/gameplay.lua', params, onComplete)` ou transmet un `onComplete` dans `params`; le gameplay pousse ses overlays internes puis, à la fin, appelle `onComplete(result)` et effectue `sceneManager:pop()` pour retirer la scène de combat, laissant `preparation.lua` afficher la carte et traiter le résultat.
 
+      - Taille / estimation (approx) :
+         - `GameStartRouter` : 0.5 - 1 jour (design + tests minimal)
+         - `scene/intro/intro.lua` : 0.5 jour (squeleton + skip)
+         - `scene/villageHub/villageHub.lua` : 0.5 - 1 jour (UI navigation)
+         - `scene/hub/hub.lua` : 1 jour (sélection deck + étages)
+         - `scene/gameplay/preparation.lua` (floor map) : 1 jour (sélection zones + callbacks)
+         - `scene/gameplay/gameplay.lua` (combat stub -> voir renommage) : 1 - 2 jours (système de phases de combat minimal)
+         - `rest.lua` (scène de repos réutilisable) : 0.5 - 1 jour (API + options)
+         - `merchant` scene/overlay : 0.5 - 1 jour (catalogue + transactions)
+         - Overlays (gameover/reward/initiative) : 0.5 jour total (squeletons + intégration)
+
+      - Travail sans tous les assets : objectif → système fonctionnel avant beauté.
+         - Implémenter des placeholders (backgrounds simples, sprites carrés, fontes par défaut) et des données mock (monstres/items) pour valider le flow.
+         - Les assets graphiques/sons peuvent être branchés ensuite sans modifier la logique.
+
+      - Renommage recommandé : `scene/gameplay/gameplay.lua` → `scene/gameplay/combat.lua` (ou `combat_manager.lua`) :
+         - Raison : clarifier la responsabilité (gestion complète des phases de combat).
+         - Actions à faire :
+            - Créer `scene/gameplay/combat.lua` (copier/adapter `gameplay.lua` existant si présent) et implémenter l'API `onComplete(result)`.
+            - Mettre à jour tous les `require` et les appels (`sceneManager:push(...)`, `preparation.lua`, tests, docs) pour pointer vers le nouveau nom.
+            - Taille estimée du refactor + tests : 0.5 jour.
+         - Bénéfice : permet d'isoler et tester le combat sans toucher le reste du flow.
+
+      - Note technique : pour éviter les erreurs de require lors des tests hors LÖVE, ajouter un petit bootstrap de test qui expose les globals nécessaires (`_G.screen`, `_G.hud`, `_G.saveManager`, `_G.json`, etc.) ou prévoir `pcall(require, ...)` dans les modules non critiques.
+
 ### Phase 3 — Overlays
 8. Créer overlays stackables :
    - `scene/overlay/overlay_gameover.lua`
