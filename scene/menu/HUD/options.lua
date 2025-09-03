@@ -256,6 +256,15 @@ function options:handleInput()
         end
     end
 
+    -- Gestion de la touche Echap pour retourner au menu principal
+    if love.keyboard.isDown("escape") then
+        _log("[options] Touche Echap détectée → retour au menu principal")
+        if options.onSwitchPanel then
+            options.onSwitchPanel("main")
+        end
+        return -- Sortir pour éviter de traiter les autres inputs
+    end
+
     -- Traitement des boutons
     for _, value in pairs(self.buttons) do
         local inside = (mx >= value.vector2.x) and (mx <= value.vector2.x + value.width) and

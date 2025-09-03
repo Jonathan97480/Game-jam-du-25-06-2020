@@ -27,6 +27,61 @@ local Config = {
     ZONE_BUTTON_MULTILINGUAL = { x = 60, y = gameReso.height / 2 + (3 * 80) },
     ZONE_BUTTON_SAVE_DEMO = { x = 60, y = gameReso.height / 2 + (4 * 80) },
 
+    -- Configuration des positions pour le panneau Menu Principal
+    MAIN_MENU = {
+        title = { x = 60, y = gameReso.height / 2 - 150, fontSize = 80 },
+        buttons = {
+            play = { x = 60, y = gameReso.height / 2 + (1 * 80), width = 200, height = 60 },
+            options = { x = 60, y = gameReso.height / 2 + (2 * 80), width = 200, height = 60 },
+            languages = { x = 60, y = gameReso.height / 2 + (3 * 80), width = 200, height = 60 },
+            credits = { x = 60, y = gameReso.height / 2 + (4 * 80), width = 200, height = 60 },
+            quit = { x = 60, y = gameReso.height / 2 + (5 * 80), width = 200, height = 60 }
+        }
+    },
+
+    -- Configuration des positions pour le panneau MultiLangue
+    MULTILANGUE = {
+        title = { x = 60, y = gameReso.height / 2 - 150, fontSize = 80 },
+        buttons = {
+            francais = {
+                clickZone = { x = 60, y = gameReso.height / 2 + (1 * 120), width = 300, height = 80 },
+                text = { x = 60, y = gameReso.height / 2 + (1 * 120) + 10 },
+                flag = { x = 60, y = gameReso.height / 2 + (1 * 120) + 40, scaleX = 0.2, scaleY = 0.15 }
+            },
+            english = {
+                clickZone = { x = 60, y = gameReso.height / 2 + (2 * 120) + 20, width = 300, height = 80 },
+                text = { x = 60, y = gameReso.height / 2 + (2 * 120) + 30 },
+                flag = { x = 60, y = gameReso.height / 2 + (2 * 120) + 60, scaleX = 0.2, scaleY = 0.15 }
+            },
+            retour = {
+                clickZone = { x = 60, y = gameReso.height / 2 + (4 * 100), width = 180, height = 60 },
+                text = { x = 60, y = gameReso.height / 2 + (4 * 100) }
+            }
+        }
+    },
+
+    -- Configuration des positions pour le panneau Options
+    OPTIONS = {
+        title = { x = 60, y = gameReso.height / 2 - 150, fontSize = 80 },
+        labels = {
+            volume = { x = 60, y = gameReso.height / 2 - 50 },
+            fullscreen = { x = 60, y = gameReso.height / 2 + 20 },
+            debug = { x = 60, y = gameReso.height / 2 + 90 }
+        },
+        buttons = {
+            volumeMinus = { x = 200, y = gameReso.height / 2 - 60, width = 50, height = 40 },
+            volumePlus = { x = 300, y = gameReso.height / 2 - 60, width = 50, height = 40 },
+            fullscreenToggle = { x = 200, y = gameReso.height / 2 + 10, width = 100, height = 40 },
+            debugToggle = { x = 200, y = gameReso.height / 2 + 80, width = 100, height = 40 },
+            retour = { x = 60, y = gameReso.height / 2 + 160, width = 180, height = 60 }
+        },
+        values = {
+            volume = { x = 260, y = gameReso.height / 2 - 50 },
+            fullscreen = { x = 310, y = gameReso.height / 2 + 20 },
+            debug = { x = 310, y = gameReso.height / 2 + 90 }
+        }
+    },
+
     RESOURCES = {}
 }
 

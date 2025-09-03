@@ -3,10 +3,20 @@
 
 local mainMenu = {}
 
+-- Fonction d'importation sécurisée
+local function safeRequire(name)
+    local ok, mod = pcall(require, name)
+    return ok and mod or nil
+end
+
 -- Accès aux globales
 local screen = _G.screen
 local scene = _G.scene
 local globalFunction = _G.globalFunction
+
+-- Configuration depuis config.lua
+local config = safeRequire('scene.menu.config') or {}
+local positions = config.MAIN_MENU or {}
 
 -- helper de log local
 local function _log(...)
@@ -17,14 +27,14 @@ local function _log(...)
     end
 end
 
--- Configuration des boutons principaux
+-- Configuration des boutons principaux (utilise config.lua)
 mainMenu.buttons = {
     play = {
         cmd = 'play',
         texte = 'Play',
-        width = 180,
-        height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (1 * 80) },
+        width = (positions.buttons and positions.buttons.play and positions.buttons.play.width) or 180,
+        height = (positions.buttons and positions.buttons.play and positions.buttons.play.height) or 60,
+        vector2 = (positions.buttons and positions.buttons.play) or { x = 60, y = screen.gameReso.height / 2 + (1 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -76,9 +86,10 @@ mainMenu.buttons = {
 
     options = {
         texte = 'Options',
-        width = 180,
-        height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (2 * 80) },
+        width = (positions.buttons and positions.buttons.options and positions.buttons.options.width) or 180,
+        height = (positions.buttons and positions.buttons.options and positions.buttons.options.height) or 60,
+        vector2 = (positions.buttons and positions.buttons.options) or
+        { x = 60, y = screen.gameReso.height / 2 + (2 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -95,9 +106,10 @@ mainMenu.buttons = {
 
     multilingual = {
         texte = 'Langues',
-        width = 180,
-        height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (3 * 80) },
+        width = (positions.buttons and positions.buttons.languages and positions.buttons.languages.width) or 180,
+        height = (positions.buttons and positions.buttons.languages and positions.buttons.languages.height) or 60,
+        vector2 = (positions.buttons and positions.buttons.languages) or
+        { x = 60, y = screen.gameReso.height / 2 + (3 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -107,16 +119,17 @@ mainMenu.buttons = {
         action = function(_)
             _log("[mainMenu] Langues cliqué → switch vers panneau multilingue")
             if mainMenu.onSwitchPanel then
-                mainMenu.onSwitchPanel("multilingual")
+                mainMenu.onSwitchPanel("multilangue")
             end
         end
     },
 
     credit = {
         texte = 'Credits',
-        width = 180,
-        height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (4 * 80) },
+        width = (positions.buttons and positions.buttons.credits and positions.buttons.credits.width) or 180,
+        height = (positions.buttons and positions.buttons.credits and positions.buttons.credits.height) or 60,
+        vector2 = (positions.buttons and positions.buttons.credits) or
+        { x = 60, y = screen.gameReso.height / 2 + (4 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -131,9 +144,9 @@ mainMenu.buttons = {
 
     quit = {
         texte = 'Quitter',
-        width = 180,
-        height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (5 * 80) },
+        width = (positions.buttons and positions.buttons.quit and positions.buttons.quit.width) or 180,
+        height = (positions.buttons and positions.buttons.quit and positions.buttons.quit.height) or 60,
+        vector2 = (positions.buttons and positions.buttons.quit) or { x = 60, y = screen.gameReso.height / 2 + (5 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },

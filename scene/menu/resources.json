@@ -4,6 +4,10 @@
             "background": "img/Menu/BackGround.jpg",
             "title": "img/Menu/Titre.png"
         },
+        "flags": {
+            "fr": "img/flags/fr.png",
+            "en": "img/flags/en.png"
+        },
         "audio": {
             "ambiance": "audio/Menu/anbiance.wav",
             "ambiance2": "audio/Menu/anbiance2.wav",

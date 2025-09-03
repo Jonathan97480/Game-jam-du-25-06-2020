@@ -7,6 +7,10 @@ local multiLangue = {}
 local screen = _G.screen
 local globalFunction = _G.globalFunction
 
+-- Chargement des ressources
+local config = require("scene.menu.config")
+local res = require("my-librairie.managers.resource_cache")
+
 -- helper de log local
 local function _log(...)
     if globalFunction and globalFunction.log and globalFunction.log.info then
@@ -16,14 +20,27 @@ local function _log(...)
     end
 end
 
--- Configuration des boutons de langue
+-- Images des drapeaux (chargées dynamiquement)
+multiLangue.flags = {}
+
+-- Configuration des boutons de langue (utilise config.lua)
+local config = safeRequire('scene.menu.config') or {}
+local positions = config.MULTILANGUE or {}
+
 multiLangue.buttons = {
     francais = {
         texte = 'Français',
         langue = 'fr',
-        width = 200,
-        height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (1 * 80) },
+        width = (positions.buttons and positions.buttons.francais and positions.buttons.francais.clickZone and positions.buttons.francais.clickZone.width) or
+        300,
+        height = (positions.buttons and positions.buttons.francais and positions.buttons.francais.clickZone and positions.buttons.francais.clickZone.height) or
+        80,
+        vector2 = (positions.buttons and positions.buttons.francais and positions.buttons.francais.clickZone) or
+        { x = 60, y = screen.gameReso.height / 2 + (1 * 120) },
+        flagPos = (positions.buttons and positions.buttons.francais and positions.buttons.francais.flag) or
+        { x = 60, y = screen.gameReso.height / 2 + (1 * 120) + 40 },
+        textPos = (positions.buttons and positions.buttons.francais and positions.buttons.francais.text) or
+        { x = 60, y = screen.gameReso.height / 2 + (1 * 120) + 10 },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -42,9 +59,16 @@ multiLangue.buttons = {
     english = {
         texte = 'English',
         langue = 'en',
-        width = 200,
-        height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (2 * 80) },
+        width = (positions.buttons and positions.buttons.english and positions.buttons.english.clickZone and positions.buttons.english.clickZone.width) or
+        300,
+        height = (positions.buttons and positions.buttons.english and positions.buttons.english.clickZone and positions.buttons.english.clickZone.height) or
+        80,
+        vector2 = (positions.buttons and positions.buttons.english and positions.buttons.english.clickZone) or
+        { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 20 },
+        flagPos = (positions.buttons and positions.buttons.english and positions.buttons.english.flag) or
+        { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 60 },
+        textPos = (positions.buttons and positions.buttons.english and positions.buttons.english.text) or
+        { x = 60, y = screen.gameReso.height / 2 + (2 * 120) + 30 },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -62,9 +86,12 @@ multiLangue.buttons = {
 
     retour = {
         texte = 'Retour',
-        width = 180,
-        height = 60,
-        vector2 = { x = 60, y = screen.gameReso.height / 2 + (4 * 80) },
+        width = (positions.buttons and positions.buttons.retour and positions.buttons.retour.clickZone and positions.buttons.retour.clickZone.width) or
+        180,
+        height = (positions.buttons and positions.buttons.retour and positions.buttons.retour.clickZone and positions.buttons.retour.clickZone.height) or
+        60,
+        vector2 = (positions.buttons and positions.buttons.retour and positions.buttons.retour.clickZone) or
+        { x = 60, y = screen.gameReso.height / 2 + (4 * 100) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -90,11 +117,40 @@ multiLangue.onSwitchPanel = nil
 function multiLangue:load()
     _log("[multiLangue] Panneau multilingue chargé")
 
+    -- Charger les drapeaux depuis resources.json
+    self:loadFlags()
+
     -- Mettre à jour les textes selon la langue actuelle
     if _G.localization and _G.localization.get then
         self.buttons.francais.texte = _G.localization.get("menu.language.french") or "Français"
         self.buttons.english.texte = _G.localization.get("menu.language.english") or "English"
         self.buttons.retour.texte = _G.localization.get("menu.back") or "Retour"
+    end
+end
+
+-- Fonction pour charger les drapeaux depuis resources.json
+function multiLangue:loadFlags()
+    local resources = config.load() or {}
+    _log("[multiLangue] Chargement des drapeaux...")
+
+    if resources and resources.flags then
+        -- Charger drapeau français
+        if resources.flags.fr then
+            self.flags.fr = res.image(resources.flags.fr)
+            _log("[multiLangue] ✅ Drapeau français chargé: " .. resources.flags.fr)
+        else
+            _log("[multiLangue] ❌ Drapeau français non trouvé dans resources")
+        end
+
+        -- Charger drapeau anglais
+        if resources.flags.en then
+            self.flags.en = res.image(resources.flags.en)
+            _log("[multiLangue] ✅ Drapeau anglais chargé: " .. resources.flags.en)
+        else
+            _log("[multiLangue] ❌ Drapeau anglais non trouvé dans resources")
+        end
+    else
+        _log("[multiLangue] ❌ Section 'flags' non trouvée dans resources.json")
     end
 end
 
@@ -147,6 +203,15 @@ function multiLangue:handleInput()
         end
     end
 
+    -- Gestion de la touche Echap pour retourner au menu principal
+    if love.keyboard.isDown("escape") then
+        _log("[multiLangue] Touche Echap détectée → retour au menu principal")
+        if multiLangue.onSwitchPanel then
+            multiLangue.onSwitchPanel("main")
+        end
+        return -- Sortir pour éviter de traiter les autres inputs
+    end
+
     -- Traitement des boutons
     for _, value in pairs(self.buttons) do
         local inside = (mx >= value.vector2.x) and (mx <= value.vector2.x + value.width) and
@@ -184,16 +249,39 @@ function multiLangue:draw(res, fontPath)
         love.graphics.setFont(res.font(fontPath, 80))
     end
     local titre = (_G.localization and _G.localization.get and _G.localization.get("menu.language.title")) or
-    "Sélection de langue"
+        "Sélection de langue"
     love.graphics.print(titre, 60, screen.gameReso.height / 2 - 150)
 
-    -- Rendu des boutons
-    for _, value in pairs(self.buttons) do
+    -- Rendu des boutons avec drapeaux
+    for key, value in pairs(self.buttons) do
+        -- Afficher le drapeau pour les boutons de langue (utilise les échelles depuis config)
+        if key == "francais" and self.flags.fr then
+            love.graphics.setColor(1, 1, 1)
+            local scaleX = (positions.buttons and positions.buttons.francais and positions.buttons.francais.flag and positions.buttons.francais.flag.scaleX) or
+            0.2
+            local scaleY = (positions.buttons and positions.buttons.francais and positions.buttons.francais.flag and positions.buttons.francais.flag.scaleY) or
+            0.15
+            love.graphics.draw(self.flags.fr, value.flagPos.x, value.flagPos.y, 0, scaleX, scaleY)
+        elseif key == "english" and self.flags.en then
+            love.graphics.setColor(1, 1, 1)
+            local scaleX = (positions.buttons and positions.buttons.english and positions.buttons.english.flag and positions.buttons.english.flag.scaleX) or
+            0.2
+            local scaleY = (positions.buttons and positions.buttons.english and positions.buttons.english.flag and positions.buttons.english.flag.scaleY) or
+            0.15
+            love.graphics.draw(self.flags.en, value.flagPos.x, value.flagPos.y, 0, scaleX, scaleY)
+        end
+
+        -- Afficher le texte du bouton
         love.graphics.setColor(value.color.curent)
         if res and res.font and fontPath then
             love.graphics.setFont(res.font(fontPath, 60))
         end
-        love.graphics.print(value.texte, value.vector2.x, value.vector2.y)
+
+        -- Position du texte : à côté du drapeau pour les langues, position normale pour retour
+        local textX = value.textPos and value.textPos.x or value.vector2.x
+        local textY = value.textPos and value.textPos.y or value.vector2.y
+
+        love.graphics.print(value.texte, textX, textY)
     end
     love.graphics.setColor(1, 1, 1)
 end
