@@ -113,15 +113,23 @@ function love.load()
 
   -- ÉTAPE 1: D'abord initialiser le système de scènes
   globalFunction.log.info("[main.lua] Initialisation du système de scènes")
-  scene:load() -- Initialise le système AVANT d'ajouter des scènes
+  scene.debug = true -- Activer le debug du sceneManager
+  scene:load()       -- Initialise le système AVANT d'ajouter des scènes
 
-  -- ÉTAPE 2: Ajouter seulement le menu (pas start_studio ici)
-  globalFunction.log.info("[main.lua] Ajout de la scène menu")
-  scene:add(scene_menu) -- Menu sera ajouté par start_studio plus tard
+  -- ÉTAPE 2: Pousser directement le menu comme scène de base
+  globalFunction.log.info("[main.lua] Push de la scène menu comme base")
+  globalFunction.log.info("[main.lua] Type de scene_menu: " .. type(scene_menu))
+  if scene_menu and scene_menu.name then
+    globalFunction.log.info("[main.lua] scene_menu.name: " .. tostring(scene_menu.name))
+  else
+    globalFunction.log.error("[main.lua] ERREUR: scene_menu invalide!")
+  end
+  local result_menu = scene:push(scene_menu) -- Push le menu d'abord
+  globalFunction.log.info("[main.lua] Résultat push menu: " .. tostring(result_menu and result_menu.name or "NIL"))
 
-  -- ÉTAPE 3: Créer et pousser directement la scène start_studio
-  globalFunction.log.info("[main.lua] Push de la scène start_studio")
-  scene:push(scene_start_studio) -- Push au lieu de add+switch
+  -- ÉTAPE 3: Pousser la scène start_studio par-dessus
+  globalFunction.log.info("[main.lua] Push de la scène start_studio par-dessus")
+  scene:push(scene_start_studio) -- Push le studio par-dessus
 
   globalFunction.log.info("[main.lua] love.load() terminé")
 

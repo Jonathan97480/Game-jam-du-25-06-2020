@@ -1,9 +1,21 @@
--- scene/menu.lua
+--[[ anbianceanbiance.aambianceanbiance ]]
+--anbianceanbiance.aambianceanbiance
+--anbianceanbiance.aambianceanbiance
+--anbiancemanbiancem.aambianceanbiancem
+--anbiancemanbiancem.aambianceanbiancemful
+--anbiancemanbiancem.aambianceanbiancemfulfullSound
+--anbiancemanbiancem.aambianceanbiancemfulfullSoundambiance
+--anbiancemanbiancem.aambianceanbiancemfulfullSoundambianceambiance2
+--anbiancemanbiancem.aambianceanbiancemfulfullSoundambianceambiance2fullSound
+--anbiancemanbiancem.aambianceanbiancemfulfullSoundambianceambiance2fullSoundambiance2
 
--- Accès aux globales centralisées (chargées via my-librairie/globals.lua)
 local screen         = _G.screen
 local scene          = _G.scene
 local globalFunction = _G.globalFunction
+
+local config         = require("scene.menu.config")
+local res            = require("my-librairie.managers.resource_cache")
+
 
 -- helper de log local : utilise globalFunction.log.info si présent, sinon print
 local function _log(...)
@@ -15,6 +27,7 @@ local function _log(...)
 end
 
 local menu        = {}
+menu.name = "menu"  -- IMPORTANT: nom pour le sceneManager
 menu.illustration = {}
 
 -- Custom transition script for the menu scene (slide + fade)
@@ -42,19 +55,31 @@ menu.transition   = {
     end,
 }
 
-local res         = require("my-librairie.managers.resource_cache")
 
 --[[ Arrière-plan & titre ]]
+-- Chargement sécurisé des ressources avec fallback
+local resources = config.load() or {}
+
+-- Vérification et chargement sécurisé des images avec valeurs par défaut
+local backgroundPath = "img/Menu/BackGround.jpg"
+local titlePath = "img/Menu/Titre.png"
+
+if resources and resources.images then
+    backgroundPath = resources.images.background or backgroundPath
+    titlePath = resources.images.title or titlePath
+end
+
 menu.illustration.background = {
-    img = res.image('img/Menu/BackGround.jpg'),
+    r = resources,
+    img = res.image(backgroundPath),
     vector2 = { x = 0, y = 0 }
 }
 
 menu.illustration.title = {
-    img = res.image('img/Menu/Titre.png'),
+    img = res.image(titlePath),
     vector2 = {
         x = screen.gameReso.width / 2,
-        y = screen.gameReso.height / 0.5
+        y = screen.gameReso.height / 4  -- Position corrigée (était /0.5)
     }
 }
 
@@ -100,10 +125,7 @@ menu.button = {
 
                 -- Tentative de chargement des différents chemins possibles pour gameplay
                 local gameplayPaths = {
-                    "scene.gameplay.gameplay",
-                    "scene/gameplay/gameplay",
-                    "scene.gameplay",
-                    "scene/gameplay"
+                    "scene.gameplay.gameplay"
                 }
 
                 local gameplayLoaded = false
@@ -149,7 +171,7 @@ menu.button = {
         action = function(_)
             -- Si tu as une scène credits, décommente la ligne suivante :
             -- scene:switch("scene.credits")
-            print("[menu] TODO: scène 'credits' non configurée.")
+            _log("[menu] TODO: scène 'credits' non configurée.")
         end
     },
 
@@ -263,12 +285,81 @@ local isclick = false
 
 --[[
 Fonction : menu.load
-Rôle : Prépare l’écran de menu (pas de pré-chargement du gameplay ici).
+Rôle : Prépare l'écran de menu (pas de pré-chargement du gameplay ici).
 Paramètres : (aucun)
 Retour : nil
 ]]
 function menu.load()
-    -- rien de spécial pour l’instant
+    _log("[menu] Chargement scène menu")
+    config.load()
+    
+    -- Chargement sécurisé des ressources audio
+    local audioResources = config.RESOURCES
+    if audioResources and audioResources.audio then
+        if audioResources.audio.ambiance then
+            res.audio(audioResources.audio.ambiance)
+        end
+        if audioResources.audio.fullSound then
+            res.audio(audioResources.audio.fullSound)
+            love.audio.play(res.audio(audioResources.audio.ambiance2))
+        end
+    else
+        _log("[menu] Ressources audio non trouvées dans config.RESOURCES")
+    end
+end
+
+--[[
+Fonction : menu.enter
+Rôle : Appelée quand la scène devient active
+Paramètres : (aucun)
+Retour : nil
+]]
+function menu.enter()
+    _log("[menu] Scène menu activée")
+end
+
+--[[
+Fonction : menu.resume
+Rôle : Appelée quand la scène reprend après avoir été en pause (ex: après un pop)
+Paramètres : (aucun)
+Retour : nil
+]]
+function menu.resume()
+    _log("[menu] Scène menu reprise après pause")
+    -- Recharger les ressources si nécessaire
+    if config.RESOURCES == nil or #config.RESOURCES == 0 then
+        config.load()
+    end
+end
+
+--[[
+Fonction : menu.pause
+Rôle : Appelée quand la scène est mise en pause (ex: avant un push)
+Paramètres : (aucun)
+Retour : nil
+]]
+function menu.pause()
+    _log("[menu] Scène menu mise en pause")
+end
+
+--[[
+Fonction : menu.leave
+Rôle : Appelée quand la scène devient inactive
+Paramètres : (aucun)
+Retour : nil
+]]
+function menu.leave()
+    _log("[menu] Scène menu quittée")
+end
+
+--[[
+Fonction : menu.unload
+Rôle : Appelée pour nettoyer les ressources de la scène
+Paramètres : (aucun)
+Retour : nil
+]]
+function menu.unload()
+    _log("[menu] Ressources menu libérées")
 end
 
 --[[
@@ -279,6 +370,9 @@ Paramètres :
 Retour : nil
 ]]
 function menu.update(dt)
+    if config.RESOURCES == nil or #config.RESOURCES == 0 then
+        config.load()
+    end
     menu.hover()
 end
 
@@ -289,6 +383,9 @@ Paramètres : (aucun)
 Retour : nil
 ]]
 function menu.draw()
+    if config.RESOURCES == nil or #config.RESOURCES == 0 then
+        config.load()
+    end
     love.graphics.draw(menu.illustration.background.img, 0, 0)
     -- footer: centré en bas
     if menu.illustration.footer and menu.illustration.footer.img then
@@ -296,11 +393,17 @@ function menu.draw()
         local fh = (type(f.getHeight) == 'function' and f:getHeight()) or 0
         love.graphics.draw(f, 0, screen.gameReso.height - fh)
     end
-    love.graphics.draw(menu.illustration.title.img, menu.illustration.title.vector2.x, menu.illustration.title.vector2.y)
+    --love.graphics.draw(menu.illustration.title.img, menu.illustration.title.vector2.x, menu.illustration.title.vector2.y)
 
     for _, value in pairs(menu.button) do
         love.graphics.setColor(value.color.curent)
-        love.graphics.setFont(res.font(60))
+        -- Chargement sécurisé de la police
+        local fontResources = config.RESOURCES
+        local fontPath = "fonts/PANICKO.ttf"
+        if fontResources and fontResources.fonts and fontResources.fonts.main then
+            fontPath = fontResources.fonts.main
+        end
+        love.graphics.setFont(res.font(fontPath, 60))
         love.graphics.print(value.texte, value.vector2.x, value.vector2.y)
     end
     love.graphics.setColor(1, 1, 1)
@@ -308,7 +411,7 @@ end
 
 --[[
 Fonction : menu.hover
-Rôle : Survol & clic gauche pour déclencher l’action du bouton.
+Rôle : Survol & clic gauche pour déclencher l'action du bouton.
 Paramètres : (aucun)
 Retour : nil
 ]]
@@ -360,7 +463,7 @@ function menu.hover()
             end
         end
     end
-    print(mx, my)
+
     for _, value in pairs(menu.button) do
         local inside = (mx >= value.vector2.x) and (mx <= value.vector2.x + value.width) and (my >= value.vector2.y) and
             (my <= value.vector2.y + value.height)
