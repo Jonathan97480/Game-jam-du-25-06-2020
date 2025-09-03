@@ -226,7 +226,14 @@ Paramètres :
   - dt : nombre
 Retour : nil
 ]]
-function menu.update(dt)
+function menu.update(dt, ...)
+    -- Fix: Gérer les appels avec syntaxe méthode (:) et fonction (.)
+    -- Si dt est une table (menu lui-même), le vrai dt est le premier argument suivant
+    if type(dt) == "table" and dt.name == "menu" then
+        local args = {...}
+        dt = args[1] or love.timer.getDelta()
+    end
+    
     if config.RESOURCES == nil or #config.RESOURCES == 0 then
         config.load()
     end

@@ -23,6 +23,9 @@ options.settings = {
     debug = false,      -- Mode debug
 }
 
+-- Variable pour les notifications
+options.notification = nil
+
 options.buttons = {
     volume_moins = {
         texte = 'Volume -',
@@ -40,6 +43,8 @@ options.buttons = {
             _log("[options] Volume diminué: " .. options.settings.volume)
             -- Appliquer le volume au système audio
             options:applyVolumeSettings()
+            -- Sauvegarde automatique du volume
+            options:saveSettings()
         end
     },
 
@@ -59,6 +64,8 @@ options.buttons = {
             _log("[options] Volume augmenté: " .. options.settings.volume)
             -- Appliquer le volume au système audio
             options:applyVolumeSettings()
+            -- Sauvegarde automatique du volume
+            options:saveSettings()
         end
     },
 
@@ -162,20 +169,98 @@ end
 
 -- Charger les paramètres sauvegardés
 function options:loadSettings()
-    -- TODO: Charger depuis fichier de sauvegarde
-    -- Pour l'instant, utiliser les valeurs par défaut
-    _log("[options] Chargement des paramètres (valeurs par défaut)")
+    _log("[options] 🔄 Chargement des paramètres...")
+
+    -- Vérifier le fichier settings.json
+    local settingsContent = love.filesystem.read("settings.json")
+    if settingsContent then
+        local ok, settings = pcall(_G.json.decode, settingsContent)
+        if ok and settings then
+            if settings.volume then
+                self.settings.volume = math.max(0, math.min(100, settings.volume))
+                _log("[options] ✅ Volume chargé: " .. self.settings.volume)
+            end
+            if settings.fullscreen ~= nil then
+                self.settings.fullscreen = settings.fullscreen
+                _log("[options] ✅ Fullscreen chargé: " .. tostring(self.settings.fullscreen))
+            end
+            if settings.debug ~= nil then
+                self.settings.debug = settings.debug
+                _log("[options] ✅ Debug chargé: " .. tostring(self.settings.debug))
+            end
+            return
+        end
+    end
+
+    _log("[options] ⚠️ Aucun paramètre trouvé, utilisation valeurs par défaut")
 end
 
 -- Sauvegarder les paramètres
 function options:saveSettings()
+    _log("[options] 🔄 Sauvegarde des paramètres...")
+
     -- Appliquer les paramètres avant de sauvegarder
     self:applyVolumeSettings()
 
-    -- TODO: Sauvegarder dans fichier
-    _log("[options] Paramètres sauvegardés: volume=" .. self.settings.volume ..
-        ", fullscreen=" .. tostring(self.settings.fullscreen) ..
-        ", debug=" .. tostring(self.settings.debug))
+    -- Charger les paramètres existants ou créer nouveaux
+    local settings = {}
+    local settingsContent = love.filesystem.read("settings.json")
+    if settingsContent then
+        local ok, existingSettings = pcall(_G.json.decode, settingsContent)
+        if ok and existingSettings then
+            settings = existingSettings
+        end
+    end
+
+    -- Mettre à jour avec les nouvelles valeurs
+    settings.volume = self.settings.volume
+    settings.fullscreen = self.settings.fullscreen
+    settings.debug = self.settings.debug
+
+    -- Sauvegarder
+    local settingsData = _G.json.encode(settings)
+    local success = love.filesystem.write("settings.json", settingsData)
+
+    if success then
+        _log("[options] ✅ Paramètres sauvegardés: volume=" .. self.settings.volume ..
+            ", fullscreen=" .. tostring(self.settings.fullscreen) ..
+            ", debug=" .. tostring(self.settings.debug))
+        -- Afficher notification de sauvegarde
+        self:showSaveNotification()
+    else
+        _log("[options] ❌ Échec sauvegarde paramètres")
+        -- Afficher notification d'erreur
+        self:showSaveNotification(false)
+    end
+end
+
+-- Fonction pour afficher une notification de sauvegarde
+function options:showSaveNotification(success)
+    local success = success ~= false -- Par défaut true, false si explicitement passé
+
+    -- Texte de la notification avec fallback simple
+    local notificationText
+    if success then
+        if _G.localization and _G.localization.get then
+            notificationText = _G.localization.get("system.settings_saved")
+            if not notificationText or notificationText:find("MISSING:") or notificationText:find("LOCALIZATION_") then
+                notificationText = "Paramètres sauvegardés !"
+            end
+        else
+            notificationText = "Paramètres sauvegardés !"
+        end
+    else
+        notificationText = "Erreur de sauvegarde"
+    end
+
+    self.notification = {
+        text = notificationText,
+        timer = 3.0, -- Afficher pendant 3 secondes
+        alpha = 1.0,
+        success = success
+    }
+    _log("[options] 💾 Notification: " .. (success and "Sauvegarde réussie" or "Échec sauvegarde"))
+    _log("[options] 💾 Texte notification: " .. notificationText)
 end
 
 -- Mettre à jour les textes des boutons selon l'état actuel
@@ -209,7 +294,26 @@ end
 
 -- Fonction de mise à jour
 function options:update(dt)
+    -- Protection : s'assurer que dt est un nombre
+    if type(dt) ~= "number" then
+        _log("[options] ERREUR: dt n'est pas un nombre, type reçu: " .. type(dt))
+        return
+    end
+
     self:handleInput()
+
+    -- Gérer l'affichage de la notification
+    if self.notification then
+        self.notification.timer = self.notification.timer - dt
+        -- Fadeout les dernières 0.5 secondes
+        if self.notification.timer <= 0.5 then
+            self.notification.alpha = self.notification.timer / 0.5
+        end
+        -- Supprimer la notification quand le timer expire
+        if self.notification.timer <= 0 then
+            self.notification = nil
+        end
+    end
 end
 
 -- Gestion des entrées
@@ -318,6 +422,65 @@ function options:draw(res, fontPath)
         love.graphics.print(value.texte, value.vector2.x, value.vector2.y)
     end
     love.graphics.setColor(1, 1, 1)
+
+    -- Affichage des notifications
+    if self.notification then
+        local screenW = screen.gameReso.width
+        local screenH = screen.gameReso.height
+
+        -- Calculer position et taille de la notification
+        local notifH = 60
+        local notifW = 300
+        local notifX = (screenW - notifW) / 2
+        local notifY = screenH - notifH - 50
+
+        -- Arrière-plan de la notification
+        love.graphics.setColor(0, 0, 0, 0.8 * self.notification.alpha)
+        love.graphics.rectangle("fill", notifX, notifY, notifW, notifH)
+
+        -- Texte de la notification
+        if self.notification.success then
+            love.graphics.setColor(0, 1, 0, self.notification.alpha)   -- Vert pour succès
+        else
+            love.graphics.setColor(1, 0.5, 0, self.notification.alpha) -- Orange pour erreur
+        end
+
+        if res and res.font and fontPath then
+            love.graphics.setFont(res.font(fontPath, 30))
+        end
+
+        local textW = love.graphics.getFont():getWidth(self.notification.text)
+        local textX = notifX + (notifW - textW) / 2
+        local textY = notifY + (notifH - love.graphics.getFont():getHeight()) / 2
+        love.graphics.print(self.notification.text, textX, textY)
+
+        love.graphics.setColor(1, 1, 1) -- Restaurer couleur blanche
+    end
 end
+
+-- Fonction pour mettre à jour les textes selon la langue
+function options:updateTexts()
+    if _G.localization and _G.localization.get then
+        -- Mettre à jour les textes des boutons (base seulement, les états ON/OFF sont gérés séparément)
+        self.buttons.volume_moins.texte = _G.localization.get("ui.options.volume_decrease") or "Volume -"
+        self.buttons.volume_plus.texte = _G.localization.get("ui.options.volume_increase") or "Volume +"
+
+        -- Pour les boutons toggle, on met à jour avec l'état actuel
+        local fullscreenLabel = _G.localization.get("ui.options.fullscreen") or "Plein écran"
+        self.buttons.fullscreen_toggle.texte = fullscreenLabel .. ": " .. (self.settings.fullscreen and "ON" or "OFF")
+
+        local debugLabel = _G.localization.get("ui.options.debug") or "Debug"
+        self.buttons.debug_toggle.texte = debugLabel .. ": " .. (self.settings.debug and "ON" or "OFF")
+
+        self.buttons.sauvegarder.texte = _G.localization.get("ui.options.save") or "Sauvegarder"
+        self.buttons.retour.texte = _G.localization.get("ui.menu.back") or "Retour"
+
+        _log("[options] Textes mis à jour selon la langue courante")
+    else
+        _log("[options] ⚠️ Système de localisation non disponible")
+    end
+end -- Callback pour changement de langue (sera défini par menu.lua)
+
+options.onLanguageChanged = nil
 
 return options

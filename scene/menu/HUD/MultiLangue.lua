@@ -58,10 +58,14 @@ multiLangue.buttons = {
             if _G.localization and _G.localization.setLanguage then
                 _G.localization.setLanguage('fr')
                 _log("[multiLangue] Langue changée vers: fr")
+                -- Sauvegarder la langue choisie
+                multiLangue:saveLanguagePreference('fr')
                 -- Recharger les textes avec la nouvelle langue
                 multiLangue:updateTexts()
                 -- Actualiser les autres panneaux aussi
                 multiLangue:notifyLanguageChange()
+                -- Afficher notification de sauvegarde
+                multiLangue:showLanguageSavedNotification('fr')
             end
         end
     },
@@ -90,10 +94,14 @@ multiLangue.buttons = {
             if _G.localization and _G.localization.setLanguage then
                 _G.localization.setLanguage('en')
                 _log("[multiLangue] Langue changée vers: en")
+                -- Sauvegarder la langue choisie
+                multiLangue:saveLanguagePreference('en')
                 -- Recharger les textes avec la nouvelle langue
                 multiLangue:updateTexts()
                 -- Actualiser les autres panneaux aussi
                 multiLangue:notifyLanguageChange()
+                -- Afficher notification de sauvegarde
+                multiLangue:showLanguageSavedNotification('en')
             end
         end
     },
@@ -134,6 +142,9 @@ function multiLangue:load()
     -- Charger les drapeaux depuis resources.json
     self:loadFlags()
 
+    -- Charger la langue sauvegardée
+    self:loadLanguagePreference()
+
     -- Mettre à jour les textes selon la langue actuelle
     self:updateTexts()
 end
@@ -166,10 +177,28 @@ end
 
 -- Fonction de mise à jour
 function multiLangue:update(dt)
-    self:handleInput()
-end
+    -- Protection : s'assurer que dt est un nombre
+    if type(dt) ~= "number" then
+        _log("[multiLangue] ERREUR: dt n'est pas un nombre, type reçu: " .. type(dt))
+        return
+    end
 
--- Gestion des entrées (similaire à mainMenu)
+    self:handleInput()
+
+    -- Gérer l'affichage de la notification
+    if self.notification then
+        self.notification.timer = self.notification.timer - dt
+        -- Fadeout les dernières 0.5 secondes
+        if self.notification.timer <= 0.5 then
+            self.notification.alpha = self.notification.timer / 0.5
+        end
+        -- Supprimer la notification quand le timer expire
+        if self.notification.timer <= 0 then
+            self.notification = nil
+        end
+    end
+end -- Gestion des entrées (similaire à mainMenu)
+
 function multiLangue:handleInput()
     local gf = _G.globalFunction
     local mx, my = 0, 0
@@ -259,7 +288,7 @@ function multiLangue:draw(res, fontPath)
         love.graphics.setFont(res.font(fontPath, 80))
     end
     local titre = (_G.localization and _G.localization.get and _G.localization.get("ui.options.language")) or
-    "Sélection de langue"
+        "Sélection de langue"
     local titlePos = (positions.title) or { x = 60, y = screen.gameReso.height / 2 - 150 }
     love.graphics.print(titre, titlePos.x, titlePos.y)
 
@@ -294,6 +323,25 @@ function multiLangue:draw(res, fontPath)
 
         love.graphics.print(value.texte, textX, textY)
     end
+
+    -- Afficher la notification de sauvegarde si elle existe
+    if self.notification then
+        love.graphics.setColor(0, 0, 0, 0.7 * self.notification.alpha) -- Fond semi-transparent
+        local notifW, notifH = 300, 60
+        local notifX = (screen.gameReso.width - notifW) / 2
+        local notifY = screen.gameReso.height - 150
+        love.graphics.rectangle("fill", notifX, notifY, notifW, notifH, 10, 10)
+
+        love.graphics.setColor(0, 1, 0, self.notification.alpha) -- Texte vert
+        if res and res.font then
+            love.graphics.setFont(res.font("fonts/PANICKO.ttf", 24))
+        end
+        local textW = love.graphics.getFont():getWidth(self.notification.text)
+        local textX = notifX + (notifW - textW) / 2
+        local textY = notifY + (notifH - love.graphics.getFont():getHeight()) / 2
+        love.graphics.print(self.notification.text, textX, textY)
+    end
+
     love.graphics.setColor(1, 1, 1)
 end
 
@@ -301,21 +349,82 @@ end
 function multiLangue:updateTexts()
     if _G.localization and _G.localization.get then
         -- Mettre à jour les textes des boutons selon la langue actuelle
-        self.buttons.francais.texte = _G.localization.get("ui.menu.options") or "Français"
-        self.buttons.english.texte = "English" -- Toujours en anglais pour clarté
+        self.buttons.francais.texte = "Français" -- Toujours en français pour clarté
+        self.buttons.english.texte = "English"   -- Toujours en anglais pour clarté
         self.buttons.retour.texte = _G.localization.get("ui.menu.back") or "Retour"
 
         _log("[multiLangue] Textes mis à jour selon la langue: " .. (_G.localization.getCurrentLanguage() or "unknown"))
     end
-end
+end -- Fonction pour notifier les autres panneaux du changement de langue
 
--- Fonction pour notifier les autres panneaux du changement de langue
 function multiLangue:notifyLanguageChange()
     -- Si on a accès au panneau parent, on peut notifier les autres panneaux
     if multiLangue.onLanguageChanged then
         multiLangue.onLanguageChanged()
     end
 end
+
+-- Fonction pour sauvegarder la préférence de langue
+function multiLangue:saveLanguagePreference(language)
+    _log("[multiLangue] 🔄 Tentative de sauvegarde langue: " .. language)
+
+    -- Utiliser le système de sauvegarde si disponible
+    if _G.saveManager and _G.saveManager.saveSettings then
+        local settings = _G.saveManager.loadSettings() or {}
+        settings.language = language
+        _G.saveManager.saveSettings(settings)
+        _log("[multiLangue] ✅ Langue sauvegardée via saveManager: " .. language)
+    else
+        _log("[multiLangue] ⚠️ saveManager.saveSettings non disponible, utilisation fallback")
+        -- Fallback: sauvegarder dans un fichier simple
+        local settingsData = string.format('{"language": "%s"}', language)
+        local success = love.filesystem.write("settings.json", settingsData)
+        if success then
+            _log("[multiLangue] ✅ Langue sauvegardée dans settings.json: " .. language)
+        else
+            _log("[multiLangue] ❌ Échec sauvegarde langue: " .. language)
+        end
+    end
+end
+
+-- Fonction pour charger la langue sauvegardée
+function multiLangue:loadLanguagePreference()
+    _log("[multiLangue] 🔄 Chargement préférences langue...")
+
+    -- Vérifier d'abord le fichier settings.json
+    local settingsContent = love.filesystem.read("settings.json")
+    if settingsContent then
+        local ok, settings = pcall(_G.json.decode, settingsContent)
+        if ok and settings and settings.language then
+            _log("[multiLangue] ✅ Langue trouvée dans settings.json: " .. settings.language)
+            if _G.localization and _G.localization.setLanguage then
+                _G.localization.setLanguage(settings.language)
+                self:updateTexts()
+                self:notifyLanguageChange()
+                _log("[multiLangue] ✅ Langue restaurée: " .. settings.language)
+                return settings.language
+            end
+        end
+    end
+
+    _log("[multiLangue] ⚠️ Aucune préférence de langue trouvée, utilisation par défaut")
+    return nil
+end
+
+-- Fonction pour afficher une notification de sauvegarde
+function multiLangue:showLanguageSavedNotification(language)
+    -- Stocker la notification pour l'affichage
+    self.notification = {
+        text = (_G.localization and _G.localization.get and _G.localization.get("system.language_saved")) or
+            "Langue sauvegardée !",
+        timer = 3.0, -- Afficher pendant 3 secondes
+        alpha = 1.0
+    }
+    _log("[multiLangue] 💾 Notification: Langue " .. language .. " sauvegardée")
+end
+
+-- Variable pour la notification
+multiLangue.notification = nil
 
 -- Callback pour changement de langue (sera défini par menu.lua)
 multiLangue.onLanguageChanged = nil

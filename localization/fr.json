@@ -49,9 +49,13 @@
         "options": {
             "language": "Langue",
             "volume": "Volume",
+            "volume_decrease": "Volume -",
+            "volume_increase": "Volume +",
             "music": "Musique",
             "sfx": "Effets Sonores",
             "fullscreen": "Plein Écran",
+            "debug": "Mode Debug",
+            "save": "Sauvegarder",
             "resolution": "Résolution",
             "difficulty": "Difficulté",
             "auto_save": "Sauvegarde Auto"
@@ -178,7 +182,8 @@
             "save_failed": "Échec de la sauvegarde",
             "load_failed": "Échec du chargement",
             "language_changed": "Langue changée en {language}",
-            "settings_saved": "Paramètres sauvegardés"
+            "settings_saved": "Paramètres sauvegardés",
+            "language_saved": "Langue sauvegardée"
         },
         "errors": {
             "save_failed": "Impossible de sauvegarder la partie",
