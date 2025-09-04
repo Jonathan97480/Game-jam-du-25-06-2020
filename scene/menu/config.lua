@@ -82,6 +82,21 @@ local Config = {
         }
     },
 
+    -- Configuration des positions pour le panneau Load Save
+    LOAD_SAVE = {
+        title = { x = 60, y = gameReso.height / 2 - 200, fontSize = 60 },
+        slotContainer = { x = 60, y = gameReso.height / 2 - 120, width = 600, height = 400 },
+        buttons = {
+            retour = { x = 60, y = gameReso.height / 2 + 300, width = 180, height = 60 }
+        },
+        notification = {
+            x = gameReso.width / 2 - 200,
+            y = 50,
+            width = 400,
+            height = 60
+        }
+    },
+
     RESOURCES = {}
 }
 

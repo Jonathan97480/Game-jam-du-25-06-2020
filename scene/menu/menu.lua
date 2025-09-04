@@ -15,6 +15,7 @@ local res            = require("my-librairie.managers.resource_cache")
 local mainMenu   = require("scene.menu.HUD.mainMenu")
 local multiLangue = require("scene.menu.HUD.MultiLangue")
 local options    = require("scene.menu.HUD.options")
+local loadSave   = require("scene.menu.HUD.loadSave")
 
 
 -- helper de log local : utilise globalFunction.log.info si présent, sinon print
@@ -33,11 +34,12 @@ menu.illustration = {}
 
 -- État du menu et panneaux
 
-menu.currentPanel = "main"  -- Panneau actuel : "main", "multilangue", "options"
+menu.currentPanel = "main"  -- Panneau actuel : "main", "multilangue", "options", "loadsave"
 menu.panels = {
     main = mainMenu,
     multilangue = multiLangue,
-    options = options
+    options = options,
+    loadsave = loadSave
 }
 
 -- Custom transition script for the menu scene (slide + fade)
@@ -242,6 +244,11 @@ function menu.update(dt, ...)
     if currentPanel and currentPanel.update then
         currentPanel:update(dt)
     end
+    
+    -- Mettre à jour spécifiquement le panneau loadSave pour les notifications
+    if menu.panels.loadsave and menu.panels.loadsave.update then
+        menu.panels.loadsave.update(dt)
+    end
 end
 
 --[[
@@ -277,6 +284,11 @@ function menu.draw()
             fontPath = fontResources.fonts.main
         end
         currentPanel:draw(res, fontPath)
+    end
+    
+    -- Rendu des notifications du panneau loadSave (toujours visible)
+    if menu.panels.loadsave and menu.panels.loadsave.draw then
+        menu.panels.loadsave.draw()
     end
     
     love.graphics.setColor(1, 1, 1)
