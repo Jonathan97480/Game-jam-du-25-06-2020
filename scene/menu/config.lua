@@ -30,12 +30,22 @@ local Config = {
     -- Configuration des positions pour le panneau Menu Principal
     MAIN_MENU = {
         title = { x = 60, y = gameReso.height / 2 - 150, fontSize = 80 },
+        -- Panel conteneur pour tous les boutons
+        buttonPanel = {
+            x = 60,
+            y = gameReso.height / 2 - 50,
+            width = 300,
+            height = 500,
+            spacing = 70 -- Espacement entre les boutons
+        },
         buttons = {
-            play = { x = 60, y = gameReso.height / 2 + (1 * 80), width = 200, height = 60 },
-            options = { x = 60, y = gameReso.height / 2 + (2 * 80), width = 200, height = 60 },
-            languages = { x = 60, y = gameReso.height / 2 + (3 * 80), width = 200, height = 60 },
-            credits = { x = 60, y = gameReso.height / 2 + (4 * 80), width = 200, height = 60 },
-            quit = { x = 60, y = gameReso.height / 2 + (5 * 80), width = 200, height = 60 }
+            play = { x = 0, y = 0, width = 250, height = 60 },
+            continue = { x = 0, y = 70, width = 250, height = 60 },
+            loadSave = { x = 0, y = 140, width = 250, height = 60 },
+            options = { x = 0, y = 210, width = 250, height = 60 },
+            languages = { x = 0, y = 280, width = 250, height = 60 },
+            credits = { x = 0, y = 350, width = 250, height = 60 },
+            quit = { x = 0, y = 420, width = 250, height = 60 }
         }
     },
 
@@ -84,10 +94,12 @@ local Config = {
 
     -- Configuration des positions pour le panneau Load Save
     LOAD_SAVE = {
-        title = { x = 60, y = gameReso.height / 2 - 200, fontSize = 60 },
-        slotContainer = { x = 60, y = gameReso.height / 2 - 120, width = 600, height = 400 },
+        title = { x = 60, y = gameReso.height / 2 - 300, fontSize = 60 },
+        slotContainer = { x = 60, y = gameReso.height / 2 - 200, width = 600, height = 400 },
+        noSavesMessage = { x = 60, y = gameReso.height / 2 - 100, fontSize = 24 },
         buttons = {
-            retour = { x = 60, y = gameReso.height / 2 + 300, width = 180, height = 60 }
+            retour = { x = 60, y = gameReso.height / 2 + 250, width = 180, height = 60 },
+            createSave = { x = 260, y = gameReso.height / 2 + 250, width = 200, height = 60 }
         },
         notification = {
             x = gameReso.width / 2 - 200,

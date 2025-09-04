@@ -10,9 +10,10 @@ README — Game Jam (fork)
 #### 🎮 Menu Modulaire ⭐ **ARCHITECTURE RÉCENTE**
 - **[Menu_Modular_System_Documentation.md](./Menu_Modular_System_Documentation.md)** - Système de menu modulaire avec 3 panneaux (Main, Langues, Options) ⭐ **NOUVEAU**
 
-#### 🖥️ HUD (Interface Utilisateur) ⭐ **SYSTÈME CENTRALISÉ**
+#### 🖥️ HUD (Interface Utilisateur) ⭐ **SYSTÈME CENTRALISÉ & AUTO-LAYOUT**
 - **[HUD_Centralized_System.md](./HUD_Centralized_System.md)** - Architecture centralisée complète ⭐ **NOUVEAU**
 - **[HUD_Migration_Complete.md](./HUD_Migration_Complete.md)** - Guide de migration et changements effectués ⭐ **NOUVEAU**
+- **[HUD_Auto_Layout_Guide.md](./HUD_Auto_Layout_Guide.md)** - Guide du positionnement automatique des éléments UI ⭐ **NOUVEAU SEPT 2025**
 - **[HUD_Documentation.md](./HUD_Documentation.md)** - Documentation détaillée du système HUD
 - **[HUD_Examples.md](./HUD_Examples.md)** - Exemples d'utilisation pratiques
 - **[HUD_Quick_Reference.md](./HUD_Quick_Reference.md)** - Référence rapide API HUD
@@ -76,14 +77,22 @@ README — Game Jam (fork)
 #### Systèmes Majeurs Ajoutés
 - **Système Multilingue Complet** : LocalizationManager + interface graphique avec drapeaux
 - **Menu Modulaire** : Architecture 3 panneaux avec navigation fluide et sauvegarde auto
+- **Positionnement Automatique HUD** : Organisation dynamique des éléments UI basée sur le contenu ⭐ **NOUVEAU**
 - **Réorganisation Documentation** : Fusion 3 dossiers docs en un seul dossier centralisé
 
 #### Fonctionnalités Clés
 - **200+ traductions FR/EN** : Interface complète, cartes, dialogues
 - **Fonction globale `t()`** : Traduction avec variables `{damage}`, `{level}`
 - **Sauvegarde automatique** : Langue et paramètres dans `settings.json`
+- **Auto-layout UI** : Boutons dimensionnés automatiquement selon leur contenu textuel ⭐ **NOUVEAU**
 - **Tests complets** : Validation système multilingue (8/8 tests réussis)
 - **Interface graphique** : Drapeaux, notifications avec fadeout, navigation clavier
+
+#### Amélioration Positionnement Automatique ⭐ **SEPT 2025**
+- **Calcul dynamique** : Tailles de boutons basées sur le contenu textuel
+- **Support multilingue** : Adaptation automatique aux différentes langues
+- **Espacement intelligent** : Organisation cohérente sans configuration manuelle
+- **Performance optimisée** : Calculs de layout pendant le chargement uniquement
 
 ---
 

@@ -307,11 +307,113 @@ La migration vers le HUD centralisé a été un succès complet :
 - API modernisée et cohérente  
 - Smart clearing automatique
 - Protection d'erreurs robuste
+- **NOUVEAU** : Positionnement automatique des éléments UI
 
 ✅ **Bénéfices observés :**
 - Plus d'erreurs de coordonnées
 - Overlays stables et fonctionnels
 - Code plus maintenable
 - Debugging simplifié
+- **NOUVEAU** : Interface adaptative au contenu
 
-Le système est maintenant prêt pour tous les développements futurs avec une architecture solide et performante.
+---
+
+## Nouvelles Fonctionnalités : Positionnement Automatique (Sept 2025)
+
+### Vue d'ensemble
+
+Le système HUD intègre maintenant des capacités de positionnement automatique pour les boutons et éléments UI, permettant une organisation dynamique basée sur le contenu textuel.
+
+### Implémentation
+
+**Exemple concret :** Menu principal avec auto-organisation
+
+```lua
+-- scene/menu/HUD/mainMenu.lua - Nouvelle architecture
+
+-- Fonction de positionnement automatique
+local function organizeButtonsInPanel()
+    local fontSize = 20
+    local spacing = 15
+    local currentY = 10
+    
+    local buttonOrder = {
+        "play", "continue", "loadSave", "options", "multilingual", "credits", "quit"
+    }
+
+    for _, buttonId in ipairs(buttonOrder) do
+        local buttonData = mainMenu.buttons[buttonId]
+        
+        if buttonData and isVisible(buttonData) then
+            -- Calcul automatique de la taille basée sur le texte
+            local text = getButtonText(buttonData)
+            local textWidth, textHeight = getTextDimensions(text, fontSize)
+            
+            -- Auto-ajustement avec padding
+            buttonData.width = textWidth + 40
+            buttonData.height = textHeight + 20
+            buttonData.vector2 = {
+                x = panelConfig.x + 10,
+                y = panelConfig.y + currentY
+            }
+            
+            currentY = currentY + buttonData.height + spacing
+        end
+    end
+end
+
+-- Intégration dans le cycle de vie
+function mainMenu:load()
+    createButtonPanel()
+    organizeButtonsInPanel()  -- Auto-organisation
+end
+```
+
+### Résultats Observés
+
+**Logs typiques de positionnement automatique :**
+```
+[mainMenu] Panel conteneur créé à position: 60, 490
+[mainMenu] Bouton 'play' positionné à: 70, 500 (taille: 100x40)
+[mainMenu] Bouton 'continue' positionné à: 70, 555 (taille: 148x40)
+[mainMenu] Bouton 'loadSave' positionné à: 70, 610 (taille: 208x40)
+[mainMenu] Boutons organisés automatiquement - espace utilisé: 208x385
+```
+
+### Avantages
+
+✅ **Adaptation automatique :**
+- Tailles de boutons basées sur le contenu textuel
+- Support multilingue sans reconfiguration
+- Espacement cohérent et automatique
+
+✅ **Maintenance simplifiée :**
+- Plus de positions hard-codées à ajuster
+- Évolution automatique avec les changements de texte
+- Gestion intelligente de la visibilité des éléments
+
+✅ **Intégration robuste :**
+- Compatible avec le système de visibilité existant
+- Respect de l'architecture HUD centralisée
+- Logs détaillés pour debugging
+
+### Migration des Menus Existants
+
+**Avant (positions manuelles) :**
+```lua
+buttons.play = {
+    width = 250, height = 60,
+    vector2 = { x = 60, y = 400 }  -- Position fixe
+}
+```
+
+**Après (auto-positionnement) :**
+```lua
+buttons.play = {
+    texte = function() return _G.t("ui.menu.play") end,
+    action = function(btn) createNewGame() end
+    -- width, height, vector2 calculés automatiquement
+}
+```
+
+Le système est maintenant prêt pour tous les développements futurs avec une architecture solide, performante et adaptative.

@@ -12,7 +12,10 @@
             "new_game": "Nouvelle Partie",
             "continue": "Continuer",
             "load": "Charger",
+            "load_save": "Charger Partie",
             "save": "Sauvegarder",
+            "no_saves": "Aucune sauvegarde disponible",
+            "create_save": "Créer une sauvegarde",
             "options": "Options",
             "settings": "Paramètres",
             "credits": "Crédits",
@@ -82,6 +85,21 @@
             "show_discard": "D - Voir la défausse",
             "help": "H - Afficher cette aide",
             "close": "Esc - Fermer les fenêtres"
+        },
+        "common": {
+            "load": "Charger",
+            "save": "Sauvegarder",
+            "delete": "Supprimer",
+            "edit": "Modifier",
+            "create": "Créer",
+            "back": "Retour",
+            "next": "Suivant",
+            "previous": "Précédent",
+            "ok": "OK",
+            "cancel": "Annuler",
+            "confirm": "Confirmer",
+            "yes": "Oui",
+            "no": "Non"
         }
     },
     "cards": {

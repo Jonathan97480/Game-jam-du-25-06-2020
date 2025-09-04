@@ -18,6 +18,7 @@ local saveManager = _G.saveManager
 -- Configuration depuis config.lua
 local config = safeRequire('scene.menu.config') or {}
 local positions = config.MAIN_MENU or {}
+local panelConfig = positions.buttonPanel or { x = 60, y = screen.gameReso.height / 2 - 50, width = 300, height = 500 }
 
 -- Import du panneau loadSave
 local loadSave = safeRequire('scene.menu.HUD.loadSave')
@@ -33,9 +34,146 @@ end
 
 -- Fonction pour vérifier s'il y a des sauvegardes disponibles
 local function hasSaves()
-    if not saveManager then return false end
+    if not saveManager then
+        _log("[mainMenu] SaveManager non disponible")
+        return false
+    end
     local saves = saveManager.getSaveSlots() or {}
+    _log("[mainMenu] Nombre de sauvegardes trouvées: " .. #saves)
     return #saves > 0
+end
+
+-- Fonction pour forcer l'affichage du bouton (temporaire pour debug)
+local function debugShowLoadSave()
+    -- Toujours montrer le bouton loadSave maintenant
+    return true
+end
+
+-- Fonction pour créer le panel conteneur des boutons
+local function createButtonPanel()
+    if not _G.hud then
+        _log("[mainMenu] HUD non disponible pour créer le panel")
+        return false
+    end
+
+    local hud = _G.hud
+
+    -- Créer le panel conteneur
+    hud.setPanel("main_menu_buttons_panel",
+        panelConfig.x,
+        panelConfig.y,
+        panelConfig.width,
+        panelConfig.height,
+        { layer = "background" },
+        { type = "container", color = { 0, 0, 0, 0 } }
+    )
+
+    _log("[mainMenu] Panel conteneur créé à position: " .. panelConfig.x .. ", " .. panelConfig.y)
+    return true
+end
+
+-- Fonction pour calculer la taille du texte (estimation approximative fiable)
+local function getTextDimensions(text, fontSize)
+    if not text then return 0, 0 end
+
+    local textStr = tostring(text)
+    local size = fontSize or 20 -- Taille par défaut
+
+    -- Estimation basée sur la largeur moyenne des caractères
+    local charWidth = size * 0.6 -- Ratio largeur/hauteur approximatif
+    local width = #textStr * charWidth
+    local height = size
+
+    return width, height
+end
+
+-- Fonction pour organiser automatiquement les boutons dans le panel
+local function organizeButtonsInPanel()
+    if not _G.hud then
+        _log("[mainMenu] HUD non disponible pour organiser les boutons")
+        return 0, 0
+    end
+
+    -- Configuration de base
+    local fontSize = 20
+    local spacing = 15 -- Espacement entre les boutons
+    local startX = 10  -- Marge gauche dans le panel
+    local startY = 10  -- Marge haute dans le panel
+
+    local currentY = startY
+    local maxWidth = 0
+
+    -- Liste ordonnée des boutons
+    local buttonOrder = {
+        "play", "continue", "loadSave", "options", "multilingual", "credits", "quit"
+    }
+
+    -- Parcourir tous les boutons dans l'ordre défini
+    for _, buttonId in ipairs(buttonOrder) do
+        local buttonData = mainMenu.buttons[buttonId]
+
+        -- Vérifier si le bouton existe et est visible
+        local isVisible = true
+        if buttonData and buttonData.visible and type(buttonData.visible) == "function" then
+            isVisible = buttonData.visible()
+        end
+
+        if buttonData and isVisible then
+            -- Obtenir le texte du bouton
+            local displayText = ""
+            if type(buttonData.texte) == "function" then
+                displayText = tostring(buttonData.texte())
+            else
+                displayText = tostring(buttonData.texte)
+            end
+
+            -- Calculer les dimensions du texte
+            local textWidth, textHeight = getTextDimensions(displayText, fontSize)
+
+            -- Ajouter du padding au texte pour le bouton
+            local buttonWidth = textWidth + 40   -- 20px padding de chaque côté
+            local buttonHeight = textHeight + 20 -- 10px padding haut/bas
+
+            -- Mettre à jour la largeur maximale
+            if buttonWidth > maxWidth then
+                maxWidth = buttonWidth
+            end
+
+            -- Calculer la position relative au panel
+            local relativeX = startX
+            local relativeY = currentY
+
+            -- Mettre à jour les dimensions et position du bouton
+            buttonData.width = buttonWidth
+            buttonData.height = buttonHeight
+            buttonData.vector2 = {
+                x = panelConfig.x + relativeX,
+                y = panelConfig.y + relativeY
+            }
+
+            _log("[mainMenu] Bouton '" ..
+                buttonId .. "' positionné à: " .. buttonData.vector2.x .. ", " .. buttonData.vector2.y ..
+                " (taille: " .. buttonWidth .. "x" .. buttonHeight .. ")")
+
+            -- Passer au bouton suivant
+            currentY = currentY + buttonHeight + spacing
+        end
+    end
+
+    -- Retourner les dimensions totales utilisées
+    return maxWidth, currentY - startY
+end -- Fonction pour créer une sauvegarde de test (temporaire)
+local function createTestSave()
+    if saveManager and saveManager.saveToSlot then
+        local success, result = saveManager.saveToSlot(1)
+        if success then
+            _log("[mainMenu] Sauvegarde de test créée: " .. tostring(result))
+        else
+            _log("[mainMenu] Échec création sauvegarde test: " .. tostring(result))
+        end
+    else
+        _log("[mainMenu] SaveManager non disponible pour créer sauvegarde test")
+    end
 end
 
 -- Fonction pour charger la dernière sauvegarde
@@ -44,22 +182,11 @@ local function loadLatestSave()
         _log("[mainMenu] SaveManager non disponible")
         return false
     end
-    
-    local latestSave = saveManager.getLatestSave()
-    if not latestSave then
-        _log("[mainMenu] Aucune sauvegarde trouvée")
-        return false
-    end
-    
-    local success, result
-    if latestSave.slot then
-        success, result = saveManager.loadFromSlot(latestSave.slot)
-    else
-        success, result = saveManager.loadFromFile(latestSave.filename)
-    end
-    
+
+    local success, result = saveManager.loadLatestGameAndSetId()
+
     if success then
-        _log("[mainMenu] Dernière sauvegarde chargée avec succès")
+        _log("[mainMenu] Dernière sauvegarde chargée avec succès - ID: " .. tostring(_G.idSave))
         if scene and scene.switch then
             scene:switch("scene.gameplay.gameplay")
         end
@@ -70,21 +197,34 @@ local function loadLatestSave()
     end
 end
 
--- Configuration des boutons principaux (utilise config.lua)
+-- Fonction pour créer une nouvelle partie avec sauvegarde automatique
+local function createNewGame()
+    if not saveManager then
+        _log("[mainMenu] SaveManager non disponible")
+        return false
+    end
+
+    local success, slotId, filename = saveManager.createNewGame()
+
+    if success then
+        _log("[mainMenu] Nouvelle partie créée avec succès - ID: " .. slotId .. ", fichier: " .. filename)
+        if scene and scene.switch then
+            scene:switch("scene.gameplay.gameplay")
+        end
+        return true
+    else
+        _log("[mainMenu] Échec création nouvelle partie: " .. tostring(slotId))
+        return false
+    end
+end
+
+-- Configuration des boutons principaux (positions calculées automatiquement)
 mainMenu.buttons = {
     play = {
         cmd = 'play',
-        texte = function() 
-            -- Changer le texte selon la présence de sauvegardes
-            if hasSaves() then
-                return _G.t and _G.t("ui.menu.continue") or "Continuer"
-            else
-                return _G.t and _G.t("ui.menu.new_game") or "Nouvelle Partie"
-            end
+        texte = function()
+            return _G.t and _G.t("ui.menu.play") or "Jouer"
         end,
-        width = (positions.buttons and positions.buttons.play and positions.buttons.play.width) or 180,
-        height = (positions.buttons and positions.buttons.play and positions.buttons.play.height) or 60,
-        vector2 = (positions.buttons and positions.buttons.play) or { x = 60, y = screen.gameReso.height / 2 + (1 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -93,50 +233,32 @@ mainMenu.buttons = {
         },
         action = function(btn)
             if btn and btn.cmd == 'play' then
-                if hasSaves() then
-                    -- S'il y a des sauvegardes, charger la plus récente
-                    _log("[mainMenu] Continue cliqué → chargement dernière sauvegarde")
-                    loadLatestSave()
-                else
-                    -- Sinon, commencer une nouvelle partie
-                    _log("[mainMenu] Nouvelle Partie cliqué → switch vers gameplay")
-                    
-                    if not scene then
-                        _log("[mainMenu] ERREUR: scene global n'est pas disponible")
-                        return
-                    end
+                -- Le bouton "Jouer" crée toujours une nouvelle partie
+                _log("[mainMenu] Nouvelle Partie cliqué → création sauvegarde et lancement")
+                createNewGame()
+            end
+        end
+    },
 
-                    if not scene.switchWithTransition then
-                        _log("[mainMenu] ERREUR: scene.switchWithTransition n'existe pas")
-                        return
-                    end
-
-                    local gameplayPaths = { "scene.gameplay.gameplay" }
-                    local gameplayLoaded = false
-
-                    for _, path in ipairs(gameplayPaths) do
-                        local ok, gameplayScene = pcall(require, path)
-                        if ok and gameplayScene then
-                            _log("[mainMenu] Gameplay trouvé avec le chemin: " .. path)
-                            local switchOk, result = pcall(function()
-                                return scene:switchWithTransition(path, {})
-                            end)
-                            if switchOk then
-                                _log("[mainMenu] Switch réussi vers: " .. path)
-                                gameplayLoaded = true
-                                break
-                            else
-                                _log("[mainMenu] Échec du switch vers " .. path .. ": " .. tostring(result))
-                            end
-                        else
-                            _log("[mainMenu] Impossible de charger: " .. path .. " (" .. tostring(gameplayScene) .. ")")
-                        end
-                    end
-
-                    if not gameplayLoaded then
-                        _log("[mainMenu] ERREUR: Impossible de charger la scène de gameplay")
-                    end
-                end
+    continue = {
+        cmd = 'continue',
+        texte = function()
+            return _G.t and _G.t("ui.menu.continue") or "Continuer"
+        end,
+        visible = function()
+            -- N'afficher que s'il y a des sauvegardes
+            return hasSaves()
+        end,
+        color = {
+            curent = { 1, 1, 1 },
+            hover  = { 0, 1, 0 },
+            normal = { 1, 1, 1 },
+            click  = { 1, 0, 0 },
+        },
+        action = function(btn)
+            if btn and btn.cmd == 'continue' then
+                _log("[mainMenu] Continuer cliqué → chargement dernière sauvegarde")
+                loadLatestSave()
             end
         end
     },
@@ -147,12 +269,9 @@ mainMenu.buttons = {
             return _G.t and _G.t("ui.menu.load_save") or "Charger Partie"
         end,
         visible = function()
-            -- N'afficher que s'il y a des sauvegardes
-            return hasSaves()
+            -- N'afficher que s'il y a des sauvegardes (temporairement forcé pour debug)
+            return debugShowLoadSave()
         end,
-        width = (positions.buttons and positions.buttons.play and positions.buttons.play.width) or 180,
-        height = (positions.buttons and positions.buttons.play and positions.buttons.play.height) or 60,
-        vector2 = (positions.buttons and positions.buttons.play) or { x = 60, y = screen.gameReso.height / 2 + (2 * 80) },
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -173,14 +292,6 @@ mainMenu.buttons = {
         texte = function()
             return _G.t and _G.t("ui.menu.options") or "Options"
         end,
-        width = (positions.buttons and positions.buttons.options and positions.buttons.options.width) or 180,
-        height = (positions.buttons and positions.buttons.options and positions.buttons.options.height) or 60,
-        vector2 = function()
-            -- Ajuster position selon présence du bouton loadSave
-            local yOffset = hasSaves() and 3 or 2
-            return (positions.buttons and positions.buttons.options) or 
-                { x = 60, y = screen.gameReso.height / 2 + (yOffset * 80) }
-        end,
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -198,14 +309,6 @@ mainMenu.buttons = {
     multilingual = {
         texte = function()
             return _G.t and _G.t("ui.menu.languages") or "Langues"
-        end,
-        width = (positions.buttons and positions.buttons.languages and positions.buttons.languages.width) or 180,
-        height = (positions.buttons and positions.buttons.languages and positions.buttons.languages.height) or 60,
-        vector2 = function()
-            -- Ajuster position selon présence du bouton loadSave
-            local yOffset = hasSaves() and 4 or 3
-            return (positions.buttons and positions.buttons.languages) or
-                { x = 60, y = screen.gameReso.height / 2 + (yOffset * 80) }
         end,
         color = {
             curent = { 1, 1, 1 },
@@ -225,14 +328,6 @@ mainMenu.buttons = {
         texte = function()
             return _G.t and _G.t("ui.menu.credits") or "Crédits"
         end,
-        width = (positions.buttons and positions.buttons.credits and positions.buttons.credits.width) or 180,
-        height = (positions.buttons and positions.buttons.credits and positions.buttons.credits.height) or 60,
-        vector2 = function()
-            -- Ajuster position selon présence du bouton loadSave
-            local yOffset = hasSaves() and 5 or 4
-            return (positions.buttons and positions.buttons.credits) or
-                { x = 60, y = screen.gameReso.height / 2 + (yOffset * 80) }
-        end,
         color = {
             curent = { 1, 1, 1 },
             hover  = { 0, 1, 0 },
@@ -250,14 +345,6 @@ mainMenu.buttons = {
     quit = {
         texte = function()
             return _G.t and _G.t("ui.menu.quit") or "Quitter"
-        end,
-        width = (positions.buttons and positions.buttons.quit and positions.buttons.quit.width) or 180,
-        height = (positions.buttons and positions.buttons.quit and positions.buttons.quit.height) or 60,
-        vector2 = function()
-            -- Ajuster position selon présence du bouton loadSave
-            local yOffset = hasSaves() and 6 or 5
-            return (positions.buttons and positions.buttons.quit) or
-                { x = 60, y = screen.gameReso.height / 2 + (yOffset * 80) }
         end,
         color = {
             curent = { 1, 1, 1 },
@@ -280,6 +367,20 @@ mainMenu.onSwitchPanel = nil
 -- Fonction de chargement
 function mainMenu:load()
     _log("[mainMenu] Panneau principal chargé")
+
+    -- Créer le panel conteneur pour les boutons
+    createButtonPanel()
+
+    -- Organiser automatiquement les boutons avec le texte de chaque bouton
+    local totalWidth, totalHeight = organizeButtonsInPanel()
+    _log("[mainMenu] Boutons organisés automatiquement - espace utilisé: " .. totalWidth .. "x" .. totalHeight)
+
+    -- Créer une sauvegarde de test si aucune n'existe (temporaire pour debug)
+    if not hasSaves() then
+        _log("[mainMenu] Aucune sauvegarde trouvée, création d'une sauvegarde test")
+        createTestSave()
+    end
+
     -- Mettre à jour les textes selon la langue actuelle
     self:updateTexts()
 end
@@ -291,7 +392,7 @@ function mainMenu:updateTexts()
         self.buttons.play.texte = _G.localization.get("ui.menu.play") or "Jouer"
         self.buttons.options.texte = _G.localization.get("ui.menu.options") or "Options"
         self.buttons.multilingual.texte = _G.localization.get("ui.options.language") or "Langues"
-        self.buttons.credit.texte = _G.localization.get("ui.menu.credits") or "Crédits"
+        self.buttons.credits.texte = _G.localization.get("ui.menu.credits") or "Crédits"
         self.buttons.quit.texte = _G.localization.get("ui.menu.quit") or "Quitter"
 
         _log("[mainMenu] Textes mis à jour selon la langue: " .. (_G.localization.getCurrentLanguage() or "unknown"))
@@ -356,43 +457,40 @@ function mainMenu:handleInput()
         elseif value.visible == false then
             isVisible = false
         end
-        
-        if not isVisible then
-            goto continue -- Passer au bouton suivant
-        end
-        
-        -- Obtenir position dynamique
-        local pos = value.vector2
-        if type(pos) == "function" then
-            pos = pos()
-        end
-        
-        local inside = (mx >= pos.x) and (mx <= pos.x + value.width) and
-            (my >= pos.y) and (my <= pos.y + value.height)
-        if inside then
-            if isClickNow and not self.isclick then
-                self.isclick = true
-                value.color.curent = value.color.click
-                _log("[mainMenu] Clic détecté sur bouton: " .. (value.cmd or (type(value.texte) == "function" and value.texte() or value.texte) or "inconnu"))
-                if value.action then
-                    value.action(value)
+
+        if isVisible then
+            -- Obtenir position dynamique
+            local pos = value.vector2
+            if type(pos) == "function" then
+                pos = pos()
+            end
+
+            local inside = (mx >= pos.x) and (mx <= pos.x + value.width) and
+                (my >= pos.y) and (my <= pos.y + value.height)
+            if inside then
+                if isClickNow and not self.isclick then
+                    self.isclick = true
+                    value.color.curent = value.color.click
+                    _log("[mainMenu] Clic détecté sur bouton: " ..
+                        (value.cmd or (type(value.texte) == "function" and value.texte() or value.texte) or "inconnu"))
+                    if value.action then
+                        value.action(value)
+                    else
+                        _log("[mainMenu] ERREUR: bouton sans fonction action")
+                    end
+                    break
                 else
-                    _log("[mainMenu] ERREUR: bouton sans fonction action")
+                    value.color.curent = value.color.hover
+                    self.isclick = false
                 end
                 break
-            else
-                value.color.curent = value.color.hover
+            elseif self.isclick then
                 self.isclick = false
+                break
+            else
+                value.color.curent = value.color.normal
             end
-            break
-        elseif self.isclick then
-            self.isclick = false
-            break
-        else
-            value.color.curent = value.color.normal
         end
-        
-        ::continue::
     end
 end
 
@@ -407,13 +505,13 @@ function mainMenu:draw(res, fontPath)
         elseif value.visible == false then
             isVisible = false
         end
-        
+
         if isVisible then
             love.graphics.setColor(value.color.curent)
             if res and res.font and fontPath then
                 love.graphics.setFont(res.font(fontPath, 60))
             end
-            
+
             -- Obtenir texte dynamique
             local displayText = ""
             if type(value.texte) == "function" then
@@ -421,13 +519,13 @@ function mainMenu:draw(res, fontPath)
             else
                 displayText = tostring(value.texte)
             end
-            
+
             -- Obtenir position dynamique
             local pos = value.vector2
             if type(pos) == "function" then
                 pos = pos()
             end
-            
+
             love.graphics.print(displayText, pos.x, pos.y)
         end
     end

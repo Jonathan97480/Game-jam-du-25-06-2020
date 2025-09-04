@@ -12,10 +12,10 @@ local res            = require("my-librairie.managers.resource_cache")
 
 -- Chargement des panneaux modulaires HUD
 
-local mainMenu   = require("scene.menu.HUD.mainMenu")
-local multiLangue = require("scene.menu.HUD.MultiLangue")
-local options    = require("scene.menu.HUD.options")
-local loadSave   = require("scene.menu.HUD.loadSave")
+local mainMenu       = require("scene.menu.HUD.mainMenu")
+local multiLangue    = require("scene.menu.HUD.MultiLangue")
+local options        = require("scene.menu.HUD.options")
+local loadSave       = require("scene.menu.HUD.loadSave")
 
 
 -- helper de log local : utilise globalFunction.log.info si présent, sinon print
@@ -29,13 +29,13 @@ local function _log(...)
 end
 
 local menu        = {}
-menu.name = "menu"  -- IMPORTANT: nom pour le sceneManager
+menu.name         = "menu" -- IMPORTANT: nom pour le sceneManager
 menu.illustration = {}
 
 -- État du menu et panneaux
 
-menu.currentPanel = "main"  -- Panneau actuel : "main", "multilangue", "options", "loadsave"
-menu.panels = {
+menu.currentPanel = "main" -- Panneau actuel : "main", "multilangue", "options", "loadsave"
+menu.panels       = {
     main = mainMenu,
     multilangue = multiLangue,
     options = options,
@@ -93,7 +93,7 @@ menu.illustration.title = {
     img = res.image(titlePath),
     vector2 = {
         x = screen.gameReso.width / 2,
-        y = screen.gameReso.height / 4  -- Position corrigée (était /0.5)
+        y = screen.gameReso.height / 4 -- Position corrigée (était /0.5)
     }
 }
 
@@ -105,9 +105,21 @@ local function setupPanelCallbacks()
     -- Fonction de changement de panneau
     local function switchPanel(panelName)
         _log("[menu] Changement de panneau vers: " .. tostring(panelName))
+
+        -- Masquer tous les panneaux spéciaux d'abord
+        if menu.panels.loadsave and menu.panels.loadsave.hide then
+            menu.panels.loadsave.hide()
+        end
+
+        -- Changer vers le nouveau panneau
         menu.currentPanel = panelName or "main"
+
+        -- Afficher le panneau loadSave s'il est sélectionné
+        if panelName == "loadsave" and menu.panels.loadsave and menu.panels.loadsave.show then
+            menu.panels.loadsave.show()
+        end
     end
-    
+
     -- Fonction de notification de changement de langue
     local function onLanguageChanged()
         _log("[menu] Langue changée, mise à jour de tous les panneaux")
@@ -119,7 +131,7 @@ local function setupPanelCallbacks()
             end
         end
     end
-    
+
     -- Assignation des callbacks
     for panelName, panel in pairs(menu.panels) do
         if panel then
@@ -139,18 +151,25 @@ Retour : nil
 function menu.load()
     _log("[menu] Chargement scène menu")
     config.load()
-    
+
     -- Configuration des callbacks entre panneaux
     setupPanelCallbacks()
-    
+
     -- Chargement des panneaux
     for panelName, panel in pairs(menu.panels) do
         if panel and panel.load then
             _log("[menu] Chargement panneau: " .. panelName)
-            panel:load()
+            local success, error = pcall(function() panel:load() end)
+            if not success then
+                _log("[menu] ❌ Erreur lors du chargement du panneau " .. panelName .. ": " .. tostring(error))
+            else
+                _log("[menu] ✅ Panneau " .. panelName .. " chargé avec succès")
+            end
+        else
+            _log("[menu] ⚠️ Panneau " .. panelName .. " ne peut pas être chargé (fonction load manquante)")
         end
     end
-    
+
     -- Chargement sécurisé des ressources audio
     local audioResources = config.RESOURCES
     if audioResources and audioResources.audio then
@@ -231,23 +250,59 @@ function menu.update(dt, ...)
     -- Fix: Gérer les appels avec syntaxe méthode (:) et fonction (.)
     -- Si dt est une table (menu lui-même), le vrai dt est le premier argument suivant
     if type(dt) == "table" and dt.name == "menu" then
-        local args = {...}
+        local args = { ... }
         dt = args[1] or love.timer.getDelta()
     end
-    
+
     if config.RESOURCES == nil or #config.RESOURCES == 0 then
         config.load()
     end
-    
+
     -- Déléguer au panneau actuel
     local currentPanel = menu.panels[menu.currentPanel]
     if currentPanel and currentPanel.update then
         currentPanel:update(dt)
     end
-    
-    -- Mettre à jour spécifiquement le panneau loadSave pour les notifications
+
+    -- Mettre à jour spécifiquement le panneau loadSave pour les notifications et ESC
     if menu.panels.loadsave and menu.panels.loadsave.update then
-        menu.panels.loadsave.update(dt)
+        menu.panels.loadsave:update(dt)
+    end
+end
+
+--[[
+Fonction : menu.keypressed
+Rôle : Gestion des événements clavier pour le menu
+Paramètres :
+  - key : string - la touche pressée
+Retour : nil
+]]
+function menu.keypressed(key)
+    _log("[menu] Touche pressée: " .. tostring(key))
+
+    -- Gestion globale de la touche Échap
+    if key == "escape" then
+        if menu.currentPanel == "main" then
+            -- Si on est dans le menu principal, quitter le jeu
+            _log("[menu] Échap pressé dans menu principal, fermeture du jeu")
+            love.event.quit()
+        else
+            -- Sinon, retourner au menu principal
+            _log("[menu] Échap pressé, retour au menu principal depuis: " .. menu.currentPanel)
+
+            -- Masquer le panneau loadSave s'il était actif
+            if menu.currentPanel == "loadsave" and menu.panels.loadsave and menu.panels.loadsave.hide then
+                menu.panels.loadsave.hide()
+            end
+
+            menu.currentPanel = "main"
+        end
+    end
+
+    -- Déléguer aux panneaux s'ils ont une fonction keypressed
+    local currentPanel = menu.panels[menu.currentPanel]
+    if currentPanel and currentPanel.keypressed then
+        currentPanel:keypressed(key)
     end
 end
 
@@ -261,20 +316,20 @@ function menu.draw()
     if config.RESOURCES == nil or #config.RESOURCES == 0 then
         config.load()
     end
-    
+
     -- Arrière-plan commun
     love.graphics.draw(menu.illustration.background.img, 0, 0)
-    
+
     -- Footer si présent
     if menu.illustration.footer and menu.illustration.footer.img then
         local f = menu.illustration.footer.img
         local fh = (type(f.getHeight) == 'function' and f:getHeight()) or 0
         love.graphics.draw(f, 0, screen.gameReso.height - fh)
     end
-    
+
     -- Titre du jeu (optionnel)
     -- love.graphics.draw(menu.illustration.title.img, menu.illustration.title.vector2.x, menu.illustration.title.vector2.y)
-    
+
     -- Déléguer le rendu au panneau actuel
     local currentPanel = menu.panels[menu.currentPanel]
     if currentPanel and currentPanel.draw then
@@ -285,13 +340,46 @@ function menu.draw()
         end
         currentPanel:draw(res, fontPath)
     end
-    
+
     -- Rendu des notifications du panneau loadSave (toujours visible)
     if menu.panels.loadsave and menu.panels.loadsave.draw then
         menu.panels.loadsave.draw()
     end
-    
+
     love.graphics.setColor(1, 1, 1)
+end
+
+-- Gestion des clics de souris pour le HUD
+function menu:mousepressed(x, y, button)
+    _log("[menu] Clic détecté: " .. x .. "," .. y .. " button=" .. button)
+
+    -- Transmettre le clic au système HUD
+    if _G.hud and _G.hud.hover then
+        local handled = _G.hud.hover("click", x, y)
+        if handled then
+            _log("[menu] Clic géré par le HUD")
+            return true
+        end
+    end
+
+    -- Déléguer au panneau actuel si nécessaire
+    local currentPanel = menu.panels[menu.currentPanel]
+    if currentPanel and currentPanel.mousepressed then
+        return currentPanel:mousepressed(x, y, button)
+    end
+
+    return false
+end
+
+-- Gestion du relâchement de souris
+function menu:mousereleased(x, y, button)
+    -- Déléguer au panneau actuel si nécessaire
+    local currentPanel = menu.panels[menu.currentPanel]
+    if currentPanel and currentPanel.mousereleased then
+        return currentPanel:mousereleased(x, y, button)
+    end
+
+    return false
 end
 
 return menu

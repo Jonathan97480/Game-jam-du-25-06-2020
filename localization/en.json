@@ -12,7 +12,10 @@
             "new_game": "New Game",
             "continue": "Continue",
             "load": "Load",
+            "load_save": "Load Game",
             "save": "Save",
+            "no_saves": "No saves available",
+            "create_save": "Create New Save",
             "options": "Options",
             "settings": "Settings",
             "credits": "Credits",
@@ -82,6 +85,21 @@
             "show_discard": "D - View discard pile",
             "help": "H - Show this help",
             "close": "Esc - Close windows"
+        },
+        "common": {
+            "load": "Load",
+            "save": "Save",
+            "delete": "Delete",
+            "edit": "Edit",
+            "create": "Create",
+            "back": "Back",
+            "next": "Next",
+            "previous": "Previous",
+            "ok": "OK",
+            "cancel": "Cancel",
+            "confirm": "Confirm",
+            "yes": "Yes",
+            "no": "No"
         }
     },
     "cards": {

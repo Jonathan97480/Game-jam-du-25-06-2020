@@ -162,6 +162,9 @@ end
 Système de Sauvegarde (NOUVEAU - 3 sept 2025)
 ===================================================================== ]]
 
+-- ID de la sauvegarde courante (NOUVEAU - 4 sept 2025)
+_G.idSave = nil
+
 -- SaveManager (gestion sauvegarde/chargement)
 local okSave, saveManager = pcall(require, "my-librairie/save-system/saveManager")
 _G.saveManager = okSave and saveManager or nil

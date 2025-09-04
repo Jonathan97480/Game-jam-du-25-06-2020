@@ -53,18 +53,25 @@ end
 
 -- Créer le dossier de sauvegarde s'il n'existe pas
 local function ensureSaveDirectory()
+    log("info", "🔍 Vérification dossier de sauvegarde: " .. SAVE_DIRECTORY)
+    log("info", "📁 Répertoire de sauvegarde LÖVE2D: " .. (love.filesystem.getSaveDirectory() or "inconnu"))
+
     local info = love.filesystem.getInfo(SAVE_DIRECTORY)
     if not info then
+        log("info", "📁 Dossier n'existe pas, création en cours...")
         local success = love.filesystem.createDirectory(SAVE_DIRECTORY)
         if success then
-            log("info", "Dossier de sauvegarde créé: " .. SAVE_DIRECTORY)
+            log("info", "✅ Dossier de sauvegarde créé: " .. SAVE_DIRECTORY)
         else
-            log("error", "Impossible de créer le dossier de sauvegarde")
+            log("error", "❌ Impossible de créer le dossier de sauvegarde")
             return false
         end
-    elseif info.type ~= "directory" then
-        log("error", "Le chemin de sauvegarde existe mais n'est pas un dossier")
-        return false
+    else
+        log("info", "📁 Dossier existe déjà, type: " .. (info.type or "inconnu"))
+        if info.type ~= "directory" then
+            log("error", "❌ Le chemin de sauvegarde existe mais n'est pas un dossier")
+            return false
+        end
     end
     return true
 end
@@ -624,6 +631,94 @@ function saveManager.getStats()
         lastSaveTime = lastSaveTime,
         nextAutoSave = isAutoSaveEnabled and (AUTO_SAVE_INTERVAL - autoSaveTimer) or nil
     }
+end
+
+-- =========================================================================
+-- FONCTIONS POUR NOUVELLE PARTIE ET GESTION ID GLOBAL (NOUVEAU - 4 sept 2025)
+-- =========================================================================
+
+-- Créer une nouvelle sauvegarde et définir _G.idSave
+function saveManager.createNewGame()
+    -- Trouver le prochain slot libre
+    local nextSlot = saveManager.findNextFreeSlot()
+
+    log("info", "Création nouvelle partie dans le slot " .. nextSlot)
+
+    -- Créer une sauvegarde initiale vide avec les données de base d'une nouvelle partie
+    local success, filename = saveManager.saveToSlot(nextSlot)
+
+    if success then
+        _G.idSave = nextSlot
+        log("info", "✅ Nouvelle partie créée - ID sauvegarde: " .. nextSlot)
+        return true, nextSlot, filename
+    else
+        log("error", "❌ Échec création nouvelle partie: " .. tostring(filename))
+        return false, nil, filename
+    end
+end
+
+-- Charger une sauvegarde et définir _G.idSave
+function saveManager.loadGameAndSetId(slotId)
+    local success, result = saveManager.loadFromSlot(slotId)
+
+    if success then
+        _G.idSave = slotId
+        log("info", "✅ Sauvegarde chargée - ID sauvegarde: " .. slotId)
+        return true, result
+    else
+        log("error", "❌ Échec chargement sauvegarde slot " .. slotId .. ": " .. tostring(result))
+        return false, result
+    end
+end
+
+-- Charger la dernière sauvegarde et définir _G.idSave
+function saveManager.loadLatestGameAndSetId()
+    local latestSave = saveManager.getLatestSave()
+
+    if not latestSave then
+        log("warn", "Aucune sauvegarde trouvée pour chargement")
+        return false, "Aucune sauvegarde disponible"
+    end
+
+    local slotId = latestSave.slot
+    if slotId then
+        return saveManager.loadGameAndSetId(slotId)
+    else
+        -- Si pas de slot (sauvegarde auto), charger mais sans définir d'ID
+        local success, result = saveManager.loadFromFile(latestSave.filename)
+        if success then
+            _G.idSave = nil -- Auto-save n'a pas d'ID de slot
+            log("info", "✅ Auto-sauvegarde chargée (pas d'ID slot)")
+            return true, result
+        else
+            log("error", "❌ Échec chargement auto-sauvegarde: " .. tostring(result))
+            return false, result
+        end
+    end
+end
+
+-- Trouver le prochain slot libre (1-10)
+function saveManager.findNextFreeSlot()
+    local saves = saveManager.getSaveSlots()
+    local usedSlots = {}
+
+    -- Marquer les slots utilisés
+    for _, saveInfo in ipairs(saves) do
+        if saveInfo.slot and not saveInfo.isAutoSave then
+            usedSlots[saveInfo.slot] = true
+        end
+    end
+
+    -- Trouver le premier slot libre
+    for slot = 1, MAX_SAVE_SLOTS do
+        if not usedSlots[slot] then
+            return slot
+        end
+    end
+
+    -- Si tous les slots sont pleins, utiliser le slot 1 (écrasement)
+    log("warn", "Tous les slots de sauvegarde sont pleins, écrasement du slot 1")
+    return 1
 end
 
 -- =========================================================================

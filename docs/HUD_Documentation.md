@@ -9,9 +9,11 @@
 5. [Système de Couches](#système-de-couches)
 6. [Boutons Avancés](#boutons-avancés)
 7. [Responsive Design](#responsive-design)
-8. [Patterns d'Usage](#patterns-dusage)
-9. [Exemples Pratiques](#exemples-pratiques)
-10. [Débogage](#débogage)
+8. [Positionnement Automatique et Panels Intelligents](#positionnement-automatique-et-panels-intelligents)
+9. [Patterns d'Usage](#patterns-dusage)
+10. [Exemples Pratiques](#exemples-pratiques)
+11. [Fonctions Avancées](#fonctions-avancées)
+12. [Débogage](#débogage)
 
 ---
 
@@ -549,6 +551,165 @@ end
 function update(dt)
     hud.setText("score", "Score: " .. score)
 end
+```
+
+---
+
+## Positionnement Automatique et Panels Intelligents
+
+### Vue d'ensemble
+
+Le système HUD intègre maintenant des fonctionnalités de positionnement automatique pour les boutons et panels, permettant une organisation dynamique basée sur le contenu.
+
+### Panels Conteneurs
+
+Les panels peuvent servir de conteneurs pour organiser automatiquement leurs enfants :
+
+```lua
+-- Créer un panel conteneur
+hud.setPanel("menu_container", 
+    x, y, width, height,
+    { layer = "background" },
+    { type = "container", color = { 0, 0, 0, 0 } }
+)
+```
+
+### Positionnement Automatique des Boutons
+
+Le système peut calculer automatiquement les positions et tailles des boutons basées sur leur contenu textuel :
+
+```lua
+-- Exemple d'organisation automatique (voir scene/menu/HUD/mainMenu.lua)
+local function organizeButtonsInPanel()
+    local fontSize = 20
+    local spacing = 15  -- Espacement entre boutons
+    local startX = 10   -- Marge gauche
+    local startY = 10   -- Marge haute
+    
+    local currentY = startY
+    local maxWidth = 0
+
+    -- Liste des boutons à organiser
+    local buttonOrder = {
+        "play", "continue", "loadSave", "options", "multilingual", "credits", "quit"
+    }
+
+    for _, buttonId in ipairs(buttonOrder) do
+        local buttonData = menuButtons[buttonId]
+        
+        if buttonData and isVisible(buttonData) then
+            -- Calculer dimensions du texte
+            local text = getButtonText(buttonData)
+            local textWidth, textHeight = getTextDimensions(text, fontSize)
+            
+            -- Ajouter padding
+            local buttonWidth = textWidth + 40  -- 20px de chaque côté
+            local buttonHeight = textHeight + 20 -- 10px haut/bas
+            
+            -- Mettre à jour la largeur maximale
+            maxWidth = math.max(maxWidth, buttonWidth)
+            
+            -- Assigner position et taille
+            buttonData.width = buttonWidth
+            buttonData.height = buttonHeight
+            buttonData.vector2 = {
+                x = panelX + startX,
+                y = panelY + currentY
+            }
+            
+            -- Passer au bouton suivant
+            currentY = currentY + buttonHeight + spacing
+        end
+    end
+    
+    return maxWidth, currentY - startY
+end
+```
+
+### Calcul de Dimensions Textuelles
+
+Fonction utilitaire pour calculer la taille nécessaire d'un texte :
+
+```lua
+local function getTextDimensions(text, fontSize)
+    if not text then return 0, 0 end
+    
+    local textStr = tostring(text)
+    local size = fontSize or 20
+    
+    -- Estimation basée sur la largeur moyenne des caractères
+    local charWidth = size * 0.6  -- Ratio largeur/hauteur approximatif
+    local width = #textStr * charWidth
+    local height = size
+    
+    return width, height
+end
+```
+
+### Avantages du Positionnement Automatique
+
+1. **Adaptation au contenu** : Les boutons s'ajustent automatiquement à la longueur du texte
+2. **Multilingue** : Support automatique des différentes langues sans reconfiguration
+3. **Espacement uniforme** : Garantit un espacement cohérent entre les éléments
+4. **Maintenance simplifiée** : Plus besoin de positions manuelles à ajuster
+
+### Intégration avec le Système de Visibilité
+
+Le positionnement automatique respecte la visibilité des éléments :
+
+```lua
+-- Vérifier la visibilité avant positionnement
+local isVisible = true
+if buttonData.visible and type(buttonData.visible) == "function" then
+    isVisible = buttonData.visible()
+end
+
+if buttonData and isVisible then
+    -- Positionner seulement si visible
+    organizeButton(buttonData)
+end
+```
+
+### Exemples d'Utilisation
+
+#### Menu Principal avec Positionnement Automatique
+
+```lua
+-- Configuration des boutons (scene/menu/HUD/mainMenu.lua)
+mainMenu.buttons = {
+    play = {
+        texte = function() return _G.t("ui.menu.play") or "Jouer" end,
+        action = function(btn) createNewGame() end
+    },
+    continue = {
+        texte = function() return _G.t("ui.menu.continue") or "Continuer" end,
+        visible = function() return hasSaves() end,
+        action = function(btn) loadLatestSave() end
+    }
+    -- ... autres boutons
+}
+
+-- Dans load() - organisation automatique
+function mainMenu:load()
+    createButtonPanel()  -- Créer le conteneur
+    
+    -- Organiser automatiquement tous les boutons
+    local totalWidth, totalHeight = organizeButtonsInPanel()
+    _log("Boutons organisés - espace utilisé: " .. totalWidth .. "x" .. totalHeight)
+end
+```
+
+#### Résultats Typiques
+
+Exemple de log de positionnement automatique :
+
+```
+[mainMenu] Panel conteneur créé à position: 60, 490
+[mainMenu] Bouton 'play' positionné à: 70, 500 (taille: 100x40)
+[mainMenu] Bouton 'continue' positionné à: 70, 555 (taille: 148x40)
+[mainMenu] Bouton 'loadSave' positionné à: 70, 610 (taille: 208x40)
+[mainMenu] Bouton 'options' positionné à: 70, 665 (taille: 124x40)
+[mainMenu] Boutons organisés automatiquement - espace utilisé: 208x385
 ```
 
 ---

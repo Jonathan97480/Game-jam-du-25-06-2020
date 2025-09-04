@@ -140,7 +140,21 @@ function multiLangue:load()
     _log("[multiLangue] Panneau multilingue chargé")
 
     -- Charger les drapeaux depuis resources.json
+    _log("[multiLangue] Début du chargement des drapeaux...")
     self:loadFlags()
+
+    -- Debug: vérifier si les drapeaux ont été chargés
+    if self.flags.fr then
+        _log("[multiLangue] ✅ Drapeau français disponible")
+    else
+        _log("[multiLangue] ❌ Drapeau français non disponible")
+    end
+
+    if self.flags.en then
+        _log("[multiLangue] ✅ Drapeau anglais disponible")
+    else
+        _log("[multiLangue] ❌ Drapeau anglais non disponible")
+    end
 
     -- Charger la langue sauvegardée
     self:loadLanguagePreference()
@@ -172,6 +186,28 @@ function multiLangue:loadFlags()
         end
     else
         _log("[multiLangue] ❌ Section 'flags' non trouvée dans resources.json")
+
+        -- Fallback : charger directement depuis img/flags/
+        _log("[multiLangue] 🔄 Tentative de chargement direct des drapeaux...")
+
+        local frPath = "img/flags/fr.png"
+        local enPath = "img/flags/en.png"
+
+        -- Vérifier et charger le drapeau français
+        if love.filesystem.getInfo(frPath) then
+            self.flags.fr = res.image(frPath)
+            _log("[multiLangue] ✅ Drapeau français chargé directement: " .. frPath)
+        else
+            _log("[multiLangue] ❌ Drapeau français non trouvé: " .. frPath)
+        end
+
+        -- Vérifier et charger le drapeau anglais
+        if love.filesystem.getInfo(enPath) then
+            self.flags.en = res.image(enPath)
+            _log("[multiLangue] ✅ Drapeau anglais chargé directement: " .. enPath)
+        else
+            _log("[multiLangue] ❌ Drapeau anglais non trouvé: " .. enPath)
+        end
     end
 end
 
